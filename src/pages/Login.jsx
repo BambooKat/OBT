@@ -46,7 +46,7 @@ function Login() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header style={{
         background: 'var(--card)',
         borderBottom: '1px solid var(--line)',
@@ -86,7 +86,7 @@ function Login() {
         </div>
       </header>
 
-      {/* ── Form inline (appare sotto l'header) ── */}
+      {/* â”€â”€ Form inline (appare sotto l'header) â”€â”€ */}
       {mode && (
         <div style={{
           background: 'var(--card)',
@@ -180,7 +180,7 @@ function Login() {
                     className="obt-btn obt-btn--primary obt-btn--sm"
                     style={{ flex: 2, justifyContent: 'center' }}
                   >
-                    {loading ? 'Attendere…' : mode === 'signup' ? 'Registrati' : 'Accedi'}
+                    {loading ? 'Attendereâ€¦' : mode === 'signup' ? 'Registrati' : 'Accedi'}
                   </button>
                 </div>
               </form>
@@ -189,7 +189,7 @@ function Login() {
         </div>
       )}
 
-      {/* ── Hero ── */}
+      {/* â”€â”€ Hero â”€â”€ */}
       <main style={{
         flex: 1,
         display: 'flex',
@@ -213,7 +213,7 @@ function Login() {
           marginBottom: '32px',
         }}>
           Traccia i tuoi progetti di breeding, gestisci le coppie e avvicinati
-          al colore target — tutto in un posto solo.
+          al colore target â€” tutto in un posto solo.
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
@@ -226,7 +226,7 @@ function Login() {
             className="obt-btn obt-btn--ghost"
             onClick={() => openMode('login')}
           >
-            Ho già un account
+            Ho giÃ  un account
           </button>
         </div>
 
@@ -239,10 +239,10 @@ function Login() {
           justifyContent: 'center',
         }}>
           {[
-            { icon: '🥚', label: 'Gestisci starter' },
-            { icon: '🎨', label: 'Distanza cromatica' },
-            { icon: '🔗', label: 'Coppie & figli' },
-            { icon: '🎯', label: 'Colore target' },
+            { icon: 'ðŸ¥š', label: 'Gestisci starter' },
+            { icon: 'ðŸŽ¨', label: 'Distanza cromatica' },
+            { icon: 'ðŸ”—', label: 'Coppie & figli' },
+            { icon: 'ðŸŽ¯', label: 'Colore target' },
           ].map(({ icon, label }) => (
             <div key={label} style={{
               background: 'var(--card)',

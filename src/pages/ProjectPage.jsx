@@ -253,7 +253,7 @@ function ProjectPage() {
 
   const handleDeleteProject = async () => {
     const confirmed = window.confirm(
-      `Eliminare definitivamente "${project.name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non può essere annullata.`
+      `Eliminare definitivamente "${project.name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non puÃ² essere annullata.`
     )
     if (!confirmed) return
     await supabase.from('projects').delete().eq('id', id)
@@ -341,7 +341,7 @@ function ProjectPage() {
             </button>
             {isOwner && (
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>
-                ✎ Edit Project
+                âœŽ Edit Project
               </button>
             )}
           </div>
@@ -351,7 +351,7 @@ function ProjectPage() {
             {project.project_notes ? (
               <p className="obt-hero-desc">{project.project_notes}</p>
             ) : isOwner ? (
-              <p className="obt-hero-desc obt-hero-desc--empty">Nessuna info progetto ancora — aggiungila da "Edit Project".</p>
+              <p className="obt-hero-desc obt-hero-desc--empty">Nessuna info progetto ancora â€” aggiungila da "Edit Project".</p>
             ) : null}
           </div>
 
@@ -446,7 +446,7 @@ function ProjectPage() {
             Zona pericolosa
           </p>
           <button type="button" className="obt-btn obt-btn--danger obt-btn--sm" onClick={handleDeleteProject}>
-            🗑 Elimina progetto
+            ðŸ—‘ Elimina progetto
           </button>
         </div>
       </Modal>
@@ -607,7 +607,7 @@ function ProjectPage() {
 
             {pairs.length === 0 ? (
               <div className="obt-panel obt-empty">
-                <div className="obt-empty-icon">🥚</div>
+                <div className="obt-empty-icon">ðŸ¥š</div>
                 <h3>Nessuna coppia ancora registrata</h3>
                 <p>Registra il primo accoppiamento per iniziare a tracciare la genealogia.</p>
               </div>

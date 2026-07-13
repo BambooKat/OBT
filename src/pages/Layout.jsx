@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom' // assicurati di avere questo import se usi il logo cliccabile
 
 function Layout({ username, onLogout, children }) {
   return (
@@ -20,7 +20,7 @@ function Layout({ username, onLogout, children }) {
       }}>
         <div />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Link to="/dashboard" style={{ display: 'flex' }}>
+          <Link to="/" style={{ display: 'flex' }}>
             <img src="/logo_obt.png" style={{ height: '40px', width: 'auto' }} alt="OBT Home" />
           </Link>
         </div>
@@ -37,43 +37,43 @@ function Layout({ username, onLogout, children }) {
         </div>
       </header>
 
-      {/* Contenuto principale */}
-      <main style={{ 
+      {/* Contenuto principale - nota il flex: 1 */}
+      <div className="obt-shell" style={{ 
         margin: '24px auto 40px', 
         maxWidth: '1200px', 
         width: 'calc(100% - 48px)',
-        flex: '1 0 auto'
+        flex: 1 // <-- importantissimo: spinge il footer in basso
       }}>
         {children}
-      </main>
+      </div>
 
       {/* Footer */}
       <footer style={{
-        borderTop: '1px solid var(--line)',
-        background: 'var(--card)',
-        padding: '16px 32px',
-        textAlign: 'center',
-        fontSize: '14px',
-        color: 'var(--muted)',
-        flexShrink: 0
-      }}>
-        OBT - Tool per Ovipets by BambooKat ·{' '}
-        <a 
-          href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" 
-          style={{ color: 'var(--primary)', textDecoration: 'none' }}
-        >
-          Contact
-        </a>
-        {' '}·{' '}
-        <a 
-          href="https://ovipets.com" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: 'var(--muted)', textDecoration: 'none' }}
-        >
-          Ovipets.com
-        </a>
-      </footer>
+  borderTop: '1px solid var(--line)',
+  background: 'var(--card)',
+  padding: '16px 32px',
+  textAlign: 'center',
+  fontSize: '14px',
+  color: 'var(--muted)',
+  marginTop: 'auto'
+}}>
+  OBT - Tool per Ovipets by BambooKat Â·{' '}
+  <a 
+    href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" 
+    style={{ color: 'var(--primary)', textDecoration: 'none' }}
+  >
+    Contact
+  </a>
+  {' '}Â·{' '}
+  <a 
+    href="https://ovipets.com" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    style={{ color: 'var(--muted)', textDecoration: 'none' }}
+  >
+    Ovipets.com
+  </a>
+</footer>
 
     </div>
   )
