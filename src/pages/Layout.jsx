@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useT } from '../i18n'
+import LanguageSwitcher from './LanguageSwitcher'
 
 function Layout({ username, onLogout, children }) {
   return (
@@ -22,7 +24,7 @@ function Layout({ username, onLogout, children }) {
         <div />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Link to="/dashboard" style={{ display: 'flex' }}>
-            <img src="/logo_obt.png" style={{ height: '40px', width: 'auto' }} alt="OBT Home" />
+            <img src="/logo_obt.png" style={{ height: '40px', width: 'auto' }} alt={t('layout.homeAlt')} />
           </Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
@@ -33,7 +35,7 @@ function Layout({ username, onLogout, children }) {
             </div>
           )}
           {onLogout && (
-            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={onLogout}>Esci</button>
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={onLogout}>{t('common.logout')}</button>
           )}
         </div>
       </header>
@@ -63,8 +65,8 @@ function Layout({ username, onLogout, children }) {
         flexShrink: 0,
         marginTop: 'auto',
       }}>
-        OBT - Tool per Ovipets by BambooKat ·{' '}
-        <a href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Contact</a>
+        {t('layout.tagline')} ·{' '}
+        <a href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" style={{ color: 'var(--primary)', textDecoration: 'none' }}>{t('layout.contact')}</a>
         {' '}·{' '}
         <a href="https://ovipets.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', textDecoration: 'none' }}>Ovipets.com</a>
       </footer>

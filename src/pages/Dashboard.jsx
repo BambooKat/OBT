@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import Modal from './Modal'
+import { useT } from '../i18n'
 
 function Dashboard() {
   const [projects, setProjects] = useState([])
@@ -48,35 +49,35 @@ function Dashboard() {
   }
 
   const cardVariant = (i) => ['', 'obt-card--secondary', 'obt-card--tertiary'][i % 3]
-  if (loading) return <div className="obt-loading">Caricamento...</div>
+  if (loading) return <div className="obt-loading">{t('common.loading')}</div>
 
   return (
     <>
       <div className="obt-hero">
-        <h1>I tuoi progetti</h1>
-        <div className="obt-hero-sub">{projects.length === 0 ? 'Nessun progetto ancora' : `${projects.length} progett${projects.length === 1 ? 'o' : 'i'}`}</div>
+        <h1>{t('dashboard.title')}</h1>
+        <div className="obt-hero-sub">{projects.length === 0 ? t('dashboard.empty') : t('dashboard.count', { count: projects.length })}</div>
       </div>
       <div className="obt-page">
-        <div className="obt-section-head"><div /><button className="obt-btn obt-btn--primary" onClick={() => setShowNewProject(true)}>+ Nuovo progetto</button></div>
-        <Modal open={showNewProject} onClose={closeNewProjectModal} title="Nuovo progetto">
+        <div className="obt-section-head"><div /><button className="obt-btn obt-btn--primary" onClick={() => setShowNewProject(true)}>{t('dashboard.newProject')}</button></div>
+        <Modal open={showNewProject} onClose={closeNewProjectModal} title={t('dashboard.newProjectTitle')}>
           <form onSubmit={handleCreateProject}>
-            <div className="obt-hint">Configura le basi, potrai modificarle in seguito.</div>
+            <div className="obt-hint">{t('dashboard.hint')}</div>
             <div className="obt-row">
-              <div className="obt-field"><label>Nome progetto *</label><input className="obt-input" type="text" placeholder="es. Hanamiya" value={newProject.name} onChange={e => setNewProject({ ...newProject, name: e.target.value })} required autoFocus /></div>
-              <div className="obt-field"><label>Specie *</label><select className="obt-select" value={newProject.species_id} onChange={e => setNewProject({ ...newProject, species_id: e.target.value })} required>{species.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+              <div className="obt-field"><label>{t('dashboard.name')} *</label><input className="obt-input" type="text" placeholder={t('dashboard.namePlaceholder')} value={newProject.name} onChange={e => setNewProject({ ...newProject, name: e.target.value })} required autoFocus /></div>
+              <div className="obt-field"><label>{t('dashboard.species')} *</label><select className="obt-select" value={newProject.species_id} onChange={e => setNewProject({ ...newProject, species_id: e.target.value })} required>{species.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
             </div>
             <div className="obt-row">
-              <div className="obt-field"><label>Autore *</label><input className="obt-input" type="text" value={newProject.author} onChange={e => setNewProject({ ...newProject, author: e.target.value })} required /></div>
-              <div className="obt-field"><label>Collaboratori <span className="obt-optional">(opzionale)</span></label><input className="obt-input" type="text" value={newProject.collaborators} onChange={e => setNewProject({ ...newProject, collaborators: e.target.value })} /></div>
+              <div className="obt-field"><label>{t('dashboard.author')} *</label><input className="obt-input" type="text" value={newProject.author} onChange={e => setNewProject({ ...newProject, author: e.target.value })} required /></div>
+              <div className="obt-field"><label>{t('dashboard.collaborators')} <span className="obt-optional">{t('common.optional')}</span></label><input className="obt-input" type="text" value={newProject.collaborators} onChange={e => setNewProject({ ...newProject, collaborators: e.target.value })} /></div>
             </div>
-            <div className="obt-field"><label>Note <span className="obt-optional">(opzionale)</span></label><textarea className="obt-textarea" value={newProject.project_notes} onChange={e => setNewProject({ ...newProject, project_notes: e.target.value })} /></div>
-            <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">Crea progetto</button><button type="button" className="obt-btn obt-btn--ghost" onClick={closeNewProjectModal}>Annulla</button></div>
+            <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={newProject.project_notes} onChange={e => setNewProject({ ...newProject, project_notes: e.target.value })} /></div>
+            <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{t('dashboard.create')}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={closeNewProjectModal}>{t('common.cancel')}</button></div>
           </form>
         </Modal>
         {projects.length === 0 ? (
-          <div className="obt-panel obt-empty"><div className="obt-empty-icon">🥚</div><h3>Nessun progetto ancora</h3><p>Creane uno per iniziare a tracciare il tuo breeding.</p><button className="obt-btn obt-btn--primary" onClick={() => setShowNewProject(true)}>+ Nuovo progetto</button></div>
+          <div className="obt-panel obt-empty"><div className="obt-empty-icon">🥚</div><h3>{t('dashboard.emptyTitle')}</h3><p>{t('dashboard.emptyText')}</p><button className="obt-btn obt-btn--primary" onClick={() => setShowNewProject(true)}>{t('dashboard.newProject')}</button></div>
         ) : (
-          <div className="obt-grid">{projects.map((p, i) => (<div key={p.id} onClick={() => navigate(`/project/${p.id}`)} className={`obt-card ${cardVariant(i)}`}><span className="obt-badge">{p.species?.name || '—'}</span><h3>{p.name}</h3><div className="obt-meta">👤 {p.author || 'Autore non impostato'}</div></div>))}</div>
+          <div className="obt-grid">{projects.map((p, i) => (<div key={p.id} onClick={() => navigate(`/project/${p.id}`)} className={`obt-card ${cardVariant(i)}`}><span className="obt-badge">{p.species?.name || '—'}</span><h3>{p.name}</h3><div className="obt-meta">👤 {p.author || t('dashboard.authorUnset')}</div></div>))}</div>
         )}
       </div>
     </>

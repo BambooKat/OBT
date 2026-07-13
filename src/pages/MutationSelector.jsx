@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
+import { useT } from '../i18n'
 
 // Componente che mostra le mutazioni di una specie come tag cliccabili,
 // raggruppate per zona del corpo, con sezioni apri/chiudi.
 // selectedIds: array di id mutazioni già selezionate
 // onChange: funzione chiamata con il nuovo array quando l'utente clicca un tag
 function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }) {
+  const { t } = useT()
   const [mutations, setMutations] = useState([])
   const [loading, setLoading] = useState(true)
   const [openZones, setOpenZones] = useState({})
@@ -41,7 +43,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
     setOpenZones({ ...openZones, [zone]: !openZones[zone] })
   }
 
-  if (loading) return <div className="obt-loading" style={{ minHeight: 80 }}>Caricamento mutazioni...</div>
+  if (loading) return <div className="obt-loading" style={{ minHeight: 80 }}>{t('mutations.loading')}</div>
 
   const filtered = search
     ? mutations.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
@@ -49,7 +51,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
 
   const zones = {}
   filtered.forEach(m => {
-    const zone = m.body_zone || 'Altro'
+    const zone = m.body_zone || t('mutations.otherZone')
     if (!zones[zone]) zones[zone] = []
     zones[zone].push(m)
   })
@@ -63,7 +65,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
     if (selectedMutations.length === 0) {
       return (
         <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
-          Nessuna mutazione target impostata.
+          {t('project.target.none')}
         </p>
       )
     }
@@ -87,7 +89,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
       <input
         className="obt-input"
         type="text"
-        placeholder="Cerca mutazione..."
+        placeholder={t('mutations.search')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: 14 }}
@@ -96,7 +98,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
       {selectedMutations.length > 0 && (
         <div className="obt-selected-strip">
           <div className="obt-hint" style={{ marginBottom: 8 }}>
-            Selezionate ({selectedMutations.length})
+            {t('mutations.selected', { count: selectedMutations.length })}
           </div>
           <div className="obt-chips">
             {selectedMutations.map(m => (
@@ -104,7 +106,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
                 key={m.id}
                 onClick={() => toggleMutation(m.id)}
                 className={`obt-chip obt-chip--removable${m.is_event ? ' obt-chip--event' : ''}`}
-                title="Clicca per rimuovere"
+                title={t('mutations.clickToRemove')}
               >
                 {m.name}{m.is_event ? ` [${m.event_season}]` : ''} ✕
               </span>

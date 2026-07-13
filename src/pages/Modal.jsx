@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useT } from '../i18n'
 
 // Modal riusabile. Si chiude con Esc, con click sull'overlay, o col bottone ✕.
 // Usalo per form di creazione/modifica: così quando l'utente naviga via
@@ -43,7 +44,7 @@ function Modal({ open, onClose, title, size = 'md', children }) {
           <div>
             <h2>{title}</h2>
           </div>
-          <button className="obt-modal-close" onClick={onClose} aria-label="Chiudi" title="Chiudi (Esc)">✕</button>
+          <button className="obt-modal-close" onClick={onClose} aria-label={t('common.close')} title={t('common.closeEsc')}>✕</button>
         </div>
         {children}
       </div>

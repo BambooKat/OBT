@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import { useT } from '../i18n'
+import LanguageSwitcher from './LanguageSwitcher'
 
 function Login() {
+  const { t } = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -48,10 +51,10 @@ function Login() {
   }
 
   const features = [
-    { icon: <i className="ti ti-wand"></i>, label: 'Gestisci starter' },
-    { icon: <i className="ti ti-color-filter"></i>, label: 'Distanza cromatica' },
-    { icon: <i className="ti ti-dna"></i>, label: 'Coppie & figli' },
-    { icon: <i className="ti ti-target-arrow"></i>, label: 'Colore target' },
+    { icon: <i className="ti ti-wand"></i>, label: t('login.features.starters') },
+    { icon: <i className="ti ti-color-filter"></i>, label: t('login.features.distance') },
+    { icon: <i className="ti ti-dna"></i>, label: t('login.features.pairs') },
+    { icon: <i className="ti ti-target-arrow"></i>, label: t('login.features.target') },
   ]
 
   return (
@@ -71,7 +74,9 @@ function Login() {
         zIndex: 100,
         boxShadow: 'var(--shadow)',
       }}>
-        <div />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <LanguageSwitcher />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
           <img src="/logo_obt.png" alt="OBT logo" style={{ height: '40px', width: 'auto' }} />
         </div>
@@ -81,13 +86,13 @@ function Login() {
             onClick={() => openMode(mode === 'login' ? null : 'login')}
             style={mode === 'login' ? { borderColor: 'var(--primary)', color: 'var(--primary-dark)' } : {}}
           >
-            Accedi
+            {t('login.signIn')}
           </button>
           <button
             className="obt-btn obt-btn--primary obt-btn--sm"
             onClick={() => openMode(mode === 'signup' ? null : 'signup')}
           >
-            Registrati
+            {t('login.signUp')}
           </button>
         </div>
       </header>
@@ -109,7 +114,7 @@ function Login() {
               marginBottom: '4px',
               textAlign: 'center',
             }}>
-              {mode === 'login' ? 'Bentornata/o!' : 'Crea un account'}
+              {mode === 'login' ? t('login.welcomeBack') : t('login.createAccount')}
             </h2>
             <p style={{
               textAlign: 'center',
@@ -118,14 +123,12 @@ function Login() {
               fontWeight: 600,
               marginBottom: '20px',
             }}>
-              {mode === 'login'
-                ? 'Inserisci le tue credenziali per continuare'
-                : 'Unisciti alla community di OBT'}
+              {mode === 'login' ? t('login.signInSub') : t('login.signUpSub')}
             </p>
 
             {confirmationSent && (
               <div className="obt-alert obt-alert--success">
-                Registrazione quasi completata. Controlla la tua email e clicca sul link di conferma prima di accedere.
+                {t('login.confirmationSent')}
               </div>
             )}
 
@@ -133,7 +136,7 @@ function Login() {
               <form onSubmit={handleSubmit}>
                 {mode === 'signup' && (
                   <div className="obt-field">
-                    <label>Username</label>
+                    <label>{t('login.username')}</label>
                     <input
                       className="obt-input"
                       type="text"
@@ -146,7 +149,7 @@ function Login() {
                 )}
 
                 <div className="obt-field">
-                  <label>Email</label>
+                  <label>{t('login.email')}</label>
                   <input
                     className="obt-input"
                     type="email"
@@ -158,14 +161,14 @@ function Login() {
                 </div>
 
                 <div className="obt-field">
-                  <label>Password</label>
+                  <label>{t('login.password')}</label>
                   <input
                     className="obt-input"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                 </div>
 
@@ -178,7 +181,7 @@ function Login() {
                     style={{ flex: 1, justifyContent: 'center' }}
                     onClick={() => setMode(null)}
                   >
-                    Annulla
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -186,7 +189,7 @@ function Login() {
                     className="obt-btn obt-btn--primary obt-btn--sm"
                     style={{ flex: 2, justifyContent: 'center' }}
                   >
-                    {loading ? 'Attendere...' : mode === 'signup' ? 'Registrati' : 'Accedi'}
+                    {loading ? t('login.pleaseWait') : mode === 'signup' ? t('login.signUp') : t('login.signIn')}
                   </button>
                 </div>
               </form>
@@ -218,21 +221,20 @@ function Login() {
           lineHeight: 1.6,
           marginBottom: '32px',
         }}>
-          Traccia i tuoi progetti di breeding, gestisci le coppie e avvicinati
-          al colore target — tutto in un posto solo.
+          {t('login.heroText')}
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
             className="obt-btn obt-btn--primary"
             onClick={() => openMode('signup')}
           >
-            Inizia gratis
+            {t('login.startFree')}
           </button>
           <button
             className="obt-btn obt-btn--ghost"
             onClick={() => openMode('login')}
           >
-            Ho già un account
+            {t('login.haveAccount')}
           </button>
         </div>
 
@@ -274,12 +276,12 @@ function Login() {
         color: 'var(--muted)',
         marginTop: 'auto'
       }}>
-        OBT - Tool per Ovipets by BambooKat ·{' '}
+        {t('layout.tagline')} ·{' '}
         <a 
           href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" 
           style={{ color: 'var(--primary)', textDecoration: 'none' }}
         >
-          Contact
+          {t('layout.contact')}
         </a>
         {' '}·{' '}
         <a 

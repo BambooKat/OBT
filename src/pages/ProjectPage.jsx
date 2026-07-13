@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import MutationSelector from './MutationSelector'
 import Modal from './Modal'
+import { useT } from '../i18n'
 
 const ColorCell = ({ hex }) => {
   if (!hex) return <span style={{ color: 'var(--ink-soft)' }}>-</span>
@@ -178,18 +179,18 @@ function ProjectPage() {
     let petId = editingPetId
     if (editingPetId) {
       const { error } = await supabase.from('pets').update(payload).eq('id', editingPetId)
-      if (fail(error, 'Impossibile salvare le modifiche')) return
+      if (fail(error, t('project.errors.savePet'))) return
       const { error: delErr } = await supabase.from('pet_mutations').delete().eq('pet_id', editingPetId)
-      if (fail(delErr, 'Impossibile aggiornare le mutazioni')) return
+      if (fail(delErr, t('project.errors.updateMutations'))) return
     } else {
       const { data: newPet, error } = await supabase.from('pets').insert(payload).select().single()
-      if (fail(error, "Impossibile aggiungere l'esemplare")) return
+      if (fail(error, t('project.errors.addPet'))) return
       petId = newPet?.id
     }
     if (petId && selectedMutationIds.length > 0) {
       const rows = selectedMutationIds.map(mutationId => ({ pet_id: petId, mutation_id: mutationId }))
       const { error } = await supabase.from('pet_mutations').insert(rows)
-      if (fail(error, 'Impossibile salvare le mutazioni')) return
+      if (fail(error, t('project.errors.saveMutations'))) return
     }
     resetPetForm()
     loadAll()
@@ -210,10 +211,10 @@ function ProjectPage() {
 
   const handleDeletePet = async (petId) => {
     const pet = pets.find(p => p.id === petId)
-    if (!window.confirm(`Eliminare l'esemplare "${pet?.code || ''}"?\n\nQuesta azione non può essere annullata.`)) return
+    if (!window.confirm(t('project.confirm.deletePet', { code: pet?.code || '' }))) return
     setActionError('')
     const { error } = await supabase.from('pets').delete().eq('id', petId)
-    if (fail(error, "Impossibile eliminare l'esemplare")) return
+    if (fail(error, t('project.errors.deletePet'))) return
     loadAll()
   }
 
@@ -221,13 +222,13 @@ function ProjectPage() {
     if (e && e.preventDefault) e.preventDefault()
     setActionError('')
     const { error } = await supabase.from('projects').update(targetForm).eq('id', id)
-    if (fail(error, 'Impossibile salvare i colori target')) return
+    if (fail(error, t('project.errors.saveTargetColours'))) return
     const { error: delErr } = await supabase.from('project_mutations').delete().eq('project_id', id)
-    if (fail(delErr, 'Impossibile aggiornare le mutazioni target')) return
+    if (fail(delErr, t('project.errors.updateTargetMutations'))) return
     if (targetMutationIds.length > 0) {
       const rows = targetMutationIds.map(mutationId => ({ project_id: id, mutation_id: mutationId }))
       const { error: insErr } = await supabase.from('project_mutations').insert(rows)
-      if (fail(insErr, 'Impossibile salvare le mutazioni target')) return
+      if (fail(insErr, t('project.errors.saveTargetMutations'))) return
     }
     loadAll()
   }
@@ -244,16 +245,16 @@ function ProjectPage() {
       project_id: id, mother_id: pairForm.mother_id, father_id: pairForm.father_id,
       pair_date: pairForm.pair_date || null, outcome_notes: pairForm.outcome_notes || null,
     })
-    if (fail(error, 'Impossibile registrare la coppia')) return
+    if (fail(error, t('project.errors.registerPair'))) return
     closePairForm()
     loadAll()
   }
 
   const handleDeletePair = async (pairId) => {
-    if (!window.confirm('Eliminare questa coppia?\n\nQuesta azione non può essere annullata.')) return
+    if (!window.confirm(t('project.confirm.deletePair'))) return
     setActionError('')
     const { error } = await supabase.from('pairs').delete().eq('id', pairId)
-    if (fail(error, 'Impossibile eliminare la coppia')) return
+    if (fail(error, t('project.errors.deletePair'))) return
     loadAll()
   }
 
@@ -268,7 +269,7 @@ function ProjectPage() {
       project_notes: editProjectForm.project_notes || null,
       is_public: editProjectForm.is_public,
     }).eq('id', id)
-    if (fail(error, 'Impossibile salvare il progetto')) return
+    if (fail(error, t('project.errors.saveProject'))) return
     setShowEditProject(false)
     loadAll()
   }
@@ -278,10 +279,10 @@ function ProjectPage() {
   // Toggle rapido pubblico/privato dalla barra in alto, senza aprire il modal.
   const handleToggleVisibility = async () => {
     const next = !project.is_public
-    if (!next && !window.confirm('Rendere il progetto privato?\n\nChi ha il link non potrà più aprirlo.')) return
+    if (!next && !window.confirm(t('project.confirm.makePrivate'))) return
     setActionError('')
     const { error } = await supabase.from('projects').update({ is_public: next }).eq('id', id)
-    if (fail(error, 'Impossibile cambiare la visibilità')) return
+    if (fail(error, t('project.errors.toggleVisibility'))) return
     loadAll()
   }
 
@@ -291,7 +292,7 @@ function ProjectPage() {
       await navigator.clipboard.writeText(shareUrl)
     } catch {
       // Alcuni browser bloccano la clipboard fuori da HTTPS: fallback manuale.
-      window.prompt('Copia il link:', shareUrl)
+      window.prompt(t('project.share.copyPrompt'), shareUrl)
       return
     }
     setCopied(true)
@@ -299,15 +300,15 @@ function ProjectPage() {
   }
 
   const handleDeleteProject = async () => {
-    const confirmed = window.confirm(`Eliminare definitivamente "${project.name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non può essere annullata.`)
+    const confirmed = window.confirm(t('project.confirm.deleteProject', { name: project.name }))
     if (!confirmed) return
     setActionError('')
     const { error } = await supabase.from('projects').delete().eq('id', id)
-    if (fail(error, 'Impossibile eliminare il progetto')) return
+    if (fail(error, t('project.errors.deleteProject'))) return
     navigate('/dashboard')
   }
 
-  if (loading) return <div className="obt-loading">Caricamento...</div>
+  if (loading) return <div className="obt-loading">{t('common.loading')}</div>
   if (!project) return null
 
   const starters = pets.filter(p => p.generation === 0)
@@ -319,15 +320,15 @@ function ProjectPage() {
     <div className="obt-panel">
       <h3 style={{ marginBottom: 14 }}>{title}</h3>
       {list.length === 0 ? (
-        <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>Nessuno.</p>
+        <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>{t('common.none')}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="obt-table">
             <thead>
               <tr>
-                <th>Codice</th><th>Sesso</th><th>Lettera</th><th>Gen</th>
-                <th>Occhi</th><th>Body1</th><th>Body2</th><th>Extra1</th><th>Extra2</th>
-                <th>Muta</th><th>Distanza</th><th>Note</th>{isOwner && <th></th>}
+                <th>{t('project.table.code')}</th><th>{t('project.table.sex')}</th><th>{t('project.table.letter')}</th><th>{t('project.table.gen')}</th>
+                <th>{t('project.table.eyes')}</th><th>{t('project.table.body1')}</th><th>{t('project.table.body2')}</th><th>{t('project.table.extra1')}</th><th>{t('project.table.extra2')}</th>
+                <th>{t('project.table.mut')}</th><th>{t('project.table.distance')}</th><th>{t('project.table.notes')}</th>{isOwner && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -349,8 +350,8 @@ function ProjectPage() {
                     <td>{pet.notes || ''}</td>
                     {isOwner && (
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <button className="obt-icon-btn" onClick={() => handleEditPet(pet)} title="Modifica"><i className="ti ti-pencil" /></button>
-                        <button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePet(pet.id)} title="Elimina"><i className="ti ti-trash" /></button>
+                        <button className="obt-icon-btn" onClick={() => handleEditPet(pet)} title={t('common.edit')}><i className="ti ti-pencil" /></button>
+                        <button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePet(pet.id)} title={t('common.delete')}><i className="ti ti-trash" /></button>
                       </td>
                     )}
                   </tr>
@@ -363,7 +364,7 @@ function ProjectPage() {
     </div>
   )
 
-  const tabLabels = { starters: 'Starter (Gen 0)', children: 'Figli', pairs: 'Coppie', target: 'Target' }
+  const tabLabels = { starters: t('project.tabs.starters'), children: t('project.tabs.children'), pairs: t('project.tabs.pairs'), target: t('project.tabs.target') }
 
   // FIX: Niente <Layout> qui! Il Layout è già in App.jsx, altrimenti raddoppia header/footer
   return (
@@ -371,20 +372,20 @@ function ProjectPage() {
       <div className="obt-hero">
         <div className="obt-hero-top">
           <div className="obt-hero-back">
-            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; Dashboard</button>
-            {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>✎ Edit Project</button>}
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; {t('project.back')}</button>
+            {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>✎ {t('project.edit')}</button>}
             {isOwner && (
               <button
                 className="obt-btn obt-btn--ghost obt-btn--sm"
                 onClick={handleToggleVisibility}
-                title={project.is_public ? 'Chiunque abbia il link può vedere questo progetto — copia il link da "Edit Project"' : 'Solo tu puoi vedere questo progetto'}
+                title={project.is_public ? t('project.publicTitle') : t('project.privateTitle')}
               >
-                {project.is_public ? '🔓 Pubblico' : '🔒 Privato'}
+                {project.is_public ? `🔓 ${t('project.public')}` : `🔒 ${t('project.private')}`}
               </button>
             )}
             {!isOwner && (
               <span
-                title="Stai visualizzando il progetto di un altro utente"
+                title={t('project.readOnlyTitle')}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   background: 'var(--card)', border: '1px solid var(--line)',
@@ -392,19 +393,19 @@ function ProjectPage() {
                   fontSize: 12, fontWeight: 700, color: 'var(--muted)',
                 }}
               >
-                <i className="ti ti-eye" /> Sola lettura
+                <i className="ti ti-eye" /> {t('project.readOnly')}
               </span>
             )}
           </div>
           <div className="obt-hero-title">
             <h1>{project.name}</h1>
-            {project.project_notes ? <p className="obt-hero-desc">{project.project_notes}</p> : isOwner ? <p className="obt-hero-desc obt-hero-desc--empty">Nessuna info progetto ancora — aggiungila da "Edit Project".</p> : null}
+            {project.project_notes ? <p className="obt-hero-desc">{project.project_notes}</p> : isOwner ? <p className="obt-hero-desc obt-hero-desc--empty">{t('project.noInfo')}</p> : null}
           </div>
           <div className="obt-hero-info">
-            <div className="obt-hero-info-row"><span className="obt-hero-info-label">Specie</span> {project.species?.name}</div>
-            <div className="obt-hero-info-row"><span className="obt-hero-info-label">Autore</span> {project.author || '-'}</div>
-            {project.collaborators && <div className="obt-hero-info-row"><span className="obt-hero-info-label">Collaboratori</span> {project.collaborators}</div>}
-            <div className="obt-hero-info-row"><span className="obt-hero-info-label">Creato il</span> {new Date(project.created_at).toLocaleDateString('it-IT')}</div>
+            <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.species')}</span> {project.species?.name}</div>
+            <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.author')}</span> {project.author || '-'}</div>
+            {project.collaborators && <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.collaborators')}</span> {project.collaborators}</div>}
+            <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.created')}</span> {formatDate(project.created_at)}</div>
           </div>
         </div>
         <div className="obt-tabs">
@@ -417,21 +418,21 @@ function ProjectPage() {
       {actionError && (
         <div className="obt-alert obt-alert--error" style={{ margin: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <span>{actionError}</span>
-          <button className="obt-icon-btn" onClick={() => setActionError('')} title="Chiudi">✕</button>
+          <button className="obt-icon-btn" onClick={() => setActionError('')} title={t('common.close')}>✕</button>
         </div>
       )}
 
-      <Modal open={showEditProject} onClose={() => setShowEditProject(false)} title="Modifica progetto">
+      <Modal open={showEditProject} onClose={() => setShowEditProject(false)} title={t('project.editTitle')}>
         <form onSubmit={handleEditProjectSubmit}>
           <div className="obt-row">
-            <div className="obt-field"><label>Nome progetto *</label><input className="obt-input" type="text" value={editProjectForm.name} onChange={(e) => setEditProjectForm({ ...editProjectForm, name: e.target.value })} required autoFocus /></div>
-            <div className="obt-field"><label>Specie *</label><select className="obt-select" value={editProjectForm.species_id} onChange={(e) => setEditProjectForm({ ...editProjectForm, species_id: e.target.value })} required>{speciesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+            <div className="obt-field"><label>{t('dashboard.name')} *</label><input className="obt-input" type="text" value={editProjectForm.name} onChange={(e) => setEditProjectForm({ ...editProjectForm, name: e.target.value })} required autoFocus /></div>
+            <div className="obt-field"><label>{t('dashboard.species')} *</label><select className="obt-select" value={editProjectForm.species_id} onChange={(e) => setEditProjectForm({ ...editProjectForm, species_id: e.target.value })} required>{speciesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
           </div>
           <div className="obt-row">
-            <div className="obt-field"><label>Autore</label><input className="obt-input" type="text" value={editProjectForm.author} onChange={(e) => setEditProjectForm({ ...editProjectForm, author: e.target.value })} /></div>
-            <div className="obt-field"><label>Collaboratori <span className="obt-optional">(opzionale)</span></label><input className="obt-input" type="text" value={editProjectForm.collaborators} onChange={(e) => setEditProjectForm({ ...editProjectForm, collaborators: e.target.value })} /></div>
+            <div className="obt-field"><label>{t('dashboard.author')}</label><input className="obt-input" type="text" value={editProjectForm.author} onChange={(e) => setEditProjectForm({ ...editProjectForm, author: e.target.value })} /></div>
+            <div className="obt-field"><label>{t('dashboard.collaborators')} <span className="obt-optional">{t('common.optional')}</span></label><input className="obt-input" type="text" value={editProjectForm.collaborators} onChange={(e) => setEditProjectForm({ ...editProjectForm, collaborators: e.target.value })} /></div>
           </div>
-          <div className="obt-field"><label>Info progetto <span className="obt-optional">(opzionale)</span></label><textarea className="obt-textarea" value={editProjectForm.project_notes} onChange={(e) => setEditProjectForm({ ...editProjectForm, project_notes: e.target.value })} /></div>
+          <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editProjectForm.project_notes} onChange={(e) => setEditProjectForm({ ...editProjectForm, project_notes: e.target.value })} /></div>
 
           <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 16, marginTop: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
@@ -441,12 +442,10 @@ function ProjectPage() {
                 onChange={(e) => setEditProjectForm({ ...editProjectForm, is_public: e.target.checked })}
                 style={{ width: 16, height: 16, cursor: 'pointer' }}
               />
-              Condividi tramite link
+              {t('project.share.checkbox')}
             </label>
             <p className="obt-hint" style={{ marginTop: 6 }}>
-              {editProjectForm.is_public
-                ? 'Gli utenti registrati con il link potranno vedere il progetto in sola lettura.'
-                : 'Solo tu puoi vedere questo progetto. Attiva la condivisione per abilitare il link.'}
+              {editProjectForm.is_public ? t('project.share.hintPublic') : t('project.share.hintPrivate')}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, opacity: editProjectForm.is_public ? 1 : 0.45 }}>
               <input
@@ -462,56 +461,56 @@ function ProjectPage() {
                 className="obt-btn obt-btn--ghost obt-btn--sm"
                 onClick={handleCopyLink}
                 disabled={!editProjectForm.is_public}
-                title={editProjectForm.is_public ? 'Copia il link' : 'Attiva la condivisione per copiare il link'}
+                title={editProjectForm.is_public ? t('project.share.copyTitle') : t('project.share.copyDisabledTitle')}
                 style={{ whiteSpace: 'nowrap' }}
               >
-                {copied ? '✓' : 'Copia'}
+                {copied ? '✓' : t('common.copy')}
               </button>
             </div>
           </div>
-          <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">Salva modifiche</button><button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowEditProject(false)}>Annulla</button></div>
+          <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{t('common.saveChanges')}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowEditProject(false)}>{t('common.cancel')}</button></div>
         </form>
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
-          <p className="obt-text-soft" style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Zona pericolosa</p>
-          <button type="button" className="obt-btn obt-btn--danger obt-btn--sm" onClick={handleDeleteProject}>🗑 Elimina progetto</button>
+          <p className="obt-text-soft" style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>{t('project.danger.zone')}</p>
+          <button type="button" className="obt-btn obt-btn--danger obt-btn--sm" onClick={handleDeleteProject}>{t('project.danger.deleteProject')}</button>
         </div>
       </Modal>
 
       <div className="obt-page">
         {(activeTab === 'starters' || activeTab === 'children') && (
           <>
-            <div className="obt-section-head"><div />{isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={openNewPetForm}>+ Aggiungi {activeTab === 'starters' ? 'starter' : 'figlio'}</button>}</div>
-            <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? 'Modifica esemplare' : `Nuovo ${activeTab === 'starters' ? 'starter' : 'figlio'}`} size="lg">
+            <div className="obt-section-head"><div />{isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={openNewPetForm}>{activeTab === 'starters' ? t('project.pet.addStarter') : t('project.pet.addChild')}</button>}</div>
+            <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? t('project.pet.editTitle') : (activeTab === 'starters' ? t('project.pet.newStarter') : t('project.pet.newChild'))} size="lg">
               <form onSubmit={handlePetSubmit}>
                 <div className="obt-row">
-                  <div className="obt-field"><label>Codice</label><input className="obt-input" value={petForm.code} onChange={e => setPetForm({...petForm, code: e.target.value})} required autoFocus /></div>
-                  <div className="obt-field"><label>Sesso</label><select className="obt-select" value={petForm.sex} onChange={e => setPetForm({...petForm, sex: e.target.value})}><option value="M">M</option><option value="F">F</option><option value="ND">ND</option></select></div>
-                  <div className="obt-field"><label>Lettera</label><input className="obt-input" maxLength={1} value={petForm.letter} onChange={e => setPetForm({...petForm, letter: e.target.value})} /></div>
-                  <div className="obt-field"><label>Generazione</label><input type="number" min="0" className="obt-input" value={petForm.generation} onChange={e => setPetForm({...petForm, generation: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.code')}</label><input className="obt-input" value={petForm.code} onChange={e => setPetForm({...petForm, code: e.target.value})} required autoFocus /></div>
+                  <div className="obt-field"><label>{t('project.pet.sex')}</label><select className="obt-select" value={petForm.sex} onChange={e => setPetForm({...petForm, sex: e.target.value})}><option value="M">M</option><option value="F">F</option><option value="ND">ND</option></select></div>
+                  <div className="obt-field"><label>{t('project.pet.letter')}</label><input className="obt-input" maxLength={1} value={petForm.letter} onChange={e => setPetForm({...petForm, letter: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.generation')}</label><input type="number" min="0" className="obt-input" value={petForm.generation} onChange={e => setPetForm({...petForm, generation: e.target.value})} /></div>
                 </div>
                 {petForm.generation > 0 && (
                   <div className="obt-row">
-                    <div className="obt-field"><label>Madre</label><select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm({...petForm, mother_id: e.target.value})}><option value="">-- nessuna --</option>{females.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}</select></div>
-                    <div className="obt-field"><label>Padre</label><select className="obt-select" value={petForm.father_id} onChange={e => setPetForm({...petForm, father_id: e.target.value})}><option value="">-- nessuno --</option>{males.map(m => <option key={m.id} value={m.id}>{m.code}</option>)}</select></div>
+                    <div className="obt-field"><label>{t('project.pet.mother')}</label><select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm({...petForm, mother_id: e.target.value})}><option value="">{t('project.pet.noMother')}</option>{females.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}</select></div>
+                    <div className="obt-field"><label>{t('project.pet.father')}</label><select className="obt-select" value={petForm.father_id} onChange={e => setPetForm({...petForm, father_id: e.target.value})}><option value="">{t('project.pet.noFather')}</option>{males.map(m => <option key={m.id} value={m.id}>{m.code}</option>)}</select></div>
                   </div>
                 )}
                 <div className="obt-row">
-                  <div className="obt-field"><label>Occhi</label><input className="obt-input" placeholder="6A786D" value={petForm.eyes} onChange={e => setPetForm({...petForm, eyes: e.target.value})} /></div>
-                  <div className="obt-field"><label>Body 01</label><input className="obt-input" placeholder="22565B" value={petForm.body1} onChange={e => setPetForm({...petForm, body1: e.target.value})} /></div>
-                  <div className="obt-field"><label>Body 02</label><input className="obt-input" placeholder="181B23" value={petForm.body2} onChange={e => setPetForm({...petForm, body2: e.target.value})} /></div>
-                  <div className="obt-field"><label>Extra 01</label><input className="obt-input" placeholder="4D565C" value={petForm.extra1} onChange={e => setPetForm({...petForm, extra1: e.target.value})} /></div>
-                  <div className="obt-field"><label>Extra 02</label><input className="obt-input" placeholder="8CABAE" value={petForm.extra2} onChange={e => setPetForm({...petForm, extra2: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.eyes')}</label><input className="obt-input" placeholder="6A786D" value={petForm.eyes} onChange={e => setPetForm({...petForm, eyes: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.body1')}</label><input className="obt-input" placeholder="22565B" value={petForm.body1} onChange={e => setPetForm({...petForm, body1: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.body2')}</label><input className="obt-input" placeholder="181B23" value={petForm.body2} onChange={e => setPetForm({...petForm, body2: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.extra1')}</label><input className="obt-input" placeholder="4D565C" value={petForm.extra1} onChange={e => setPetForm({...petForm, extra1: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.extra2')}</label><input className="obt-input" placeholder="8CABAE" value={petForm.extra2} onChange={e => setPetForm({...petForm, extra2: e.target.value})} /></div>
                 </div>
-                <div className="obt-field"><label>Note</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
-                <div className="obt-field"><label>Mutazioni</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
-                <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? 'Salva modifiche' : 'Aggiungi'}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>Annulla</button></div>
+                <div className="obt-field"><label>{t('project.pet.notes')}</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
+                <div className="obt-field"><label>{t('project.pet.mutations')}</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
+                <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>{t('common.cancel')}</button></div>
               </form>
             </Modal>
-            {activeTab === 'starters' ? (<><PetTable list={starters.filter(p => p.sex === 'F')} title="Femmine" /><PetTable list={starters.filter(p => p.sex === 'M')} title="Maschi" /><PetTable list={starters.filter(p => p.sex === 'ND')} title="Non ancora sessati" /></>) : (<><PetTable list={children.filter(p => p.sex === 'F')} title="Femmine" /><PetTable list={children.filter(p => p.sex === 'M')} title="Maschi" /><PetTable list={children.filter(p => p.sex === 'ND')} title="Non ancora sessati" /></>)}
+            {activeTab === 'starters' ? (<><PetTable list={starters.filter(p => p.sex === 'F')} title={t('project.groups.females')} /><PetTable list={starters.filter(p => p.sex === 'M')} title={t('project.groups.males')} /><PetTable list={starters.filter(p => p.sex === 'ND')} title={t('project.groups.unsexed')} /></>) : (<><PetTable list={children.filter(p => p.sex === 'F')} title={t('project.groups.females')} /><PetTable list={children.filter(p => p.sex === 'M')} title={t('project.groups.males')} /><PetTable list={children.filter(p => p.sex === 'ND')} title={t('project.groups.unsexed')} /></>)}
           </>
         )}
-        {activeTab === 'pairs' && (<><div className="obt-section-head"><div />{isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => setShowPairForm(true)}>+ Registra coppia</button>}</div><Modal open={showPairForm} onClose={closePairForm} title="Registra coppia"><form onSubmit={handlePairSubmit}><div className="obt-row"><div className="obt-field"><label>Madre</label><select className="obt-select" value={pairForm.mother_id} onChange={e => setPairForm({...pairForm, mother_id: e.target.value})} required autoFocus><option value="">-- seleziona --</option>{females.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}</select></div><div className="obt-field"><label>Padre</label><select className="obt-select" value={pairForm.father_id} onChange={e => setPairForm({...pairForm, father_id: e.target.value})} required><option value="">-- seleziona --</option>{males.map(m => <option key={m.id} value={m.id}>{m.code}</option>)}</select></div><div className="obt-field"><label>Data</label><input type="date" className="obt-input" value={pairForm.pair_date} onChange={e => setPairForm({...pairForm, pair_date: e.target.value})} /></div></div><div className="obt-field"><label>Note / esito</label><input className="obt-input" value={pairForm.outcome_notes} onChange={e => setPairForm({...pairForm, outcome_notes: e.target.value})} /></div><div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">Registra</button><button type="button" className="obt-btn obt-btn--ghost" onClick={closePairForm}>Annulla</button></div></form></Modal>{pairs.length === 0 ? <div className="obt-panel obt-empty"><div className="obt-empty-icon">🥚</div><h3>Nessuna coppia ancora registrata</h3><p>Registra il primo accoppiamento per iniziare a tracciare la genealogia.</p></div> : <div className="obt-panel"><div style={{ overflowX: 'auto' }}><table className="obt-table"><thead><tr><th>Madre</th><th>Padre</th><th>Data</th><th>Note</th>{isOwner && <th></th>}</tr></thead><tbody>{pairs.map(pair => (<tr key={pair.id}><td>{pair.mother?.code || '-'}</td><td>{pair.father?.code || '-'}</td><td>{pair.pair_date || '-'}</td><td>{pair.outcome_notes || ''}</td>{isOwner && <td><button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePair(pair.id)} title="Elimina"><i className="ti ti-trash" /></button></td>}</tr>))}</tbody></table></div></div>}</>)}
-        {activeTab === 'target' && (<><form onSubmit={handleTargetSubmit} className="obt-panel"><h2 style={{ marginBottom: 18 }}>Colori target</h2><div className="obt-row">{[{ label: 'Occhi', key: 'target_eyes' },{ label: 'Body 01', key: 'target_body1' },{ label: 'Body 02', key: 'target_body2' },{ label: 'Extra 01', key: 'target_extra1' },{ label: 'Extra 02', key: 'target_extra2' },].map(({ label, key }) => (<div className="obt-field" key={key}><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{label}<ColorCell hex={targetForm[key]} /></label><input className="obt-input" disabled={!isOwner} value={targetForm[key]} onChange={e => setTargetForm({ ...targetForm, [key]: e.target.value })} placeholder="es. A0A0A0" /></div>))}</div>{isOwner && <button type="submit" className="obt-btn obt-btn--primary">Salva target</button>}</form><div className="obt-panel"><h3 style={{ marginBottom: 14 }}>Mutazioni target</h3><MutationSelector speciesId={project.species_id} selectedIds={targetMutationIds} onChange={setTargetMutationIds} readOnly={!isOwner} />{isOwner && <button className="obt-btn obt-btn--primary obt-mt-md" onClick={handleTargetSubmit}>Salva mutazioni target</button>}</div></>)}
+        {activeTab === 'pairs' && (<><div className="obt-section-head"><div />{isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => setShowPairForm(true)}>{t('project.pairs.add')}</button>}</div><Modal open={showPairForm} onClose={closePairForm} title={t('project.pairs.addTitle')}><form onSubmit={handlePairSubmit}><div className="obt-row"><div className="obt-field"><label>{t('project.pet.mother')}</label><select className="obt-select" value={pairForm.mother_id} onChange={e => setPairForm({...pairForm, mother_id: e.target.value})} required autoFocus><option value="">{t('project.pairs.select')}</option>{females.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}</select></div><div className="obt-field"><label>{t('project.pet.father')}</label><select className="obt-select" value={pairForm.father_id} onChange={e => setPairForm({...pairForm, father_id: e.target.value})} required><option value="">{t('project.pairs.select')}</option>{males.map(m => <option key={m.id} value={m.id}>{m.code}</option>)}</select></div><div className="obt-field"><label>{t('project.pairs.date')}</label><input type="date" className="obt-input" value={pairForm.pair_date} onChange={e => setPairForm({...pairForm, pair_date: e.target.value})} /></div></div><div className="obt-field"><label>{t('project.pairs.outcome')}</label><input className="obt-input" value={pairForm.outcome_notes} onChange={e => setPairForm({...pairForm, outcome_notes: e.target.value})} /></div><div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{t('project.pairs.submit')}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={closePairForm}>{t('common.cancel')}</button></div></form></Modal>{pairs.length === 0 ? <div className="obt-panel obt-empty"><div className="obt-empty-icon">🥚</div><h3>{t('project.pairs.emptyTitle')}</h3><p>{t('project.pairs.emptyText')}</p></div> : <div className="obt-panel"><div style={{ overflowX: 'auto' }}><table className="obt-table"><thead><tr><th>{t('project.pairs.mother')}</th><th>{t('project.pairs.father')}</th><th>Data</th><th>{t('project.table.notes')}</th>{isOwner && <th></th>}</tr></thead><tbody>{pairs.map(pair => (<tr key={pair.id}><td>{pair.mother?.code || '-'}</td><td>{pair.father?.code || '-'}</td><td>{pair.pair_date || '-'}</td><td>{pair.outcome_notes || ''}</td>{isOwner && <td><button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePair(pair.id)} title={t('common.delete')}><i className="ti ti-trash" /></button></td>}</tr>))}</tbody></table></div></div>}</>)}
+        {activeTab === 'target' && (<><form onSubmit={handleTargetSubmit} className="obt-panel"><h2 style={{ marginBottom: 18 }}>{t('project.target.colours')}</h2><div className="obt-row">{[{ label: t('project.pet.eyes'), key: 'target_eyes' },{ label: t('project.pet.body1'), key: 'target_body1' },{ label: t('project.pet.body2'), key: 'target_body2' },{ label: t('project.pet.extra1'), key: 'target_extra1' },{ label: t('project.pet.extra2'), key: 'target_extra2' },].map(({ label, key }) => (<div className="obt-field" key={key}><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{label}<ColorCell hex={targetForm[key]} /></label><input className="obt-input" disabled={!isOwner} value={targetForm[key]} onChange={e => setTargetForm({ ...targetForm, [key]: e.target.value })} placeholder={t('project.target.placeholder')} /></div>))}</div>{isOwner && <button type="submit" className="obt-btn obt-btn--primary">{t('project.target.save')}</button>}</form><div className="obt-panel"><h3 style={{ marginBottom: 14 }}>{t('project.target.mutations')}</h3><MutationSelector speciesId={project.species_id} selectedIds={targetMutationIds} onChange={setTargetMutationIds} readOnly={!isOwner} />{isOwner && <button className="obt-btn obt-btn--primary obt-mt-md" onClick={handleTargetSubmit}>{t('project.target.saveMutations')}</button>}</div></>)}
       </div>
     </>
   )

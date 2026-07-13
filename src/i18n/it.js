@@ -1,0 +1,207 @@
+// Italiano. Le chiavi mancanti ricadono automaticamente su en.js.
+const it = {
+  common: {
+    loading: 'Caricamento…',
+    cancel: 'Annulla',
+    save: 'Salva',
+    saveChanges: 'Salva modifiche',
+    add: 'Aggiungi',
+    edit: 'Modifica',
+    delete: 'Elimina',
+    close: 'Chiudi',
+    closeEsc: 'Chiudi (Esc)',
+    copy: 'Copia',
+    optional: '(opzionale)',
+    none: 'Nessuno.',
+    logout: 'Esci',
+  },
+
+  layout: {
+    homeAlt: 'OBT Home',
+    tagline: 'OBT — Tool per Ovipets by BambooKat',
+    contact: 'Contatti',
+    language: 'Lingua',
+  },
+
+  login: {
+    signIn: 'Accedi',
+    signUp: 'Registrati',
+    welcomeBack: 'Bentornata/o!',
+    createAccount: 'Crea un account',
+    signInSub: 'Inserisci le tue credenziali per continuare',
+    signUpSub: 'Unisciti alla community di OBT',
+    confirmationSent:
+      'Registrazione quasi completata. Controlla la tua email e clicca sul link di conferma prima di accedere.',
+    username: 'Username',
+    email: 'Email',
+    password: 'Password',
+    pleaseWait: 'Attendere…',
+    heroText:
+      'Traccia i tuoi progetti di breeding, gestisci le coppie e avvicinati al colore target — tutto in un posto solo.',
+    startFree: 'Inizia gratis',
+    haveAccount: 'Ho già un account',
+    features: {
+      starters: 'Gestisci starter',
+      distance: 'Distanza cromatica',
+      pairs: 'Coppie & figli',
+      target: 'Colore target',
+    },
+  },
+
+  dashboard: {
+    title: 'I tuoi progetti',
+    empty: 'Nessun progetto ancora',
+    count: { one: '{count} progetto', other: '{count} progetti' },
+    newProject: '+ Nuovo progetto',
+    newProjectTitle: 'Nuovo progetto',
+    hint: 'Configura le basi, potrai modificarle in seguito.',
+    name: 'Nome progetto',
+    namePlaceholder: 'es. Hanamiya',
+    species: 'Specie',
+    author: 'Autore',
+    collaborators: 'Collaboratori',
+    notes: 'Note',
+    create: 'Crea progetto',
+    emptyTitle: 'Nessun progetto ancora',
+    emptyText: 'Creane uno per iniziare a tracciare il tuo breeding.',
+    authorUnset: 'Autore non impostato',
+  },
+
+  project: {
+    back: 'Dashboard',
+    edit: 'Modifica progetto',
+    editTitle: 'Modifica progetto',
+    public: 'Pubblico',
+    private: 'Privato',
+    publicTitle: 'Chiunque abbia il link può vedere questo progetto — copia il link da "Modifica progetto"',
+    privateTitle: 'Solo tu puoi vedere questo progetto',
+    readOnly: 'Sola lettura',
+    readOnlyTitle: 'Stai visualizzando il progetto di un altro utente',
+    noInfo: 'Nessuna info progetto ancora — aggiungila da "Modifica progetto".',
+    species: 'Specie',
+    author: 'Autore',
+    collaborators: 'Collaboratori',
+    created: 'Creato il',
+
+    tabs: {
+      starters: 'Starter (Gen 0)',
+      children: 'Figli',
+      pairs: 'Coppie',
+      target: 'Target',
+    },
+
+    groups: {
+      females: 'Femmine',
+      males: 'Maschi',
+      unsexed: 'Non ancora sessati',
+    },
+
+    table: {
+      code: 'Codice',
+      sex: 'Sesso',
+      letter: 'Lettera',
+      gen: 'Gen',
+      eyes: 'Occhi',
+      body1: 'Body1',
+      body2: 'Body2',
+      extra1: 'Extra1',
+      extra2: 'Extra2',
+      mut: 'Muta',
+      distance: 'Distanza',
+      notes: 'Note',
+    },
+
+    pet: {
+      addStarter: '+ Aggiungi starter',
+      addChild: '+ Aggiungi figlio',
+      newStarter: 'Nuovo starter',
+      newChild: 'Nuovo figlio',
+      editTitle: 'Modifica esemplare',
+      code: 'Codice',
+      sex: 'Sesso',
+      letter: 'Lettera',
+      generation: 'Generazione',
+      mother: 'Madre',
+      father: 'Padre',
+      noMother: '-- nessuna --',
+      noFather: '-- nessuno --',
+      eyes: 'Occhi',
+      body1: 'Body 01',
+      body2: 'Body 02',
+      extra1: 'Extra 01',
+      extra2: 'Extra 02',
+      notes: 'Note',
+      mutations: 'Mutazioni',
+    },
+
+    pairs: {
+      add: '+ Registra coppia',
+      addTitle: 'Registra coppia',
+      mother: 'Madre',
+      father: 'Padre',
+      select: '-- seleziona --',
+      date: 'Data',
+      outcome: 'Note / esito',
+      submit: 'Registra',
+      emptyTitle: 'Nessuna coppia ancora registrata',
+      emptyText: 'Registra il primo accoppiamento per iniziare a tracciare la genealogia.',
+    },
+
+    target: {
+      colours: 'Colori target',
+      mutations: 'Mutazioni target',
+      save: 'Salva target',
+      saveMutations: 'Salva mutazioni target',
+      placeholder: 'es. A0A0A0',
+      none: 'Nessuna mutazione target impostata.',
+    },
+
+    share: {
+      checkbox: 'Condividi tramite link',
+      hintPublic: 'Gli utenti registrati con il link potranno vedere il progetto in sola lettura.',
+      hintPrivate: 'Solo tu puoi vedere questo progetto. Attiva la condivisione per abilitare il link.',
+      copyTitle: 'Copia il link',
+      copyDisabledTitle: 'Attiva la condivisione per copiare il link',
+      copyPrompt: 'Copia il link:',
+    },
+
+    danger: {
+      zone: 'Zona pericolosa',
+      deleteProject: '🗑 Elimina progetto',
+    },
+
+    confirm: {
+      deletePet: 'Eliminare l\'esemplare "{code}"?\n\nQuesta azione non può essere annullata.',
+      deletePair: 'Eliminare questa coppia?\n\nQuesta azione non può essere annullata.',
+      deleteProject:
+        'Eliminare definitivamente "{name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non può essere annullata.',
+      makePrivate: 'Rendere il progetto privato?\n\nChi ha il link non potrà più aprirlo.',
+    },
+
+    errors: {
+      savePet: 'Impossibile salvare le modifiche',
+      addPet: "Impossibile aggiungere l'esemplare",
+      saveMutations: 'Impossibile salvare le mutazioni',
+      updateMutations: 'Impossibile aggiornare le mutazioni',
+      deletePet: "Impossibile eliminare l'esemplare",
+      saveTargetColours: 'Impossibile salvare i colori target',
+      updateTargetMutations: 'Impossibile aggiornare le mutazioni target',
+      saveTargetMutations: 'Impossibile salvare le mutazioni target',
+      registerPair: 'Impossibile registrare la coppia',
+      deletePair: 'Impossibile eliminare la coppia',
+      saveProject: 'Impossibile salvare il progetto',
+      deleteProject: 'Impossibile eliminare il progetto',
+      toggleVisibility: 'Impossibile cambiare la visibilità',
+    },
+  },
+
+  mutations: {
+    loading: 'Caricamento mutazioni…',
+    search: 'Cerca mutazione…',
+    selected: 'Selezionate ({count})',
+    clickToRemove: 'Clicca per rimuovere',
+    otherZone: 'Altro',
+  },
+}
+
+export default it

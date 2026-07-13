@@ -1,0 +1,207 @@
+// Lingua base. Ogni altra lingua ricade su questa per le chiavi mancanti.
+const en = {
+  common: {
+    loading: 'Loading…',
+    cancel: 'Cancel',
+    save: 'Save',
+    saveChanges: 'Save changes',
+    add: 'Add',
+    edit: 'Edit',
+    delete: 'Delete',
+    close: 'Close',
+    closeEsc: 'Close (Esc)',
+    copy: 'Copy',
+    optional: '(optional)',
+    none: 'None.',
+    logout: 'Log out',
+  },
+
+  layout: {
+    homeAlt: 'OBT Home',
+    tagline: 'OBT — Ovipets tool by BambooKat',
+    contact: 'Contact',
+    language: 'Language',
+  },
+
+  login: {
+    signIn: 'Sign in',
+    signUp: 'Sign up',
+    welcomeBack: 'Welcome back!',
+    createAccount: 'Create an account',
+    signInSub: 'Enter your credentials to continue',
+    signUpSub: 'Join the OBT community',
+    confirmationSent:
+      'Almost there! Check your inbox and click the confirmation link before signing in.',
+    username: 'Username',
+    email: 'Email',
+    password: 'Password',
+    pleaseWait: 'Please wait…',
+    heroText:
+      'Track your breeding projects, manage your pairs, and close in on your target colour — all in one place.',
+    startFree: 'Start for free',
+    haveAccount: 'I already have an account',
+    features: {
+      starters: 'Manage starters',
+      distance: 'Colour distance',
+      pairs: 'Pairs & children',
+      target: 'Target colour',
+    },
+  },
+
+  dashboard: {
+    title: 'Your projects',
+    empty: 'No projects yet',
+    count: { one: '{count} project', other: '{count} projects' },
+    newProject: '+ New project',
+    newProjectTitle: 'New project',
+    hint: 'Set up the basics — you can change them later.',
+    name: 'Project name',
+    namePlaceholder: 'e.g. Hanamiya',
+    species: 'Species',
+    author: 'Author',
+    collaborators: 'Collaborators',
+    notes: 'Notes',
+    create: 'Create project',
+    emptyTitle: 'No projects yet',
+    emptyText: 'Create one to start tracking your breeding.',
+    authorUnset: 'No author set',
+  },
+
+  project: {
+    back: 'Dashboard',
+    edit: 'Edit Project',
+    editTitle: 'Edit project',
+    public: 'Public',
+    private: 'Private',
+    publicTitle: 'Anyone with the link can view this project — copy the link from "Edit Project"',
+    privateTitle: 'Only you can see this project',
+    readOnly: 'Read-only',
+    readOnlyTitle: "You're viewing another user's project",
+    noInfo: 'No project info yet — add it from "Edit Project".',
+    species: 'Species',
+    author: 'Author',
+    collaborators: 'Collaborators',
+    created: 'Created on',
+
+    tabs: {
+      starters: 'Starters (Gen 0)',
+      children: 'Children',
+      pairs: 'Pairs',
+      target: 'Target',
+    },
+
+    groups: {
+      females: 'Females',
+      males: 'Males',
+      unsexed: 'Not sexed yet',
+    },
+
+    table: {
+      code: 'Code',
+      sex: 'Sex',
+      letter: 'Letter',
+      gen: 'Gen',
+      eyes: 'Eyes',
+      body1: 'Body1',
+      body2: 'Body2',
+      extra1: 'Extra1',
+      extra2: 'Extra2',
+      mut: 'Mut',
+      distance: 'Distance',
+      notes: 'Notes',
+    },
+
+    pet: {
+      addStarter: '+ Add starter',
+      addChild: '+ Add child',
+      newStarter: 'New starter',
+      newChild: 'New child',
+      editTitle: 'Edit specimen',
+      code: 'Code',
+      sex: 'Sex',
+      letter: 'Letter',
+      generation: 'Generation',
+      mother: 'Mother',
+      father: 'Father',
+      noMother: '-- none --',
+      noFather: '-- none --',
+      eyes: 'Eyes',
+      body1: 'Body 01',
+      body2: 'Body 02',
+      extra1: 'Extra 01',
+      extra2: 'Extra 02',
+      notes: 'Notes',
+      mutations: 'Mutations',
+    },
+
+    pairs: {
+      add: '+ Register pair',
+      addTitle: 'Register pair',
+      mother: 'Mother',
+      father: 'Father',
+      select: '-- select --',
+      date: 'Date',
+      outcome: 'Notes / outcome',
+      submit: 'Register',
+      emptyTitle: 'No pairs registered yet',
+      emptyText: 'Register your first pairing to start tracking the family tree.',
+    },
+
+    target: {
+      colours: 'Target colours',
+      mutations: 'Target mutations',
+      save: 'Save target',
+      saveMutations: 'Save target mutations',
+      placeholder: 'e.g. A0A0A0',
+      none: 'No target mutations set.',
+    },
+
+    share: {
+      checkbox: 'Share via link',
+      hintPublic: 'Signed-in users with the link will be able to view this project in read-only mode.',
+      hintPrivate: 'Only you can see this project. Turn on sharing to enable the link.',
+      copyTitle: 'Copy the link',
+      copyDisabledTitle: 'Turn on sharing to copy the link',
+      copyPrompt: 'Copy the link:',
+    },
+
+    danger: {
+      zone: 'Danger zone',
+      deleteProject: '🗑 Delete project',
+    },
+
+    confirm: {
+      deletePet: 'Delete specimen "{code}"?\n\nThis cannot be undone.',
+      deletePair: 'Delete this pair?\n\nThis cannot be undone.',
+      deleteProject:
+        'Permanently delete "{name}"?\n\nAll specimens, pairs and related data will be deleted too. This cannot be undone.',
+      makePrivate: 'Make this project private?\n\nAnyone holding the link will lose access.',
+    },
+
+    errors: {
+      savePet: 'Could not save the changes',
+      addPet: 'Could not add the specimen',
+      saveMutations: 'Could not save the mutations',
+      updateMutations: 'Could not update the mutations',
+      deletePet: 'Could not delete the specimen',
+      saveTargetColours: 'Could not save the target colours',
+      updateTargetMutations: 'Could not update the target mutations',
+      saveTargetMutations: 'Could not save the target mutations',
+      registerPair: 'Could not register the pair',
+      deletePair: 'Could not delete the pair',
+      saveProject: 'Could not save the project',
+      deleteProject: 'Could not delete the project',
+      toggleVisibility: 'Could not change the visibility',
+    },
+  },
+
+  mutations: {
+    loading: 'Loading mutations…',
+    search: 'Search mutation…',
+    selected: 'Selected ({count})',
+    clickToRemove: 'Click to remove',
+    otherZone: 'Other',
+  },
+}
+
+export default en
