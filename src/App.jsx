@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
-import Login from './Login'
-import Dashboard from './Dashboard'
-import Layout from './Layout' // <-- importa Layout
+import Login from './pages/Login'           // <-- aggiunto /pages
+import Dashboard from './pages/Dashboard'   // <-- aggiunto /pages
+import Layout from './pages/Layout'         // <-- aggiunto /pages
 
 function App() {
   const [session, setSession] = useState(null)
@@ -26,7 +26,6 @@ function App() {
     return <div style={{display: 'flex', justifyContent: 'center', marginTop: '40vh'}}>Caricamento...</div>
   }
 
-  // Qui è la chiave: Layout avvolge tutto
   return (
     <Layout 
       username={session?.user?.email} 
