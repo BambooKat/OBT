@@ -20,6 +20,7 @@ const ColorCell = ({ hex }) => {
 }
 
 function ProjectPage() {
+  const { t } = useT()
   const { id } = useParams()
   const navigate = useNavigate()
 

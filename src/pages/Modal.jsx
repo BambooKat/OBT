@@ -13,6 +13,7 @@ import { useT } from '../i18n'
 //   size: 'sm' | 'md' | 'lg' (default 'md')
 //   children: contenuto del modal (tipicamente un form)
 function Modal({ open, onClose, title, size = 'md', children }) {
+  const { t } = useT()
   useEffect(() => {
     if (!open) return
     const handleKey = (e) => {

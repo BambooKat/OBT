@@ -5,6 +5,7 @@ import Modal from './Modal'
 import { useT } from '../i18n'
 
 function Dashboard() {
+  const { t } = useT()
   const [projects, setProjects] = useState([])
   const [species, setSpecies] = useState([])
   const [loading, setLoading] = useState(true)

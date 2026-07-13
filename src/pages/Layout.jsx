@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import LanguageSwitcher from './LanguageSwitcher'
 
 function Layout({ username, onLogout, children }) {
+  const { t } = useT()
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
