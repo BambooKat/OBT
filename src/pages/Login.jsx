@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
-
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -43,10 +42,17 @@ function Login() {
     }
   }
 
+  const features = [
+    { icon: <i className="ti ti-wand"></i>, label: 'Gestisci starter' },
+    { icon: <i className="ti ti-color-filter"></i>, label: 'Distanza cromatica' },
+    { icon: <i className="ti ti-dna"></i>, label: 'Coppie & figli' },
+    { icon: <i className="ti ti-target-arrow"></i>, label: 'Colore target' },
+  ]
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* Header */}
       <header style={{
         background: 'var(--card)',
         borderBottom: '1px solid var(--line)',
@@ -60,15 +66,10 @@ function Login() {
         zIndex: 100,
         boxShadow: 'var(--shadow)',
       }}>
-        {/* sinistra: vuota ma bilancia la griglia */}
         <div />
-
-        {/* centro: logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
           <img src="/logo_obt.png" alt="OBT logo" style={{ height: '40px', width: 'auto' }} />
         </div>
-
-        {/* destra: bottoni auth */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', alignItems: 'center' }}>
           <button
             className="obt-btn obt-btn--ghost obt-btn--sm"
@@ -86,7 +87,7 @@ function Login() {
         </div>
       </header>
 
-      {/* â”€â”€ Form inline (appare sotto l'header) â”€â”€ */}
+      {/* Form inline */}
       {mode && (
         <div style={{
           background: 'var(--card)',
@@ -180,7 +181,7 @@ function Login() {
                     className="obt-btn obt-btn--primary obt-btn--sm"
                     style={{ flex: 2, justifyContent: 'center' }}
                   >
-                    {loading ? 'Attendereâ€¦' : mode === 'signup' ? 'Registrati' : 'Accedi'}
+                    {loading ? 'Attendere...' : mode === 'signup' ? 'Registrati' : 'Accedi'}
                   </button>
                 </div>
               </form>
@@ -189,7 +190,7 @@ function Login() {
         </div>
       )}
 
-      {/* â”€â”€ Hero â”€â”€ */}
+      {/* Hero */}
       <main style={{
         flex: 1,
         display: 'flex',
@@ -213,7 +214,7 @@ function Login() {
           marginBottom: '32px',
         }}>
           Traccia i tuoi progetti di breeding, gestisci le coppie e avvicinati
-          al colore target â€” tutto in un posto solo.
+          al colore target — tutto in un posto solo.
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
@@ -226,7 +227,7 @@ function Login() {
             className="obt-btn obt-btn--ghost"
             onClick={() => openMode('login')}
           >
-            Ho giÃ  un account
+            Ho già un account
           </button>
         </div>
 
@@ -238,12 +239,7 @@ function Login() {
           flexWrap: 'wrap',
           justifyContent: 'center',
         }}>
-          {[
-            { icon: 'ðŸ¥š', label: 'Gestisci starter' },
-            { icon: 'ðŸŽ¨', label: 'Distanza cromatica' },
-            { icon: 'ðŸ”—', label: 'Coppie & figli' },
-            { icon: 'ðŸŽ¯', label: 'Colore target' },
-          ].map(({ icon, label }) => (
+          {features.map(({ icon, label }) => (
             <div key={label} style={{
               background: 'var(--card)',
               border: '1px solid var(--line)',
@@ -257,11 +253,39 @@ function Login() {
               gap: '7px',
               boxShadow: 'var(--shadow)',
             }}>
-              <span>{icon}</span> {label}
+              <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span> {label}
             </div>
           ))}
         </div>
       </main>
+
+      {/* Footer */}
+      <footer style={{
+        borderTop: '1px solid var(--line)',
+        background: 'var(--card)',
+        padding: '16px 32px',
+        textAlign: 'center',
+        fontSize: '14px',
+        color: 'var(--muted)',
+        marginTop: 'auto'
+      }}>
+        OBT - Tool per Ovipets by BambooKat ·{' '}
+        <a 
+          href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" 
+          style={{ color: 'var(--primary)', textDecoration: 'none' }}
+        >
+          Contact
+        </a>
+        {' '}·{' '}
+        <a 
+          href="https://ovipets.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: 'var(--muted)', textDecoration: 'none' }}
+        >
+          Ovipets.com
+        </a>
+      </footer>
 
       <style>{`
         @keyframes obt-slide-down {
