@@ -1,17 +1,36 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import ProjectPage from './pages/ProjectPage'
+import { useEffect, useState } from 'react'
+import { supabase } from './supabaseClient'
+import Login from './Login'
+import Dashboard from './Dashboard' // o come si chiama la tua home
 
 function App() {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Recupera sessione esistente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    // Ascolta cambi login/logout
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (loading) {
+    return <div style={{display: 'flex', justifyContent: 'center', marginTop: '40vh'}}>Caricamento...</div>
+  }
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/project/:id" element={<ProjectPage />} />
-      </Routes>
-    </BrowserRouter>
+    <>
+      {!session ? <Login /> : <Dashboard />}
+    </>
   )
 }
 
