@@ -445,7 +445,7 @@ function ProjectPage() {
             </label>
             <p className="obt-hint" style={{ marginTop: 6 }}>
               {editProjectForm.is_public
-                ? 'Gli utenti registrati che ricevono il link potranno vedere questo progetto in sola lettura.'
+                ? 'Gli utenti registrati con il link potranno vedere il progetto in sola lettura.'
                 : 'Solo tu puoi vedere questo progetto. Attiva la condivisione per abilitare il link.'}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, opacity: editProjectForm.is_public ? 1 : 0.45 }}>
