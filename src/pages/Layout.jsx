@@ -22,7 +22,9 @@ function Layout({ username, onLogout, children }) {
         boxShadow: 'var(--shadow)',
         flexShrink: 0,
       }}>
-        <div />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <LanguageSwitcher />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Link to="/dashboard" style={{ display: 'flex' }}>
             <img src="/logo_obt.png" style={{ height: '40px', width: 'auto' }} alt={t('layout.homeAlt')} />
