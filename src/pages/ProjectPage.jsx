@@ -286,6 +286,7 @@ function ProjectPage() {
   }
 
   const handleCopyLink = async () => {
+    if (!editProjectForm.is_public) return
     try {
       await navigator.clipboard.writeText(shareUrl)
     } catch {
@@ -376,14 +377,9 @@ function ProjectPage() {
               <button
                 className="obt-btn obt-btn--ghost obt-btn--sm"
                 onClick={handleToggleVisibility}
-                title={project.is_public ? 'Chiunque abbia il link può vedere questo progetto' : 'Solo tu puoi vedere questo progetto'}
+                title={project.is_public ? 'Chiunque abbia il link può vedere questo progetto — copia il link da "Edit Project"' : 'Solo tu puoi vedere questo progetto'}
               >
                 {project.is_public ? '🔓 Pubblico' : '🔒 Privato'}
-              </button>
-            )}
-            {isOwner && project.is_public && (
-              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleCopyLink}>
-                {copied ? '✓ Copiato!' : '🔗 Copia link'}
               </button>
             )}
             {!isOwner && (
@@ -450,16 +446,28 @@ function ProjectPage() {
             <p className="obt-hint" style={{ marginTop: 6 }}>
               {editProjectForm.is_public
                 ? 'Qualsiasi utente registrato che riceve il link potrà vedere questo progetto in sola lettura. Non comparirà in nessun elenco pubblico.'
-                : 'Solo tu puoi vedere questo progetto.'}
+                : 'Solo tu puoi vedere questo progetto. Attiva la condivisione per abilitare il link.'}
             </p>
-            {editProjectForm.is_public && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <input className="obt-input" value={shareUrl} readOnly onFocus={(e) => e.target.select()} style={{ fontFamily: 'monospace', fontSize: 12 }} />
-                <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleCopyLink} style={{ whiteSpace: 'nowrap' }}>
-                  {copied ? '✓' : 'Copia'}
-                </button>
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, opacity: editProjectForm.is_public ? 1 : 0.45 }}>
+              <input
+                className="obt-input"
+                value={shareUrl}
+                readOnly
+                disabled={!editProjectForm.is_public}
+                onFocus={(e) => { if (editProjectForm.is_public) e.target.select() }}
+                style={{ fontFamily: 'monospace', fontSize: 12 }}
+              />
+              <button
+                type="button"
+                className="obt-btn obt-btn--ghost obt-btn--sm"
+                onClick={handleCopyLink}
+                disabled={!editProjectForm.is_public}
+                title={editProjectForm.is_public ? 'Copia il link' : 'Attiva la condivisione per copiare il link'}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {copied ? '✓' : 'Copia'}
+              </button>
+            </div>
           </div>
           <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">Salva modifiche</button><button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowEditProject(false)}>Annulla</button></div>
         </form>
