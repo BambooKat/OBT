@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import Modal from './Modal'
-// RIMUOVI questa riga: import Layout from './Layout'
 
 function Dashboard() {
   const [projects, setProjects] = useState([])
@@ -30,31 +29,31 @@ function Dashboard() {
     }
 
     const { data: profile } = await supabase
-     .from('profiles')
-     .select('username')
-     .eq('id', user.id)
-     .single()
+      .from('profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single()
 
     if (profile) {
       setUsername(profile.username)
-      setNewProject(prev => ({...prev, author: profile.username }))
+      setNewProject(prev => ({ ...prev, author: profile.username }))
     }
 
     const { data: speciesData } = await supabase
-     .from('species')
-     .select('*')
-     .order('name', { ascending: true })
+      .from('species')
+      .select('*')
+      .order('name', { ascending: true })
 
     setSpecies(speciesData || [])
     if (speciesData && speciesData.length > 0) {
-      setNewProject(prev => ({...prev, species_id: speciesData[0].id }))
+      setNewProject(prev => ({ ...prev, species_id: speciesData[0].id }))
     }
 
     const { data: projectsData, error } = await supabase
-     .from('projects')
-     .select('*, species(name)')
-     .eq('owner_id', user.id)
-     .order('created_at', { ascending: false })
+      .from('projects')
+      .select('*, species(name)')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false })
 
     if (!error && projectsData) {
       setProjects(projectsData)
@@ -73,8 +72,8 @@ function Dashboard() {
     const { data: { user } } = await supabase.auth.getUser()
 
     const { data, error } = await supabase
-     .from('projects')
-     .insert({
+      .from('projects')
+      .insert({
         owner_id: user.id,
         name: newProject.name,
         species_id: newProject.species_id,
@@ -82,11 +81,11 @@ function Dashboard() {
         collaborators: newProject.collaborators || null,
         project_notes: newProject.project_notes || null,
       })
-     .select('*, species(name)')
-     .single()
+      .select('*, species(name)')
+      .single()
 
     if (!error && data) {
-      setProjects([data,...projects])
+      setProjects([data, ...projects])
       closeNewProjectModal()
     }
   }
@@ -97,16 +96,15 @@ function Dashboard() {
   }
 
   if (loading) {
-    return <div className="obt-loading">Caricamento...</div> // <-- Niente Layout qui
+    return <div className="obt-loading">Caricamento...</div>
   }
 
-  // RIMOSSO <Layout> wrapper
   return (
     <>
       <div className="obt-hero">
         <h1>I tuoi progetti</h1>
         <div className="obt-hero-sub">
-          {projects.length === 0? 'Nessun progetto ancora' : `${projects.length} progett${projects.length === 1? 'o' : 'i'}`}
+          {projects.length === 0 ? 'Nessun progetto ancora' : `${projects.length} progett${projects.length === 1 ? 'o' : 'i'}`}
         </div>
       </div>
 
@@ -130,7 +128,7 @@ function Dashboard() {
                   type="text"
                   placeholder="es. Hanamiya"
                   value={newProject.name}
-                  onChange={(e) => setNewProject({...newProject, name: e.target.value })}
+                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
                   required
                   autoFocus
                 />
@@ -141,7 +139,7 @@ function Dashboard() {
                 <select
                   className="obt-select"
                   value={newProject.species_id}
-                  onChange={(e) => setNewProject({...newProject, species_id: e.target.value })}
+                  onChange={(e) => setNewProject({ ...newProject, species_id: e.target.value })}
                   required
                 >
                   {species.map(s => (
@@ -159,7 +157,7 @@ function Dashboard() {
                   type="text"
                   placeholder="Nome di chi cura il progetto"
                   value={newProject.author}
-                  onChange={(e) => setNewProject({...newProject, author: e.target.value })}
+                  onChange={(e) => setNewProject({ ...newProject, author: e.target.value })}
                   required
                 />
               </div>
@@ -171,7 +169,7 @@ function Dashboard() {
                   type="text"
                   placeholder="es. Mario, Luigi"
                   value={newProject.collaborators}
-                  onChange={(e) => setNewProject({...newProject, collaborators: e.target.value })}
+                  onChange={(e) => setNewProject({ ...newProject, collaborators: e.target.value })}
                 />
               </div>
             </div>
@@ -182,7 +180,7 @@ function Dashboard() {
                 className="obt-textarea"
                 placeholder="Note libere sul progetto..."
                 value={newProject.project_notes}
-                onChange={(e) => setNewProject({...newProject, project_notes: e.target.value })}
+                onChange={(e) => setNewProject({ ...newProject, project_notes: e.target.value })}
               />
             </div>
 
@@ -193,7 +191,7 @@ function Dashboard() {
           </form>
         </Modal>
 
-        {projects.length === 0? (
+        {projects.length === 0 ? (
           <div className="obt-panel obt-empty">
             <div className="obt-empty-icon">🥚</div>
             <h3>Nessun progetto ancora</h3>
