@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Login from './Login'
-import Dashboard from './Dashboard' // o come si chiama la tua home
+import Dashboard from './Dashboard'
+import Layout from './Layout' // <-- importa Layout
 
 function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Recupera sessione esistente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
 
-    // Ascolta cambi login/logout
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setLoading(false)
@@ -27,10 +26,14 @@ function App() {
     return <div style={{display: 'flex', justifyContent: 'center', marginTop: '40vh'}}>Caricamento...</div>
   }
 
+  // Qui è la chiave: Layout avvolge tutto
   return (
-    <>
+    <Layout 
+      username={session?.user?.email} 
+      onLogout={session ? () => supabase.auth.signOut() : null}
+    >
       {!session ? <Login /> : <Dashboard />}
-    </>
+    </Layout>
   )
 }
 
