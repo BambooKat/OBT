@@ -809,6 +809,48 @@ function ProjectPage() {
                   isOwner={isOwner}
                 />
               )}
+
+              {/* Storico coppie del round attivo */}
+              {pairsInActiveRound.length > 0 && (
+                <div style={{ marginTop: 24, overflowX: 'auto' }}>
+                  <table className="obt-table">
+                    <thead>
+                      <tr>
+                        <th>{t('project.pairs.mother')}</th>
+                        <th>{t('project.pairs.father')}</th>
+                        <th>{t('project.pairs.date')}</th>
+                        <th>{t('project.table.notes')}</th>
+                        {isOwner && <th></th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pairsInActiveRound.map(pair => (
+                        <tr key={pair.id}>
+                          <td>{pair.mother ? petLabel(pair.mother) : '-'}</td>
+                          <td>{pair.father ? petLabel(pair.father) : '-'}</td>
+                          <td>{pair.pair_date || '-'}</td>
+                          <td>{pair.outcome_notes || ''}</td>
+                          {isOwner && (
+                            <td>
+                              <button
+                                className="obt-icon-btn obt-icon-btn--danger"
+                                onClick={() => {
+                                  const f = females.find(f => f.id === (pair.mother?.id || pair.mother_id))
+                                  const m = males.find(m => m.id === (pair.father?.id || pair.father_id))
+                                  openCellModal(f || pair.mother, m || pair.father, pair)
+                                }}
+                                title={t('common.edit')}
+                              >
+                                <i className="ti ti-pencil" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </>
         )}
