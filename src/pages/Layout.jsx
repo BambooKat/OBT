@@ -1,8 +1,8 @@
+import { Link } from 'react-router-dom'
+
 function Layout({ username, onLogout, children }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-
-      {/* Header a tutto schermo, identico alla Login */}
       <header style={{
         background: 'var(--card)',
         borderBottom: '1px solid var(--line)',
@@ -18,7 +18,13 @@ function Layout({ username, onLogout, children }) {
       }}>
         <div />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src="/logo_obt.png"  style={{ height: '40px', width: 'auto' }} />
+          <Link to="/dashboard" style={{ display: 'flex' }}>
+            <img 
+              src="/logo_obt.png"  
+              style={{ height: '40px', width: 'auto', cursor: 'pointer' }} 
+              alt="OBT Home"
+            />
+          </Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
           {username && (
@@ -33,11 +39,9 @@ function Layout({ username, onLogout, children }) {
         </div>
       </header>
 
-      {/* Contenuto inscatolato come prima */}
       <div className="obt-shell" style={{ margin: '24px auto 40px', maxWidth: '1200px', width: 'calc(100% - 48px)' }}>
         {children}
       </div>
-
     </div>
   )
 }
