@@ -4,7 +4,7 @@ function Layout({ username, onLogout, children }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* Header - fuori dalla shell come da design originale */}
+      {/* Header - SEMPRE fuori, full width */}
       <header style={{
         background: 'var(--card)',
         borderBottom: '1px solid var(--line)',
@@ -17,6 +17,7 @@ function Layout({ username, onLogout, children }) {
         top: 0,
         zIndex: 100,
         boxShadow: 'var(--shadow)',
+        flexShrink: 0,
       }}>
         <div />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -37,48 +38,37 @@ function Layout({ username, onLogout, children }) {
         </div>
       </header>
 
-      {/* Contenuto - usa la classe obt-shell del theme.css per tutti gli stili grafici */}
-      <div className="obt-shell" style={{ 
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* flex:1 qui dentro spinge il footer in basso quando il contenuto è corto */}
-        <div style={{ flex: 1 }}>
+      {/* Wrapper centrale che spinge il footer in basso */}
+      <div style={{ flex: 1, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+        {/* Card centrale - SOLO questa ha larghezza fissa, non balla più */}
+        <div className="obt-shell" style={{ 
+          width: 'calc(100% - 48px)',
+          maxWidth: '1200px',
+          margin: '24px auto 40px',
+          // IMPORTANTE: niente display:flex qui, lascia il CSS di theme.css fare il suo lavoro
+          // così hero e tabelle non allargano la shell
+        }}>
           {children}
         </div>
-
-        {/* Footer DENTRO la shell così prende border-radius e ombra della shell,
-            ma con marginTop auto resta in fondo */}
-        <footer style={{
-          borderTop: '1px solid var(--line)',
-          background: 'var(--card)',
-          padding: '16px 32px',
-          textAlign: 'center',
-          fontSize: '14px',
-          color: 'var(--muted)',
-          marginTop: 'auto',
-          borderBottomLeftRadius: 'var(--radius-lg)',
-          borderBottomRightRadius: 'var(--radius-lg)',
-        }}>
-          OBT - Tool per Ovipets by BambooKat ·{' '}
-          <a 
-            href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" 
-            style={{ color: 'var(--primary)', textDecoration: 'none' }}
-          >
-            Contact
-          </a>
-          {' '}·{' '}
-          <a 
-            href="https://ovipets.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ color: 'var(--muted)', textDecoration: 'none' }}
-          >
-            Ovipets.com
-          </a>
-        </footer>
       </div>
+
+      {/* Footer - FUORI dalla shell, come l'header, full width */}
+      <footer style={{
+        background: 'var(--card)',
+        borderTop: '1px solid var(--line)',
+        padding: '18px 32px',
+        textAlign: 'center',
+        fontSize: '14px',
+        color: 'var(--muted)',
+        flexShrink: 0,
+        marginTop: 'auto',
+      }}>
+        OBT - Tool per Ovipets by BambooKat ·{' '}
+        <a href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Contact</a>
+        {' '}·{' '}
+        <a href="https://ovipets.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', textDecoration: 'none' }}>Ovipets.com</a>
+      </footer>
+
     </div>
   )
 }
