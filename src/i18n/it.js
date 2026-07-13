@@ -1,4 +1,3 @@
-// Italiano. Le chiavi mancanti ricadono automaticamente su en.js.
 const it = {
   common: {
     loading: 'Caricamento…',
@@ -15,14 +14,12 @@ const it = {
     none: 'Nessuno.',
     logout: 'Esci',
   },
-
   layout: {
     homeAlt: 'OBT Home',
     tagline: 'OBT — Tool per Ovipets by BambooKat',
     contact: 'Contatti',
     language: 'Lingua',
   },
-
   login: {
     signIn: 'Accedi',
     signUp: 'Registrati',
@@ -30,24 +27,16 @@ const it = {
     createAccount: 'Crea un account',
     signInSub: 'Inserisci le tue credenziali per continuare',
     signUpSub: 'Unisciti alla community di OBT',
-    confirmationSent:
-      'Registrazione quasi completata. Controlla la tua email e clicca sul link di conferma prima di accedere.',
+    confirmationSent: 'Registrazione quasi completata. Controlla la tua email e clicca sul link di conferma prima di accedere.',
     username: 'Username',
     email: 'Email',
     password: 'Password',
     pleaseWait: 'Attendere…',
-    heroText:
-      'Traccia i tuoi progetti di breeding, gestisci le coppie e avvicinati al colore target — tutto in un posto solo.',
+    heroText: 'Traccia i tuoi progetti di breeding, gestisci le coppie e avvicinati al colore target — tutto in un posto solo.',
     startFree: 'Inizia gratis',
     haveAccount: 'Ho già un account',
-    features: {
-      starters: 'Gestisci starter',
-      distance: 'Distanza cromatica',
-      pairs: 'Coppie & figli',
-      target: 'Colore target',
-    },
+    features: { starters: 'Gestisci starter', distance: 'Distanza cromatica', pairs: 'Coppie & figli', target: 'Colore target' },
   },
-
   dashboard: {
     title: 'I tuoi progetti',
     empty: 'Nessun progetto ancora',
@@ -66,7 +55,6 @@ const it = {
     emptyText: 'Creane uno per iniziare a tracciare il tuo breeding.',
     authorUnset: 'Autore non impostato',
   },
-
   project: {
     back: 'Dashboard',
     edit: 'Modifica progetto',
@@ -82,21 +70,18 @@ const it = {
     author: 'Autore',
     collaborators: 'Collaboratori',
     created: 'Creato il',
-
     tabs: {
       starters: 'Starter (Gen 0)',
       children: 'Figli',
       pairs: 'Coppie',
       target: 'Target',
     },
-
     groups: {
       females: 'Femmine',
       males: 'Maschi',
       unsexed: 'Non ancora sessati',
       unhatched: 'Non schiusi',
     },
-
     table: {
       code: 'Codice',
       sex: 'Sesso',
@@ -111,7 +96,6 @@ const it = {
       distance: 'Distanza',
       notes: 'Note',
     },
-
     pet: {
       addStarter: '+ Aggiungi starter',
       addChild: '+ Aggiungi figlio',
@@ -134,24 +118,30 @@ const it = {
       notes: 'Note',
       mutations: 'Mutazioni',
     },
-
     pairs: {
       add: '+ Registra coppia',
       addTitle: 'Registra coppia',
+      newPair: 'Nuova coppia',
+      editPair: 'Modifica coppia',
       mother: 'Madre',
       father: 'Padre',
       select: '-- seleziona --',
-      round: 'Giro',
-      roundTitle: 'Giro {round}',
+      roundLabel: 'Giro',
+      newRound: 'Giro',
+      selectRound: 'Seleziona giro:',
+      pairsCount: 'coppie registrate',
       date: 'Data',
       outcome: 'Note / esito',
+      notesPlaceholder: 'es. 3 uova, buon risultato',
       submit: 'Registra',
-      addChild: 'Aggiungi figlio',
-      gridIncomplete: 'Dati incompleti per visualizzare la griglia.',
+      addChildCode: 'Codice figlio (opzionale)',
+      childCodePlaceholder: 'es. HM-G1-1AB/ND',
+      childHint: 'Verrà aggiunto tra i figli come ND. Puoi assegnargli il sesso dopo.',
+      gridNeedBoth: 'Aggiungi almeno una femmina e un maschio agli starter per usare la griglia.',
+      cellRegister: 'Clicca per registrare questo accoppiamento',
       emptyTitle: 'Nessuna coppia ancora registrata',
-      emptyText: 'Registra il primo accoppiamento per iniziare a tracciare la genealogia.',
+      emptyText: 'Clicca una cella della griglia per registrare il primo accoppiamento.',
     },
-
     target: {
       colours: 'Colori target',
       mutations: 'Mutazioni target',
@@ -160,7 +150,6 @@ const it = {
       placeholder: 'es. A0A0A0',
       none: 'Nessuna mutazione target impostata.',
     },
-
     share: {
       checkbox: 'Condividi tramite link',
       hintPublic: 'Gli utenti registrati con il link potranno vedere il progetto in sola lettura.',
@@ -169,20 +158,16 @@ const it = {
       copyDisabledTitle: 'Attiva la condivisione per copiare il link',
       copyPrompt: 'Copia il link:',
     },
-
     danger: {
       zone: 'Zona pericolosa',
       deleteProject: '🗑 Elimina progetto',
     },
-
     confirm: {
       deletePet: 'Eliminare l\'esemplare "{code}"?\n\nQuesta azione non può essere annullata.',
       deletePair: 'Eliminare questa coppia?\n\nQuesta azione non può essere annullata.',
-      deleteProject:
-        'Eliminare definitivamente "{name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non può essere annullata.',
+      deleteProject: 'Eliminare definitivamente "{name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non può essere annullata.',
       makePrivate: 'Rendere il progetto privato?\n\nChi ha il link non potrà più aprirlo.',
     },
-
     errors: {
       savePet: 'Impossibile salvare le modifiche',
       addPet: "Impossibile aggiungere l'esemplare",
@@ -199,7 +184,6 @@ const it = {
       toggleVisibility: 'Impossibile cambiare la visibilità',
     },
   },
-
   mutations: {
     loading: 'Caricamento mutazioni…',
     search: 'Cerca mutazione…',
@@ -208,5 +192,4 @@ const it = {
     otherZone: 'Altro',
   },
 }
-
 export default it

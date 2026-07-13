@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import MutationSelector from './MutationSelector'
@@ -19,8 +19,170 @@ const ColorCell = ({ hex }) => {
   )
 }
 
-// Etichetta leggibile per un pet nelle tendine: "A - XK29A1" o solo "XK29A1"
-const petLabel = (pet) => pet.letter ? `${pet.letter} — ${pet.code}` : pet.code
+const petLabel = (pet) => pet?.letter ? `${pet.letter} — ${pet.code}` : (pet?.code || '?')
+
+// ---- Mini-form griglia ----
+function PairCellModal({ open, onClose, pair, female, male, round, onSave, onDelete, isOwner }) {
+  const { t } = useT()
+  const [date, setDate] = useState('')
+  const [notes, setNotes] = useState('')
+  const [childCode, setChildCode] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setDate(pair?.pair_date || '')
+      setNotes(pair?.outcome_notes || '')
+      setChildCode('')
+    }
+  }, [open, pair])
+
+  if (!open) return null
+
+  const handleSave = async () => {
+    setSaving(true)
+    await onSave({ date, notes, childCode })
+    setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    setSaving(true)
+    await onDelete()
+    setSaving(false)
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={pair
+        ? `${t('project.pairs.editPair')}: ${petLabel(female)} × ${petLabel(male)}`
+        : `${t('project.pairs.newPair')}: ${petLabel(female)} × ${petLabel(male)}`
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <label className="obt-label">{t('project.pairs.roundLabel')} {round}</label>
+          </div>
+        </div>
+        <div className="obt-field">
+          <label>{t('project.pairs.date')}</label>
+          <input type="date" className="obt-input" value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+        <div className="obt-field">
+          <label>{t('project.pairs.outcome')}</label>
+          <input className="obt-input" value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('project.pairs.notesPlaceholder')} />
+        </div>
+        <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+          <label>🥚 {t('project.pairs.addChildCode')}</label>
+          <input className="obt-input" value={childCode} onChange={e => setChildCode(e.target.value)} placeholder={t('project.pairs.childCodePlaceholder')} />
+          <p className="obt-hint" style={{ marginTop: 4 }}>{t('project.pairs.childHint')}</p>
+        </div>
+        <div className="obt-actions" style={{ marginTop: 4 }}>
+          {isOwner && (
+            <button className="obt-btn obt-btn--primary" onClick={handleSave} disabled={saving}>
+              {saving ? t('common.loading') : (pair ? t('common.saveChanges') : t('project.pairs.submit'))}
+            </button>
+          )}
+          {isOwner && pair && (
+            <button className="obt-btn obt-btn--danger obt-btn--sm" onClick={handleDelete} disabled={saving}>
+              {t('common.delete')}
+            </button>
+          )}
+          <button className="obt-btn obt-btn--ghost" onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// ---- Componente griglia ----
+function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner }) {
+  const { t } = useT()
+  // mappa fId:mId -> pair
+  const cellMap = {}
+  pairsInRound.forEach(p => {
+    const fId = p.mother?.id || p.mother_id
+    const mId = p.father?.id || p.father_id
+    if (fId && mId) cellMap[`${fId}:${mId}`] = p
+  })
+
+  if (females.length === 0 || males.length === 0) {
+    return <p className="obt-text-soft" style={{ fontSize: 13, padding: '8px 0' }}>{t('project.pairs.gridNeedBoth')}</p>
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ borderCollapse: 'separate', borderSpacing: 4, minWidth: 300 }}>
+        <thead>
+          <tr>
+            <th style={{
+              padding: '6px 12px', fontSize: 12, fontWeight: 700,
+              color: 'var(--muted)', textAlign: 'left', background: 'transparent',
+            }}>♀ \ ♂</th>
+            {males.map(m => (
+              <th key={m.id} style={{
+                padding: '6px 10px', fontSize: 12, fontWeight: 700,
+                color: 'var(--ink)', textAlign: 'center', background: 'transparent',
+                whiteSpace: 'nowrap',
+              }}>
+                {m.letter && <span style={{ color: 'var(--primary)', fontWeight: 900 }}>{m.letter}</span>}
+                {m.letter && ' '}
+                <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.code}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {females.map(f => (
+            <tr key={f.id}>
+              <td style={{
+                padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                whiteSpace: 'nowrap', color: 'var(--ink)',
+              }}>
+                {f.letter && <span style={{ color: 'var(--primary)', fontWeight: 900 }}>{f.letter}</span>}
+                {f.letter && ' '}
+                <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{f.code}</span>
+              </td>
+              {males.map(m => {
+                const pair = cellMap[`${f.id}:${m.id}`]
+                const done = !!pair
+                return (
+                  <td key={m.id} style={{ padding: 2, textAlign: 'center' }}>
+                    <button
+                      onClick={() => onCellClick(f, m, pair)}
+                      disabled={!isOwner && !done}
+                      title={done
+                        ? (pair.outcome_notes || `${petLabel(f)} × ${petLabel(m)}`)
+                        : (isOwner ? t('project.pairs.cellRegister') : '')
+                      }
+                      style={{
+                        width: 52, height: 36,
+                        borderRadius: 8,
+                        border: done ? '2px solid var(--primary)' : '2px dashed var(--line)',
+                        background: done ? 'var(--primary)' : 'var(--surface)',
+                        color: done ? '#fff' : 'var(--muted)',
+                        cursor: isOwner ? 'pointer' : (done ? 'default' : 'not-allowed'),
+                        fontSize: done ? 16 : 20,
+                        fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {done ? '✓' : '·'}
+                    </button>
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 function ProjectPage() {
   const { t, formatDate } = useT()
@@ -35,6 +197,7 @@ function ProjectPage() {
   const [isOwner, setIsOwner] = useState(false)
   const [actionError, setActionError] = useState('')
 
+  // Form pet
   const [showPetForm, setShowPetForm] = useState(false)
   const [editingPetId, setEditingPetId] = useState(null)
   const [petForm, setPetForm] = useState({
@@ -45,14 +208,21 @@ function ProjectPage() {
   const [selectedMutationIds, setSelectedMutationIds] = useState([])
   const [petMutationCounts, setPetMutationCounts] = useState({})
 
+  // Target
   const [targetForm, setTargetForm] = useState({
     target_eyes: '', target_body1: '', target_body2: '', target_extra1: '', target_extra2: ''
   })
   const [targetMutationIds, setTargetMutationIds] = useState([])
 
-  const [showPairForm, setShowPairForm] = useState(false)
-  const [pairForm, setPairForm] = useState({ mother_id: '', father_id: '', round_number: 1, pair_date: '', outcome_notes: '' })
+  // Griglia: stato cella aperta
+  const [cellModal, setCellModal] = useState({
+    open: false, female: null, male: null, pair: null, round: 1
+  })
 
+  // Selezione round attivo nella tab Coppie
+  const [activeRound, setActiveRound] = useState(1)
+
+  // Edit progetto
   const [showEditProject, setShowEditProject] = useState(false)
   const [speciesList, setSpeciesList] = useState([])
   const [editProjectForm, setEditProjectForm] = useState({
@@ -61,9 +231,9 @@ function ProjectPage() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => { loadAll() }, [id])
-  useEffect(() => { setShowPetForm(false); setShowPairForm(false) }, [activeTab])
+  useEffect(() => { setShowPetForm(false) }, [activeTab])
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -104,14 +274,19 @@ function ProjectPage() {
       setPetMutationCounts({})
     }
 
-    const { data: pairsData } = await supabase.from('pairs').select('*, mother:mother_id(id, code, letter), father:father_id(id, code, letter)').eq('project_id', id).order('round_number', { ascending: true }).order('created_at', { ascending: false })
+    const { data: pairsData } = await supabase
+      .from('pairs')
+      .select('*, mother:mother_id(id, code, letter), father:father_id(id, code, letter)')
+      .eq('project_id', id)
+      .order('round_number', { ascending: true })
+      .order('created_at', { ascending: false })
     setPairs(pairsData || [])
 
     const { data: projMuts } = await supabase.from('project_mutations').select('mutation_id').eq('project_id', id)
     setTargetMutationIds((projMuts || []).map(pm => pm.mutation_id))
 
     setLoading(false)
-  }
+  }, [id, navigate])
 
   const hexToRgb = (hex) => {
     if (!hex) return null
@@ -148,6 +323,13 @@ function ProjectPage() {
     return 'obt-dist-pill--bad'
   }
 
+  const fail = (error, msg) => {
+    if (!error) return false
+    console.error(msg, error)
+    setActionError(`${msg}: ${error.message}`)
+    return true
+  }
+
   const resetPetForm = () => {
     setPetForm({ code: '', sex: 'M', letter: '', generation: 0, mother_id: '', father_id: '', eyes: '', body1: '', body2: '', extra1: '', extra2: '', notes: '' })
     setSelectedMutationIds([])
@@ -157,19 +339,8 @@ function ProjectPage() {
 
   const openNewPetForm = (prefill = {}) => {
     resetPetForm()
-    setPetForm(prev => ({
-      ...prev,
-      generation: activeTab === 'children' ? 1 : 0,
-      ...prefill,
-    }))
+    setPetForm(prev => ({ ...prev, generation: activeTab === 'children' ? 1 : 0, ...prefill }))
     setShowPetForm(true)
-  }
-
-  const fail = (error, msg) => {
-    if (!error) return false
-    console.error(msg, error)
-    setActionError(`${msg}: ${error.message}`)
-    return true
   }
 
   const handlePetSubmit = async (e) => {
@@ -199,7 +370,6 @@ function ProjectPage() {
       if (fail(error, t('project.errors.saveMutations'))) return
     }
     resetPetForm()
-    // Dopo aver aggiunto un figlio, torna sulla tab figli
     if (!editingPetId && parseInt(payload.generation) > 0) setActiveTab('children')
     loadAll()
   }
@@ -241,46 +411,64 @@ function ProjectPage() {
     loadAll()
   }
 
-  const closePairForm = () => {
-    setShowPairForm(false)
-    setPairForm({ mother_id: '', father_id: '', round_number: 1, pair_date: '', outcome_notes: '' })
+  // ---- Gestione cella griglia ----
+  const openCellModal = (female, male, pair) => {
+    setCellModal({ open: true, female, male, pair: pair || null, round: activeRound })
   }
 
-  const handlePairSubmit = async (e) => {
-    e.preventDefault()
+  const closeCellModal = () => {
+    setCellModal({ open: false, female: null, male: null, pair: null, round: activeRound })
+  }
+
+  const handleCellSave = async ({ date, notes, childCode }) => {
     setActionError('')
-    const { error } = await supabase.from('pairs').insert({
-      project_id: id,
-      mother_id: pairForm.mother_id,
-      father_id: pairForm.father_id,
-      round_number: parseInt(pairForm.round_number) || 1,
-      pair_date: pairForm.pair_date || null,
-      outcome_notes: pairForm.outcome_notes || null,
-    })
-    if (fail(error, t('project.errors.registerPair'))) return
-    closePairForm()
+    const { female, male, pair, round } = cellModal
+
+    if (pair) {
+      // Aggiorna coppia esistente
+      const { error } = await supabase.from('pairs').update({
+        pair_date: date || null,
+        outcome_notes: notes || null,
+      }).eq('id', pair.id)
+      if (fail(error, t('project.errors.registerPair'))) return
+    } else {
+      // Crea nuova coppia
+      const { error } = await supabase.from('pairs').insert({
+        project_id: id,
+        mother_id: female.id,
+        father_id: male.id,
+        round_number: round,
+        pair_date: date || null,
+        outcome_notes: notes || null,
+      })
+      if (fail(error, t('project.errors.registerPair'))) return
+    }
+
+    // Se c'è un codice figlio, crea il pet ND
+    if (childCode.trim()) {
+      const { error } = await supabase.from('pets').insert({
+        project_id: id,
+        code: childCode.trim(),
+        sex: 'ND',
+        generation: 1,
+        mother_id: female.id,
+        father_id: male.id,
+      })
+      if (fail(error, t('project.errors.addPet'))) return
+    }
+
+    closeCellModal()
     loadAll()
   }
 
-  const handleDeletePair = async (pairId) => {
+  const handleCellDelete = async () => {
+    if (!cellModal.pair) return
     if (!window.confirm(t('project.confirm.deletePair'))) return
     setActionError('')
-    const { error } = await supabase.from('pairs').delete().eq('id', pairId)
+    const { error } = await supabase.from('pairs').delete().eq('id', cellModal.pair.id)
     if (fail(error, t('project.errors.deletePair'))) return
+    closeCellModal()
     loadAll()
-  }
-
-  // Apre il form figlio precompilato con madre/padre dalla coppia
-  const handleAddChildFromPair = (pair) => {
-    setActiveTab('children')
-    setTimeout(() => {
-      openNewPetForm({
-        generation: 1,
-        sex: 'ND',
-        mother_id: pair.mother?.id || pair.mother_id || '',
-        father_id: pair.father?.id || pair.father_id || '',
-      })
-    }, 50)
   }
 
   const handleEditProjectSubmit = async (e) => {
@@ -339,37 +527,15 @@ function ProjectPage() {
   const males = pets.filter(p => p.sex === 'M')
   const females = pets.filter(p => p.sex === 'F')
 
-  // ---- Griglia accoppiamenti ----
-  // Raggruppa le coppie per round_number
-  const pairsByRound = pairs.reduce((acc, pair) => {
-    const r = pair.round_number || 1
-    if (!acc[r]) acc[r] = []
-    acc[r].push(pair)
-    return acc
-  }, {})
-  const rounds = Object.keys(pairsByRound).map(Number).sort((a, b) => a - b)
+  // Calcola i round esistenti
+  const existingRounds = [...new Set(pairs.map(p => p.round_number || 1))].sort((a, b) => a - b)
+  const maxRound = existingRounds.length > 0 ? Math.max(...existingRounds) : 0
+  // Round visibili: quelli esistenti + uno nuovo sempre disponibile
+  const visibleRounds = existingRounds.includes(maxRound + 1)
+    ? existingRounds
+    : [...existingRounds, maxRound + 1]
 
-  // Calcola la griglia per un dato round: righe = femmine che compaiono in quel round, colonne = maschi
-  const buildGrid = (roundPairs) => {
-    const gridFemales = []
-    const gridMales = []
-    const seenF = new Set()
-    const seenM = new Set()
-    roundPairs.forEach(pair => {
-      const fId = pair.mother?.id || pair.mother_id
-      const mId = pair.father?.id || pair.father_id
-      if (fId && !seenF.has(fId)) { seenF.add(fId); gridFemales.push(pair.mother) }
-      if (mId && !seenM.has(mId)) { seenM.add(mId); gridMales.push(pair.father) }
-    })
-    // mappa veloce (fId, mId) -> pair
-    const cellMap = {}
-    roundPairs.forEach(p => {
-      const fId = p.mother?.id || p.mother_id
-      const mId = p.father?.id || p.father_id
-      if (fId && mId) cellMap[`${fId}:${mId}`] = p
-    })
-    return { gridFemales, gridMales, cellMap }
-  }
+  const pairsInActiveRound = pairs.filter(p => (p.round_number || 1) === activeRound)
 
   const PetTable = ({ list, title }) => (
     <div className="obt-panel">
@@ -419,10 +585,12 @@ function ProjectPage() {
     </div>
   )
 
-  const tabLabels = { starters: t('project.tabs.starters'), children: t('project.tabs.children'), pairs: t('project.tabs.pairs'), target: t('project.tabs.target') }
-
-  // Numero massimo di giri esistenti (per il default del form)
-  const maxRound = rounds.length > 0 ? Math.max(...rounds) : 0
+  const tabLabels = {
+    starters: t('project.tabs.starters'),
+    children: t('project.tabs.children'),
+    pairs: t('project.tabs.pairs'),
+    target: t('project.tabs.target')
+  }
 
   return (
     <>
@@ -432,31 +600,26 @@ function ProjectPage() {
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; {t('project.back')}</button>
             {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>✎ {t('project.edit')}</button>}
             {isOwner && (
-              <button
-                className="obt-btn obt-btn--ghost obt-btn--sm"
-                onClick={handleToggleVisibility}
-                title={project.is_public ? t('project.publicTitle') : t('project.privateTitle')}
-              >
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleToggleVisibility} title={project.is_public ? t('project.publicTitle') : t('project.privateTitle')}>
                 {project.is_public ? `🔓 ${t('project.public')}` : `🔒 ${t('project.private')}`}
               </button>
             )}
             {!isOwner && (
-              <span
-                title={t('project.readOnlyTitle')}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: 'var(--card)', border: '1px solid var(--line)',
-                  borderRadius: 'var(--radius-pill)', padding: '6px 14px',
-                  fontSize: 12, fontWeight: 700, color: 'var(--muted)',
-                }}
-              >
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'var(--card)', border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-pill)', padding: '6px 14px',
+                fontSize: 12, fontWeight: 700, color: 'var(--muted)',
+              }}>
                 <i className="ti ti-eye" /> {t('project.readOnly')}
               </span>
             )}
           </div>
           <div className="obt-hero-title">
             <h1>{project.name}</h1>
-            {project.project_notes ? <p className="obt-hero-desc">{project.project_notes}</p> : isOwner ? <p className="obt-hero-desc obt-hero-desc--empty">{t('project.noInfo')}</p> : null}
+            {project.project_notes
+              ? <p className="obt-hero-desc">{project.project_notes}</p>
+              : isOwner ? <p className="obt-hero-desc obt-hero-desc--empty">{t('project.noInfo')}</p> : null}
           </div>
           <div className="obt-hero-info">
             <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.species')}</span> {project.species?.name}</div>
@@ -479,6 +642,7 @@ function ProjectPage() {
         </div>
       )}
 
+      {/* Modal edit progetto */}
       <Modal open={showEditProject} onClose={() => setShowEditProject(false)} title={t('project.editTitle')}>
         <form onSubmit={handleEditProjectSubmit}>
           <div className="obt-row">
@@ -490,37 +654,15 @@ function ProjectPage() {
             <div className="obt-field"><label>{t('dashboard.collaborators')} <span className="obt-optional">{t('common.optional')}</span></label><input className="obt-input" type="text" value={editProjectForm.collaborators} onChange={(e) => setEditProjectForm({ ...editProjectForm, collaborators: e.target.value })} /></div>
           </div>
           <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editProjectForm.project_notes} onChange={(e) => setEditProjectForm({ ...editProjectForm, project_notes: e.target.value })} /></div>
-
           <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 16, marginTop: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={editProjectForm.is_public}
-                onChange={(e) => setEditProjectForm({ ...editProjectForm, is_public: e.target.checked })}
-                style={{ width: 16, height: 16, cursor: 'pointer' }}
-              />
+              <input type="checkbox" checked={editProjectForm.is_public} onChange={(e) => setEditProjectForm({ ...editProjectForm, is_public: e.target.checked })} style={{ width: 16, height: 16, cursor: 'pointer' }} />
               {t('project.share.checkbox')}
             </label>
-            <p className="obt-hint" style={{ marginTop: 6 }}>
-              {editProjectForm.is_public ? t('project.share.hintPublic') : t('project.share.hintPrivate')}
-            </p>
+            <p className="obt-hint" style={{ marginTop: 6 }}>{editProjectForm.is_public ? t('project.share.hintPublic') : t('project.share.hintPrivate')}</p>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, opacity: editProjectForm.is_public ? 1 : 0.45 }}>
-              <input
-                className="obt-input"
-                value={shareUrl}
-                readOnly
-                disabled={!editProjectForm.is_public}
-                onFocus={(e) => { if (editProjectForm.is_public) e.target.select() }}
-                style={{ fontFamily: 'monospace', fontSize: 12 }}
-              />
-              <button
-                type="button"
-                className="obt-btn obt-btn--ghost obt-btn--sm"
-                onClick={handleCopyLink}
-                disabled={!editProjectForm.is_public}
-                title={editProjectForm.is_public ? t('project.share.copyTitle') : t('project.share.copyDisabledTitle')}
-                style={{ whiteSpace: 'nowrap' }}
-              >
+              <input className="obt-input" value={shareUrl} readOnly disabled={!editProjectForm.is_public} onFocus={(e) => { if (editProjectForm.is_public) e.target.select() }} style={{ fontFamily: 'monospace', fontSize: 12 }} />
+              <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleCopyLink} disabled={!editProjectForm.is_public} style={{ whiteSpace: 'nowrap' }}>
                 {copied ? '✓' : t('common.copy')}
               </button>
             </div>
@@ -533,10 +675,31 @@ function ProjectPage() {
         </div>
       </Modal>
 
+      {/* Modal cella griglia */}
+      <PairCellModal
+        open={cellModal.open}
+        onClose={closeCellModal}
+        pair={cellModal.pair}
+        female={cellModal.female}
+        male={cellModal.male}
+        round={cellModal.round}
+        onSave={handleCellSave}
+        onDelete={handleCellDelete}
+        isOwner={isOwner}
+      />
+
       <div className="obt-page">
+        {/* ---- STARTERS / FIGLI ---- */}
         {(activeTab === 'starters' || activeTab === 'children') && (
           <>
-            <div className="obt-section-head"><div />{isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => openNewPetForm()}>{activeTab === 'starters' ? t('project.pet.addStarter') : t('project.pet.addChild')}</button>}</div>
+            <div className="obt-section-head">
+              <div />
+              {isOwner && (
+                <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => openNewPetForm()}>
+                  {activeTab === 'starters' ? t('project.pet.addStarter') : t('project.pet.addChild')}
+                </button>
+              )}
+            </div>
             <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? t('project.pet.editTitle') : (activeTab === 'starters' ? t('project.pet.newStarter') : t('project.pet.newChild'))} size="lg">
               <form onSubmit={handlePetSubmit}>
                 <div className="obt-row">
@@ -572,7 +735,10 @@ function ProjectPage() {
                 </div>
                 <div className="obt-field"><label>{t('project.pet.notes')}</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
                 <div className="obt-field"><label>{t('project.pet.mutations')}</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
-                <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>{t('common.cancel')}</button></div>
+                <div className="obt-actions">
+                  <button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button>
+                  <button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>{t('common.cancel')}</button>
+                </div>
               </form>
             </Modal>
             {activeTab === 'starters' ? (
@@ -583,163 +749,71 @@ function ProjectPage() {
           </>
         )}
 
+        {/* ---- COPPIE ---- */}
         {activeTab === 'pairs' && (
           <>
-            <div className="obt-section-head">
-              <div />
-              {isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => { setPairForm(prev => ({ ...prev, round_number: maxRound + 1 })); setShowPairForm(true) }}>{t('project.pairs.add')}</button>}
-            </div>
-
-            {/* Form aggiungi coppia */}
-            <Modal open={showPairForm} onClose={closePairForm} title={t('project.pairs.addTitle')}>
-              <form onSubmit={handlePairSubmit}>
-                <div className="obt-row">
-                  <div className="obt-field">
-                    <label>{t('project.pet.mother')}</label>
-                    <select className="obt-select" value={pairForm.mother_id} onChange={e => setPairForm({...pairForm, mother_id: e.target.value})} required autoFocus>
-                      <option value="">{t('project.pairs.select')}</option>
-                      {females.map(f => <option key={f.id} value={f.id}>{petLabel(f)}</option>)}
-                    </select>
-                  </div>
-                  <div className="obt-field">
-                    <label>{t('project.pet.father')}</label>
-                    <select className="obt-select" value={pairForm.father_id} onChange={e => setPairForm({...pairForm, father_id: e.target.value})} required>
-                      <option value="">{t('project.pairs.select')}</option>
-                      {males.map(m => <option key={m.id} value={m.id}>{petLabel(m)}</option>)}
-                    </select>
-                  </div>
-                  <div className="obt-field">
-                    <label>{t('project.pairs.round')}</label>
-                    <input type="number" min="1" className="obt-input" value={pairForm.round_number} onChange={e => setPairForm({...pairForm, round_number: e.target.value})} />
-                  </div>
-                  <div className="obt-field">
-                    <label>{t('project.pairs.date')}</label>
-                    <input type="date" className="obt-input" value={pairForm.pair_date} onChange={e => setPairForm({...pairForm, pair_date: e.target.value})} />
-                  </div>
-                </div>
-                <div className="obt-field">
-                  <label>{t('project.pairs.outcome')}</label>
-                  <input className="obt-input" value={pairForm.outcome_notes} onChange={e => setPairForm({...pairForm, outcome_notes: e.target.value})} />
-                </div>
-                <div className="obt-actions">
-                  <button type="submit" className="obt-btn obt-btn--primary">{t('project.pairs.submit')}</button>
-                  <button type="button" className="obt-btn obt-btn--ghost" onClick={closePairForm}>{t('common.cancel')}</button>
-                </div>
-              </form>
-            </Modal>
-
-            {pairs.length === 0 ? (
-              <div className="obt-panel obt-empty">
-                <div className="obt-empty-icon">🥚</div>
-                <h3>{t('project.pairs.emptyTitle')}</h3>
-                <p>{t('project.pairs.emptyText')}</p>
-              </div>
-            ) : (
-              <>
-                {/* ---- GRIGLIA PER ROUND ---- */}
-                {rounds.map(round => {
-                  const { gridFemales, gridMales, cellMap } = buildGrid(pairsByRound[round])
+            {/* Selettore round */}
+            <div className="obt-panel" style={{ padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginRight: 4 }}>
+                  {t('project.pairs.selectRound')}
+                </span>
+                {visibleRounds.map(r => {
+                  const hasData = existingRounds.includes(r)
+                  const isActive = r === activeRound
                   return (
-                    <div key={round} className="obt-panel" style={{ marginBottom: 20 }}>
-                      <h3 style={{ marginBottom: 14 }}>
-                        {t('project.pairs.roundTitle', { round })}
-                      </h3>
-                      {gridMales.length > 0 && gridFemales.length > 0 ? (
-                        <div style={{ overflowX: 'auto' }}>
-                          <table className="obt-table obt-pair-grid">
-                            <thead>
-                              <tr>
-                                <th style={{ background: 'var(--surface)', minWidth: 80 }}>♀ \ ♂</th>
-                                {gridMales.map(m => (
-                                  <th key={m.id} style={{ textAlign: 'center', minWidth: 90 }}>
-                                    {m.letter && <span style={{ fontWeight: 800, color: 'var(--primary)' }}>{m.letter}</span>}
-                                    {m.letter && ' '}
-                                    <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.code}</span>
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {gridFemales.map(f => (
-                                <tr key={f.id}>
-                                  <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                    {f.letter && <span style={{ fontWeight: 800, color: 'var(--primary)' }}>{f.letter}</span>}
-                                    {f.letter && ' '}
-                                    <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{f.code}</span>
-                                  </td>
-                                  {gridMales.map(m => {
-                                    const pair = cellMap[`${f.id}:${m.id}`]
-                                    return (
-                                      <td key={m.id} style={{ textAlign: 'center', padding: '6px 10px' }}>
-                                        {pair ? (
-                                          <span style={{
-                                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                                            background: 'var(--primary)', color: '#fff',
-                                            borderRadius: 'var(--radius-pill)', padding: '3px 10px',
-                                            fontSize: 12, fontWeight: 700,
-                                          }}>
-                                            ✓ {pair.outcome_notes ? <span style={{ opacity: 0.85, fontSize: 11 }}>({pair.outcome_notes})</span> : null}
-                                          </span>
-                                        ) : (
-                                          <span style={{ color: 'var(--muted)', fontSize: 18 }}>·</span>
-                                        )}
-                                      </td>
-                                    )
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('project.pairs.gridIncomplete')}</p>
-                      )}
-
-                      {/* Lista dettaglio del round */}
-                      <div style={{ marginTop: 16, overflowX: 'auto' }}>
-                        <table className="obt-table">
-                          <thead>
-                            <tr>
-                              <th>{t('project.pairs.mother')}</th>
-                              <th>{t('project.pairs.father')}</th>
-                              <th>{t('project.pairs.date')}</th>
-                              <th>{t('project.table.notes')}</th>
-                              {isOwner && <th></th>}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pairsByRound[round].map(pair => (
-                              <tr key={pair.id}>
-                                <td>{pair.mother ? petLabel(pair.mother) : '-'}</td>
-                                <td>{pair.father ? petLabel(pair.father) : '-'}</td>
-                                <td>{pair.pair_date || '-'}</td>
-                                <td>{pair.outcome_notes || ''}</td>
-                                {isOwner && (
-                                  <td style={{ whiteSpace: 'nowrap' }}>
-                                    <button
-                                      className="obt-btn obt-btn--ghost obt-btn--sm"
-                                      onClick={() => handleAddChildFromPair(pair)}
-                                      title={t('project.pairs.addChild')}
-                                      style={{ marginRight: 6 }}
-                                    >
-                                      🥚 {t('project.pairs.addChild')}
-                                    </button>
-                                    <button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePair(pair.id)} title={t('common.delete')}><i className="ti ti-trash" /></button>
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <button
+                      key={r}
+                      onClick={() => setActiveRound(r)}
+                      style={{
+                        padding: '6px 16px',
+                        borderRadius: 'var(--radius-pill)',
+                        border: isActive ? '2px solid var(--primary)' : '2px solid var(--line)',
+                        background: isActive ? 'var(--primary)' : 'var(--surface)',
+                        color: isActive ? '#fff' : (hasData ? 'var(--ink)' : 'var(--muted)'),
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {hasData ? `${t('project.pairs.roundLabel')} ${r}` : `+ ${t('project.pairs.newRound')} ${r}`}
+                    </button>
                   )
                 })}
-              </>
-            )}
+              </div>
+            </div>
+
+            {/* Griglia cliccabile */}
+            <div className="obt-panel">
+              <h3 style={{ marginBottom: 16 }}>
+                {t('project.pairs.roundLabel')} {activeRound}
+                {pairsInActiveRound.length > 0 && (
+                  <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>
+                    — {pairsInActiveRound.length} {t('project.pairs.pairsCount')}
+                  </span>
+                )}
+              </h3>
+
+              {males.length === 0 || females.length === 0 ? (
+                <div style={{ padding: '12px 0' }}>
+                  <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('project.pairs.gridNeedBoth')}</p>
+                </div>
+              ) : (
+                <PairGrid
+                  round={activeRound}
+                  females={females}
+                  males={males}
+                  pairsInRound={pairsInActiveRound}
+                  onCellClick={openCellModal}
+                  isOwner={isOwner}
+                />
+              )}
+            </div>
           </>
         )}
 
+        {/* ---- TARGET ---- */}
         {activeTab === 'target' && (
           <>
             <form onSubmit={handleTargetSubmit} className="obt-panel">
@@ -771,4 +845,5 @@ function ProjectPage() {
     </>
   )
 }
+
 export default ProjectPage

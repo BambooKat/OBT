@@ -1,4 +1,3 @@
-// Lingua base. Ogni altra lingua ricade su questa per le chiavi mancanti.
 const en = {
   common: {
     loading: 'Loading…',
@@ -15,14 +14,12 @@ const en = {
     none: 'None.',
     logout: 'Log out',
   },
-
   layout: {
     homeAlt: 'OBT Home',
     tagline: 'OBT — Ovipets tool by BambooKat',
     contact: 'Contact',
     language: 'Language',
   },
-
   login: {
     signIn: 'Sign in',
     signUp: 'Sign up',
@@ -30,24 +27,16 @@ const en = {
     createAccount: 'Create an account',
     signInSub: 'Enter your credentials to continue',
     signUpSub: 'Join the OBT community',
-    confirmationSent:
-      'Almost there! Check your inbox and click the confirmation link before signing in.',
+    confirmationSent: 'Almost there! Check your inbox and click the confirmation link before signing in.',
     username: 'Username',
     email: 'Email',
     password: 'Password',
     pleaseWait: 'Please wait…',
-    heroText:
-      'Track your breeding projects, manage your pairs, and close in on your target colour — all in one place.',
+    heroText: 'Track your breeding projects, manage your pairs, and close in on your target colour — all in one place.',
     startFree: 'Start for free',
     haveAccount: 'I already have an account',
-    features: {
-      starters: 'Manage starters',
-      distance: 'Colour distance',
-      pairs: 'Pairs & children',
-      target: 'Target colour',
-    },
+    features: { starters: 'Manage starters', distance: 'Colour distance', pairs: 'Pairs & children', target: 'Target colour' },
   },
-
   dashboard: {
     title: 'Your projects',
     empty: 'No projects yet',
@@ -66,7 +55,6 @@ const en = {
     emptyText: 'Create one to start tracking your breeding.',
     authorUnset: 'No author set',
   },
-
   project: {
     back: 'Dashboard',
     edit: 'Edit Project',
@@ -82,21 +70,18 @@ const en = {
     author: 'Author',
     collaborators: 'Collaborators',
     created: 'Created on',
-
     tabs: {
       starters: 'Starters (Gen 0)',
       children: 'Children',
       pairs: 'Pairs',
       target: 'Target',
     },
-
     groups: {
       females: 'Females',
       males: 'Males',
       unsexed: 'Not sexed yet',
       unhatched: 'Not hatched',
     },
-
     table: {
       code: 'Code',
       sex: 'Sex',
@@ -111,7 +96,6 @@ const en = {
       distance: 'Distance',
       notes: 'Notes',
     },
-
     pet: {
       addStarter: '+ Add starter',
       addChild: '+ Add child',
@@ -134,24 +118,30 @@ const en = {
       notes: 'Notes',
       mutations: 'Mutations',
     },
-
     pairs: {
       add: '+ Register pair',
       addTitle: 'Register pair',
+      newPair: 'New pair',
+      editPair: 'Edit pair',
       mother: 'Mother',
       father: 'Father',
       select: '-- select --',
-      round: 'Round',
-      roundTitle: 'Round {round}',
+      roundLabel: 'Round',
+      newRound: 'Round',
+      selectRound: 'Select round:',
+      pairsCount: 'pairs registered',
       date: 'Date',
       outcome: 'Notes / outcome',
+      notesPlaceholder: 'e.g. 3 eggs, good result',
       submit: 'Register',
-      addChild: 'Add child',
-      gridIncomplete: 'Incomplete data to display the grid.',
+      addChildCode: 'Child code (optional)',
+      childCodePlaceholder: 'e.g. HM-G1-1AB/ND',
+      childHint: 'Will be added to children as ND. You can assign sex later.',
+      gridNeedBoth: 'Add at least one female and one male to starters to use the grid.',
+      cellRegister: 'Click to register this pairing',
       emptyTitle: 'No pairs registered yet',
-      emptyText: 'Register your first pairing to start tracking the family tree.',
+      emptyText: 'Click a grid cell to register the first pairing.',
     },
-
     target: {
       colours: 'Target colours',
       mutations: 'Target mutations',
@@ -160,7 +150,6 @@ const en = {
       placeholder: 'e.g. A0A0A0',
       none: 'No target mutations set.',
     },
-
     share: {
       checkbox: 'Share via link',
       hintPublic: 'Signed-in users with the link will be able to view this project in read-only mode.',
@@ -169,20 +158,16 @@ const en = {
       copyDisabledTitle: 'Turn on sharing to copy the link',
       copyPrompt: 'Copy the link:',
     },
-
     danger: {
       zone: 'Danger zone',
       deleteProject: '🗑 Delete project',
     },
-
     confirm: {
       deletePet: 'Delete specimen "{code}"?\n\nThis cannot be undone.',
       deletePair: 'Delete this pair?\n\nThis cannot be undone.',
-      deleteProject:
-        'Permanently delete "{name}"?\n\nAll specimens, pairs and related data will be deleted too. This cannot be undone.',
+      deleteProject: 'Permanently delete "{name}"?\n\nAll specimens, pairs and related data will be deleted too. This cannot be undone.',
       makePrivate: 'Make this project private?\n\nAnyone holding the link will lose access.',
     },
-
     errors: {
       savePet: 'Could not save the changes',
       addPet: 'Could not add the specimen',
@@ -199,7 +184,6 @@ const en = {
       toggleVisibility: 'Could not change the visibility',
     },
   },
-
   mutations: {
     loading: 'Loading mutations…',
     search: 'Search mutation…',
@@ -208,5 +192,4 @@ const en = {
     otherZone: 'Other',
   },
 }
-
 export default en
