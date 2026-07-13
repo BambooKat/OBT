@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
 function Login() {
@@ -11,6 +11,11 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const [confirmationSent, setConfirmationSent] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Se l'utente e' arrivato da un link condiviso, dopo il login lo riportiamo li'
+  // invece che sulla dashboard.
+  const redirectTo = location.pathname.startsWith('/project/') ? location.pathname : '/dashboard'
 
   const openMode = (m) => {
     setMode(m)
@@ -34,11 +39,11 @@ function Login() {
       })
       if (signUpError) { setError(signUpError.message); setLoading(false); return }
       if (data.user && !data.session) { setLoading(false); setConfirmationSent(true); return }
-      navigate('/dashboard')
+      navigate(redirectTo)
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) { setError(signInError.message); setLoading(false); return }
-      navigate('/dashboard')
+      navigate(redirectTo)
     }
   }
 
@@ -160,7 +165,7 @@ function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={8}
+                    minLength={6}
                   />
                 </div>
 

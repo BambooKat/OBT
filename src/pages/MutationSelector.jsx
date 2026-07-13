@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient'
 // raggruppate per zona del corpo, con sezioni apri/chiudi.
 // selectedIds: array di id mutazioni già selezionate
 // onChange: funzione chiamata con il nuovo array quando l'utente clicca un tag
-function MutationSelector({ speciesId, selectedIds, onChange }) {
+function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }) {
   const [mutations, setMutations] = useState([])
   const [loading, setLoading] = useState(true)
   const [openZones, setOpenZones] = useState({})
@@ -29,6 +29,7 @@ function MutationSelector({ speciesId, selectedIds, onChange }) {
   }
 
   const toggleMutation = (mutationId) => {
+    if (readOnly) return
     if (selectedIds.includes(mutationId)) {
       onChange(selectedIds.filter(id => id !== mutationId))
     } else {
@@ -55,6 +56,31 @@ function MutationSelector({ speciesId, selectedIds, onChange }) {
 
   const sortedZoneNames = Object.keys(zones).sort()
   const selectedMutations = mutations.filter(m => selectedIds.includes(m.id))
+
+  // In sola lettura mostriamo solo le mutazioni selezionate: niente ricerca,
+  // niente catalogo completo, niente chip cliccabili.
+  if (readOnly) {
+    if (selectedMutations.length === 0) {
+      return (
+        <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
+          Nessuna mutazione target impostata.
+        </p>
+      )
+    }
+    return (
+      <div className="obt-chips">
+        {selectedMutations.map(m => (
+          <span
+            key={m.id}
+            className={`obt-chip obt-chip--selected${m.is_event ? ' obt-chip--event' : ''}`}
+            style={{ cursor: 'default' }}
+          >
+            {m.name}{m.is_event ? ` [${m.event_season}]` : ''}
+          </span>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="obt-mutation-box">

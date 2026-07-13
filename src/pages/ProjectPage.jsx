@@ -28,6 +28,7 @@ function ProjectPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('starters')
   const [isOwner, setIsOwner] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   const [showPetForm, setShowPetForm] = useState(false)
   const [editingPetId, setEditingPetId] = useState(null)
@@ -50,8 +51,9 @@ function ProjectPage() {
   const [showEditProject, setShowEditProject] = useState(false)
   const [speciesList, setSpeciesList] = useState([])
   const [editProjectForm, setEditProjectForm] = useState({
-    name: '', species_id: '', author: '', collaborators: '', project_notes: ''
+    name: '', species_id: '', author: '', collaborators: '', project_notes: '', is_public: false
   })
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => { loadAll() }, [id])
   useEffect(() => { setShowPetForm(false); setShowPairForm(false) }, [activeTab])
@@ -71,6 +73,7 @@ function ProjectPage() {
       author: projectData.author || '',
       collaborators: projectData.collaborators || '',
       project_notes: projectData.project_notes || '',
+      is_public: projectData.is_public === true,
     })
     setTargetForm({
       target_eyes: projectData.target_eyes || '',
@@ -153,8 +156,18 @@ function ProjectPage() {
     setShowPetForm(true)
   }
 
+  // Se una scrittura fallisce (es. RLS la blocca), lo mostriamo invece di
+  // far finta che sia andata bene.
+  const fail = (error, msg) => {
+    if (!error) return false
+    console.error(msg, error)
+    setActionError(`${msg}: ${error.message}`)
+    return true
+  }
+
   const handlePetSubmit = async (e) => {
     e.preventDefault()
+    setActionError('')
     const payload = {
       project_id: id, code: petForm.code, sex: petForm.sex,
       letter: petForm.letter || null, generation: parseInt(petForm.generation) || 0,
@@ -164,15 +177,19 @@ function ProjectPage() {
     }
     let petId = editingPetId
     if (editingPetId) {
-      await supabase.from('pets').update(payload).eq('id', editingPetId)
-      await supabase.from('pet_mutations').delete().eq('pet_id', editingPetId)
+      const { error } = await supabase.from('pets').update(payload).eq('id', editingPetId)
+      if (fail(error, 'Impossibile salvare le modifiche')) return
+      const { error: delErr } = await supabase.from('pet_mutations').delete().eq('pet_id', editingPetId)
+      if (fail(delErr, 'Impossibile aggiornare le mutazioni')) return
     } else {
-      const { data: newPet } = await supabase.from('pets').insert(payload).select().single()
+      const { data: newPet, error } = await supabase.from('pets').insert(payload).select().single()
+      if (fail(error, "Impossibile aggiungere l'esemplare")) return
       petId = newPet?.id
     }
     if (petId && selectedMutationIds.length > 0) {
       const rows = selectedMutationIds.map(mutationId => ({ pet_id: petId, mutation_id: mutationId }))
-      await supabase.from('pet_mutations').insert(rows)
+      const { error } = await supabase.from('pet_mutations').insert(rows)
+      if (fail(error, 'Impossibile salvare le mutazioni')) return
     }
     resetPetForm()
     loadAll()
@@ -192,17 +209,25 @@ function ProjectPage() {
   }
 
   const handleDeletePet = async (petId) => {
-    await supabase.from('pets').delete().eq('id', petId)
+    const pet = pets.find(p => p.id === petId)
+    if (!window.confirm(`Eliminare l'esemplare "${pet?.code || ''}"?\n\nQuesta azione non può essere annullata.`)) return
+    setActionError('')
+    const { error } = await supabase.from('pets').delete().eq('id', petId)
+    if (fail(error, "Impossibile eliminare l'esemplare")) return
     loadAll()
   }
 
   const handleTargetSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault()
-    await supabase.from('projects').update(targetForm).eq('id', id)
-    await supabase.from('project_mutations').delete().eq('project_id', id)
+    setActionError('')
+    const { error } = await supabase.from('projects').update(targetForm).eq('id', id)
+    if (fail(error, 'Impossibile salvare i colori target')) return
+    const { error: delErr } = await supabase.from('project_mutations').delete().eq('project_id', id)
+    if (fail(delErr, 'Impossibile aggiornare le mutazioni target')) return
     if (targetMutationIds.length > 0) {
       const rows = targetMutationIds.map(mutationId => ({ project_id: id, mutation_id: mutationId }))
-      await supabase.from('project_mutations').insert(rows)
+      const { error: insErr } = await supabase.from('project_mutations').insert(rows)
+      if (fail(insErr, 'Impossibile salvare le mutazioni target')) return
     }
     loadAll()
   }
@@ -214,36 +239,70 @@ function ProjectPage() {
 
   const handlePairSubmit = async (e) => {
     e.preventDefault()
-    await supabase.from('pairs').insert({
+    setActionError('')
+    const { error } = await supabase.from('pairs').insert({
       project_id: id, mother_id: pairForm.mother_id, father_id: pairForm.father_id,
       pair_date: pairForm.pair_date || null, outcome_notes: pairForm.outcome_notes || null,
     })
+    if (fail(error, 'Impossibile registrare la coppia')) return
     closePairForm()
     loadAll()
   }
 
   const handleDeletePair = async (pairId) => {
-    await supabase.from('pairs').delete().eq('id', pairId)
+    if (!window.confirm('Eliminare questa coppia?\n\nQuesta azione non può essere annullata.')) return
+    setActionError('')
+    const { error } = await supabase.from('pairs').delete().eq('id', pairId)
+    if (fail(error, 'Impossibile eliminare la coppia')) return
     loadAll()
   }
 
   const handleEditProjectSubmit = async (e) => {
     e.preventDefault()
-    await supabase.from('projects').update({
+    setActionError('')
+    const { error } = await supabase.from('projects').update({
       name: editProjectForm.name,
       species_id: editProjectForm.species_id,
       author: editProjectForm.author || null,
       collaborators: editProjectForm.collaborators || null,
       project_notes: editProjectForm.project_notes || null,
+      is_public: editProjectForm.is_public,
     }).eq('id', id)
+    if (fail(error, 'Impossibile salvare il progetto')) return
     setShowEditProject(false)
     loadAll()
+  }
+
+  const shareUrl = `${window.location.origin}/project/${id}`
+
+  // Toggle rapido pubblico/privato dalla barra in alto, senza aprire il modal.
+  const handleToggleVisibility = async () => {
+    const next = !project.is_public
+    if (!next && !window.confirm('Rendere il progetto privato?\n\nChi ha il link non potrà più aprirlo.')) return
+    setActionError('')
+    const { error } = await supabase.from('projects').update({ is_public: next }).eq('id', id)
+    if (fail(error, 'Impossibile cambiare la visibilità')) return
+    loadAll()
+  }
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+    } catch {
+      // Alcuni browser bloccano la clipboard fuori da HTTPS: fallback manuale.
+      window.prompt('Copia il link:', shareUrl)
+      return
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const handleDeleteProject = async () => {
     const confirmed = window.confirm(`Eliminare definitivamente "${project.name}"?\n\nVerranno cancellati anche tutti gli esemplari, le coppie e i dati collegati. Questa azione non può essere annullata.`)
     if (!confirmed) return
-    await supabase.from('projects').delete().eq('id', id)
+    setActionError('')
+    const { error } = await supabase.from('projects').delete().eq('id', id)
+    if (fail(error, 'Impossibile eliminare il progetto')) return
     navigate('/dashboard')
   }
 
@@ -313,6 +372,33 @@ function ProjectPage() {
           <div className="obt-hero-back">
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; Dashboard</button>
             {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>✎ Edit Project</button>}
+            {isOwner && (
+              <button
+                className="obt-btn obt-btn--ghost obt-btn--sm"
+                onClick={handleToggleVisibility}
+                title={project.is_public ? 'Chiunque abbia il link può vedere questo progetto' : 'Solo tu puoi vedere questo progetto'}
+              >
+                {project.is_public ? '🔓 Pubblico' : '🔒 Privato'}
+              </button>
+            )}
+            {isOwner && project.is_public && (
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleCopyLink}>
+                {copied ? '✓ Copiato!' : '🔗 Copia link'}
+              </button>
+            )}
+            {!isOwner && (
+              <span
+                title="Stai visualizzando il progetto di un altro utente"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: 'var(--card)', border: '1px solid var(--line)',
+                  borderRadius: 'var(--radius-pill)', padding: '6px 14px',
+                  fontSize: 12, fontWeight: 700, color: 'var(--muted)',
+                }}
+              >
+                <i className="ti ti-eye" /> Sola lettura
+              </span>
+            )}
           </div>
           <div className="obt-hero-title">
             <h1>{project.name}</h1>
@@ -332,6 +418,13 @@ function ProjectPage() {
         </div>
       </div>
 
+      {actionError && (
+        <div className="obt-alert obt-alert--error" style={{ margin: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <span>{actionError}</span>
+          <button className="obt-icon-btn" onClick={() => setActionError('')} title="Chiudi">✕</button>
+        </div>
+      )}
+
       <Modal open={showEditProject} onClose={() => setShowEditProject(false)} title="Modifica progetto">
         <form onSubmit={handleEditProjectSubmit}>
           <div className="obt-row">
@@ -343,6 +436,31 @@ function ProjectPage() {
             <div className="obt-field"><label>Collaboratori <span className="obt-optional">(opzionale)</span></label><input className="obt-input" type="text" value={editProjectForm.collaborators} onChange={(e) => setEditProjectForm({ ...editProjectForm, collaborators: e.target.value })} /></div>
           </div>
           <div className="obt-field"><label>Info progetto <span className="obt-optional">(opzionale)</span></label><textarea className="obt-textarea" value={editProjectForm.project_notes} onChange={(e) => setEditProjectForm({ ...editProjectForm, project_notes: e.target.value })} /></div>
+
+          <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 16, marginTop: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={editProjectForm.is_public}
+                onChange={(e) => setEditProjectForm({ ...editProjectForm, is_public: e.target.checked })}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
+              Condividi tramite link
+            </label>
+            <p className="obt-hint" style={{ marginTop: 6 }}>
+              {editProjectForm.is_public
+                ? 'Qualsiasi utente registrato che riceve il link potrà vedere questo progetto in sola lettura. Non comparirà in nessun elenco pubblico.'
+                : 'Solo tu puoi vedere questo progetto.'}
+            </p>
+            {editProjectForm.is_public && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <input className="obt-input" value={shareUrl} readOnly onFocus={(e) => e.target.select()} style={{ fontFamily: 'monospace', fontSize: 12 }} />
+                <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleCopyLink} style={{ whiteSpace: 'nowrap' }}>
+                  {copied ? '✓' : 'Copia'}
+                </button>
+              </div>
+            )}
+          </div>
           <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">Salva modifiche</button><button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowEditProject(false)}>Annulla</button></div>
         </form>
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
@@ -385,7 +503,7 @@ function ProjectPage() {
           </>
         )}
         {activeTab === 'pairs' && (<><div className="obt-section-head"><div />{isOwner && <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => setShowPairForm(true)}>+ Registra coppia</button>}</div><Modal open={showPairForm} onClose={closePairForm} title="Registra coppia"><form onSubmit={handlePairSubmit}><div className="obt-row"><div className="obt-field"><label>Madre</label><select className="obt-select" value={pairForm.mother_id} onChange={e => setPairForm({...pairForm, mother_id: e.target.value})} required autoFocus><option value="">-- seleziona --</option>{females.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}</select></div><div className="obt-field"><label>Padre</label><select className="obt-select" value={pairForm.father_id} onChange={e => setPairForm({...pairForm, father_id: e.target.value})} required><option value="">-- seleziona --</option>{males.map(m => <option key={m.id} value={m.id}>{m.code}</option>)}</select></div><div className="obt-field"><label>Data</label><input type="date" className="obt-input" value={pairForm.pair_date} onChange={e => setPairForm({...pairForm, pair_date: e.target.value})} /></div></div><div className="obt-field"><label>Note / esito</label><input className="obt-input" value={pairForm.outcome_notes} onChange={e => setPairForm({...pairForm, outcome_notes: e.target.value})} /></div><div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">Registra</button><button type="button" className="obt-btn obt-btn--ghost" onClick={closePairForm}>Annulla</button></div></form></Modal>{pairs.length === 0 ? <div className="obt-panel obt-empty"><div className="obt-empty-icon">🥚</div><h3>Nessuna coppia ancora registrata</h3><p>Registra il primo accoppiamento per iniziare a tracciare la genealogia.</p></div> : <div className="obt-panel"><div style={{ overflowX: 'auto' }}><table className="obt-table"><thead><tr><th>Madre</th><th>Padre</th><th>Data</th><th>Note</th>{isOwner && <th></th>}</tr></thead><tbody>{pairs.map(pair => (<tr key={pair.id}><td>{pair.mother?.code || '-'}</td><td>{pair.father?.code || '-'}</td><td>{pair.pair_date || '-'}</td><td>{pair.outcome_notes || ''}</td>{isOwner && <td><button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePair(pair.id)} title="Elimina"><i className="ti ti-trash" /></button></td>}</tr>))}</tbody></table></div></div>}</>)}
-        {activeTab === 'target' && (<><form onSubmit={handleTargetSubmit} className="obt-panel"><h2 style={{ marginBottom: 18 }}>Colori target</h2><div className="obt-row">{[{ label: 'Occhi', key: 'target_eyes' },{ label: 'Body 01', key: 'target_body1' },{ label: 'Body 02', key: 'target_body2' },{ label: 'Extra 01', key: 'target_extra1' },{ label: 'Extra 02', key: 'target_extra2' },].map(({ label, key }) => (<div className="obt-field" key={key}><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{label}<ColorCell hex={targetForm[key]} /></label><input className="obt-input" disabled={!isOwner} value={targetForm[key]} onChange={e => setTargetForm({ ...targetForm, [key]: e.target.value })} placeholder="es. A0A0A0" /></div>))}</div>{isOwner && <button type="submit" className="obt-btn obt-btn--primary">Salva target</button>}</form><div className="obt-panel"><h3 style={{ marginBottom: 14 }}>Mutazioni target</h3><MutationSelector speciesId={project.species_id} selectedIds={targetMutationIds} onChange={setTargetMutationIds} />{isOwner && <button className="obt-btn obt-btn--primary obt-mt-md" onClick={handleTargetSubmit}>Salva mutazioni target</button>}</div></>)}
+        {activeTab === 'target' && (<><form onSubmit={handleTargetSubmit} className="obt-panel"><h2 style={{ marginBottom: 18 }}>Colori target</h2><div className="obt-row">{[{ label: 'Occhi', key: 'target_eyes' },{ label: 'Body 01', key: 'target_body1' },{ label: 'Body 02', key: 'target_body2' },{ label: 'Extra 01', key: 'target_extra1' },{ label: 'Extra 02', key: 'target_extra2' },].map(({ label, key }) => (<div className="obt-field" key={key}><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{label}<ColorCell hex={targetForm[key]} /></label><input className="obt-input" disabled={!isOwner} value={targetForm[key]} onChange={e => setTargetForm({ ...targetForm, [key]: e.target.value })} placeholder="es. A0A0A0" /></div>))}</div>{isOwner && <button type="submit" className="obt-btn obt-btn--primary">Salva target</button>}</form><div className="obt-panel"><h3 style={{ marginBottom: 14 }}>Mutazioni target</h3><MutationSelector speciesId={project.species_id} selectedIds={targetMutationIds} onChange={setTargetMutationIds} readOnly={!isOwner} />{isOwner && <button className="obt-btn obt-btn--primary obt-mt-md" onClick={handleTargetSubmit}>Salva mutazioni target</button>}</div></>)}
       </div>
     </>
   )
