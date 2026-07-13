@@ -94,6 +94,7 @@ const en = {
       females: 'Females',
       males: 'Males',
       unsexed: 'Not sexed yet',
+      unhatched: 'Not hatched',
     },
 
     table: {

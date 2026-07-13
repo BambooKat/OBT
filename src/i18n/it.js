@@ -94,6 +94,7 @@ const it = {
       females: 'Femmine',
       males: 'Maschi',
       unsexed: 'Non ancora sessati',
+      unhatched: 'Non schiusi',
     },
 
     table: {
