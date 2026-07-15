@@ -154,6 +154,12 @@ const en = {
       renameHint: 'Leave empty to reset to the default name (G1, G2, ...).',
       saveError: 'Failed to save name',
     },
+    kin: {
+      direct: 'direct line',
+      parent: 'parent',
+      grandparent: 'grandparent',
+      greatgrandparent: 'great-grandparent',
+    },
     suggester: {
       pairsTitle: 'Tested pairs',
       pairsHint: 'Only pairs that have already produced children, sorted by the best child obtained.',

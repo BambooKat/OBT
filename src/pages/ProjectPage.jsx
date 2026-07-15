@@ -99,7 +99,7 @@ function PairCellModal({ open, onClose, pair, female, male, round, onSave, onDel
 }
 
 // ---- Componente griglia ----
-function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner }) {
+function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner, forbidden = {} }) {
   const { t } = useT()
   // mappa fId:mId -> pair
   const cellMap = {}
@@ -149,6 +149,21 @@ function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner })
               {males.map(m => {
                 const pair = cellMap[`${f.id}:${m.id}`]
                 const done = !!pair
+                const forb = !done ? forbidden[`${f.id}:${m.id}`] : null
+                if (forb) {
+                  return (
+                    <td key={m.id} style={{ padding: 2, textAlign: 'center' }}>
+                      <div title={forb.label} style={{
+                        width: 52, height: 36, borderRadius: 8,
+                        border: '2px solid var(--bad-text)',
+                        background: 'var(--bg)', color: 'var(--muted)',
+                        cursor: 'not-allowed', opacity: 0.7,
+                        fontSize: 18, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>·</div>
+                    </td>
+                  )
+                }
                 return (
                   <td key={m.id} style={{ padding: 2, textAlign: 'center' }}>
                     <button
@@ -159,17 +174,14 @@ function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner })
                         : (isOwner ? t('project.pairs.cellRegister') : '')
                       }
                       style={{
-                        width: 52, height: 36,
-                        borderRadius: 8,
+                        width: 52, height: 36, borderRadius: 8,
                         border: done ? '2px solid var(--primary)' : '2px dashed var(--line)',
                         background: done ? 'var(--primary)' : 'var(--surface)',
                         color: done ? '#fff' : 'var(--muted)',
                         cursor: isOwner ? 'pointer' : (done ? 'default' : 'not-allowed'),
-                        fontSize: done ? 16 : 20,
-                        fontWeight: 700,
+                        fontSize: done ? 16 : 20, fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.15s',
-                        flexShrink: 0,
+                        transition: 'all 0.15s', flexShrink: 0,
                       }}
                     >
                       {done ? '✓' : '·'}
@@ -560,6 +572,51 @@ function ProjectPage() {
     }
   }
   const activeRoster = rosterFor(activeRound)
+
+  // --- Consanguineità: antenati visibili fino ai bisnonni (profondità 3) ---
+  const kinshipInfo = (() => {
+    const petById = new Map(pets.map(p => [p.id, p]))
+    const cache = new Map()
+    const ancestors = (id) => {
+      if (cache.has(id)) return cache.get(id)
+      const res = new Map()
+      const stack = [[id, 0]]
+      while (stack.length) {
+        const [cur, depth] = stack.pop()
+        if (cur == null) continue
+        const prev = res.get(cur)
+        if (prev != null && prev <= depth) continue
+        res.set(cur, depth)
+        if (depth < 3) {
+          const p = petById.get(cur)
+          if (p) { stack.push([p.mother_id, depth + 1]); stack.push([p.father_id, depth + 1]) }
+        }
+      }
+      cache.set(id, res)
+      return res
+    }
+    const tierKeys = ['direct', 'parent', 'grandparent', 'greatgrandparent']
+    const map = {}
+    for (const f of activeRoster.females) {
+      for (const m of activeRoster.males) {
+        const A = ancestors(f.id), B = ancestors(m.id)
+        let best = null, count = 0
+        for (const [aid, da] of A) {
+          if (B.has(aid)) {
+            count++
+            const d = Math.min(da, B.get(aid))
+            if (!best || d < best.d) best = { id: aid, d }
+          }
+        }
+        if (!best) continue
+        const anc = petById.get(best.id)
+        const who = anc ? `${anc.letter ? anc.letter + ' ' : ''}${anc.code}/${anc.sex}` : '?'
+        const extra = count - 1
+        map[`${f.id}:${m.id}`] = { label: `${t('project.kin.' + tierKeys[best.d])} · ${who}${extra > 0 ? ` +${extra}` : ''}` }
+      }
+    }
+    return map
+  })()
 
   const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
 
@@ -1019,6 +1076,7 @@ function ProjectPage() {
                   pairsInRound={pairsInActiveRound}
                   onCellClick={openCellModal}
                   isOwner={isOwner}
+                  forbidden={kinshipInfo}
                 />
               )}
 

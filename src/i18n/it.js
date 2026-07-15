@@ -154,6 +154,12 @@ const it = {
       renameHint: 'Lascia vuoto per tornare al nome predefinito (G1, G2, ...).',
       saveError: 'Errore nel salvataggio del nome',
     },
+    kin: {
+      direct: 'linea diretta',
+      parent: 'genitore',
+      grandparent: 'nonno',
+      greatgrandparent: 'bisnonno',
+    },
     target: {
       colours: 'Colori target',
       mutations: 'Mutazioni target',
