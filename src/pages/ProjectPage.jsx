@@ -531,6 +531,19 @@ function ProjectPage() {
   const males = pets.filter(p => p.sex === 'M')
   const females = pets.filter(p => p.sex === 'F')
 
+  // Roster del round: di default la generazione precedente (round 1 → gen 0, round 2 → gen 1, ...)
+  const rosterFor = (round) => {
+    const override = project?.round_rosters?.[String(round)]
+    const inRoster = override
+      ? (p) => override.includes(p.id)
+      : (p) => p.generation === round - 1
+    return {
+      females: females.filter(inRoster),
+      males: males.filter(inRoster),
+    }
+  }
+  const activeRoster = rosterFor(activeRound)
+
   // Calcola i round esistenti
   const existingRounds = [...new Set(pairs.map(p => p.round_number || 1))].sort((a, b) => a - b)
   const maxRound = existingRounds.length > 0 ? Math.max(...existingRounds) : 0
@@ -846,15 +859,15 @@ function ProjectPage() {
                 )}
               </h3>
 
-              {males.length === 0 || females.length === 0 ? (
+              {activeRoster.males.length === 0 || activeRoster.females.length === 0 ? (
                 <div style={{ padding: '12px 0' }}>
                   <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('project.pairs.gridNeedBoth')}</p>
                 </div>
               ) : (
                 <PairGrid
                   round={activeRound}
-                  females={females}
-                  males={males}
+                  females={activeRoster.females}
+                  males={activeRoster.males}
                   pairsInRound={pairsInActiveRound}
                   onCellClick={openCellModal}
                   isOwner={isOwner}
