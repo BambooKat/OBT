@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import MutationSelector from './MutationSelector'
 import Modal from './Modal'
 import { useT } from '../i18n'
+import SuggesterTab from './SuggesterTab'
 
 const ColorCell = ({ hex }) => {
   if (!hex) return <span style={{ color: 'var(--ink-soft)' }}>-</span>
@@ -221,6 +222,9 @@ function ProjectPage() {
 
   // Selezione round attivo nella tab Coppie
   const [activeRound, setActiveRound] = useState(1)
+
+  //Ordine
+  const [petSort, setPetSort] = useState({})
 
   // Edit progetto
   const [showEditProject, setShowEditProject] = useState(false)
@@ -537,58 +541,105 @@ function ProjectPage() {
 
   const pairsInActiveRound = pairs.filter(p => (p.round_number || 1) === activeRound)
 
-  const PetTable = ({ list, title }) => (
-    <div className="obt-panel">
-      <h3 style={{ marginBottom: 14 }}>{title}</h3>
-      {list.length === 0 ? (
-        <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>{t('common.none')}</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table className="obt-table">
-            <thead>
-              <tr>
-                <th>{t('project.table.code')}</th><th>{t('project.table.sex')}</th><th>{t('project.table.letter')}</th><th>{t('project.table.gen')}</th>
-                <th>{t('project.table.eyes')}</th><th>{t('project.table.body1')}</th><th>{t('project.table.body2')}</th><th>{t('project.table.extra1')}</th><th>{t('project.table.extra2')}</th>
-                <th>{t('project.table.mut')}</th><th>{t('project.table.distance')}</th><th>{t('project.table.notes')}</th>{isOwner && <th></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {list.map(pet => {
-                const d = totalDist(pet)
-                return (
-                  <tr key={pet.id}>
-                    <td><strong>{pet.code}</strong></td>
-                    <td>{pet.sex}</td>
-                    <td>{pet.letter || '-'}</td>
-                    <td>{pet.generation}</td>
-                    <td><ColorCell hex={pet.eyes} /></td>
-                    <td><ColorCell hex={pet.body1} /></td>
-                    <td><ColorCell hex={pet.body2} /></td>
-                    <td><ColorCell hex={pet.extra1} /></td>
-                    <td><ColorCell hex={pet.extra2} /></td>
-                    <td>{petMutationCounts[pet.id] || 0}v</td>
-                    <td>{d !== null ? <span className={`obt-dist-pill ${distClass(d)}`}>{Math.round(d)}</span> : '-'}</td>
-                    <td>{pet.notes || ''}</td>
-                    {isOwner && (
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <button className="obt-icon-btn" onClick={() => handleEditPet(pet)} title={t('common.edit')}><i className="ti ti-pencil" /></button>
-                        <button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePet(pet.id)} title={t('common.delete')}><i className="ti ti-trash" /></button>
-                      </td>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
+  const PetTable = ({ list, title }) => {
+    const sort = petSort[title] || { key: null, dir: 1 }
+    const applySort = (key) =>
+      setPetSort(prev => {
+        const cur = prev[title] || { key: null, dir: 1 }
+        const next = cur.key === key ? { key, dir: -cur.dir } : { key, dir: 1 }
+        return { ...prev, [title]: next }
+      })
+    const slotKeys = ['eyes', 'body1', 'body2', 'extra1', 'extra2']
+    const sortVal = (pet, key) => {
+      if (key === 'gen') return pet.generation ?? 0
+      if (key === 'mut') return petMutationCounts[pet.id] || 0
+      if (key === 'distance') return totalDist(pet)
+      if (slotKeys.includes(key)) return colorDist(pet[key], project['target_' + key])
+      return (pet[key] ?? '').toString().toLowerCase()
+    }
+    const sorted = sort.key
+      ? [...list].sort((a, b) => {
+          const va = sortVal(a, sort.key), vb = sortVal(b, sort.key)
+          if (va == null && vb == null) return 0
+          if (va == null) return 1
+          if (vb == null) return -1
+          if (va < vb) return -sort.dir
+          if (va > vb) return sort.dir
+          return 0
+        })
+      : list
+    const Th = ({ k, children }) => (
+      <th onClick={() => applySort(k)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }} title={t('project.table.sortHint')}>
+        {children}
+        <span style={{ marginLeft: 4, fontSize: 10, opacity: sort.key === k ? 0.9 : 0.25 }}>
+          {sort.key === k ? (sort.dir === 1 ? '▲' : '▼') : '↕'}
+        </span>
+      </th>
+    )
+    return (
+      <div className="obt-panel">
+        <h3 style={{ marginBottom: 14 }}>{title}</h3>
+        {list.length === 0 ? (
+          <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>{t('common.none')}</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="obt-table">
+              <thead>
+                <tr>
+                  <Th k="code">{t('project.table.code')}</Th>
+                  <Th k="sex">{t('project.table.sex')}</Th>
+                  <Th k="letter">{t('project.table.letter')}</Th>
+                  <Th k="gen">{t('project.table.gen')}</Th>
+                  <Th k="eyes">{t('project.table.eyes')}</Th>
+                  <Th k="body1">{t('project.table.body1')}</Th>
+                  <Th k="body2">{t('project.table.body2')}</Th>
+                  <Th k="extra1">{t('project.table.extra1')}</Th>
+                  <Th k="extra2">{t('project.table.extra2')}</Th>
+                  <Th k="mut">{t('project.table.mut')}</Th>
+                  <Th k="distance">{t('project.table.distance')}</Th>
+                  <Th k="notes">{t('project.table.notes')}</Th>
+                  {isOwner && <th></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map(pet => {
+                  const d = totalDist(pet)
+                  return (
+                    <tr key={pet.id}>
+                      <td><strong>{pet.code}</strong></td>
+                      <td>{pet.sex}</td>
+                      <td>{pet.letter || '-'}</td>
+                      <td>{pet.generation}</td>
+                      <td><ColorCell hex={pet.eyes} /></td>
+                      <td><ColorCell hex={pet.body1} /></td>
+                      <td><ColorCell hex={pet.body2} /></td>
+                      <td><ColorCell hex={pet.extra1} /></td>
+                      <td><ColorCell hex={pet.extra2} /></td>
+                      <td>{petMutationCounts[pet.id] || 0}v</td>
+                      <td>{d !== null ? <span className={`obt-dist-pill ${distClass(d)}`}>{Math.round(d)}</span> : '-'}</td>
+                      <td>{pet.notes || ''}</td>
+                      {isOwner && (
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <button className="obt-icon-btn" onClick={() => handleEditPet(pet)} title={t('common.edit')}><i className="ti ti-pencil" /></button>
+                          <button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePet(pet.id)} title={t('common.delete')}><i className="ti ti-trash" /></button>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const tabLabels = {
     starters: t('project.tabs.starters'),
     children: t('project.tabs.children'),
     pairs: t('project.tabs.pairs'),
+    suggester: t('project.tabs.suggester'),
     target: t('project.tabs.target')
   }
 
@@ -629,7 +680,7 @@ function ProjectPage() {
           </div>
         </div>
         <div className="obt-tabs">
-          {['starters', 'children', 'pairs', 'target'].map(tab => (
+          {['starters', 'children', 'pairs', 'suggester', 'target'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`obt-tab${activeTab === tab ? ' obt-tab--active' : ''}`}>{tabLabels[tab]}</button>
           ))}
         </div>
@@ -853,6 +904,10 @@ function ProjectPage() {
               )}
             </div>
           </>
+        )}
+
+        {activeTab === 'suggester' && (
+          <SuggesterTab pets={pets} project={project} />
         )}
 
         {/* ---- TARGET ---- */}

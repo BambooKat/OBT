@@ -74,6 +74,7 @@ const it = {
       starters: 'Starter (Gen 0)',
       children: 'Figli',
       pairs: 'Coppie',
+      suggester: 'Suggeritore',
       target: 'Target',
     },
     groups: {
@@ -95,6 +96,7 @@ const it = {
       mut: 'Muta',
       distance: 'Distanza',
       notes: 'Note',
+      sortHint: 'Clicca per ordinare',
     },
     pet: {
       addStarter: '+ Aggiungi starter',
@@ -182,6 +184,19 @@ const it = {
       saveProject: 'Impossibile salvare il progetto',
       deleteProject: 'Impossibile eliminare il progetto',
       toggleVisibility: 'Impossibile cambiare la visibilità',
+    },
+    suggester: {
+      pairsTitle: 'Coppie testate',
+      pairsHint: 'Solo coppie che hanno già prodotto figli, ordinate dal miglior figlio ottenuto.',
+      breedersTitle: 'Riproduttori elevatori',
+      breedersHint: 'Media della distanza dei figli per ogni riproduttore: in cima chi abbassa di più la prole.',
+      nChildren: 'N° figli',
+      bestChild: 'Miglior figlio',
+      avgChild: 'Media figli',
+      midParent: 'Media genitori',
+      gain: 'Guadagno',
+      ownDist: 'Distanza propria',
+      empty: 'Ancora nessun figlio registrato con genitori collegati.',
     },
   },
   mutations: {

@@ -74,6 +74,7 @@ const en = {
       starters: 'Starters (Gen 0)',
       children: 'Children',
       pairs: 'Pairs',
+      suggester: 'Suggester',
       target: 'Target',
     },
     groups: {
@@ -95,6 +96,7 @@ const en = {
       mut: 'Mut',
       distance: 'Distance',
       notes: 'Notes',
+      sortHint: 'Click to sort',
     },
     pet: {
       addStarter: '+ Add starter',
@@ -141,6 +143,19 @@ const en = {
       cellRegister: 'Click to register this pairing',
       emptyTitle: 'No pairs registered yet',
       emptyText: 'Click a grid cell to register the first pairing.',
+    },
+    suggester: {
+      pairsTitle: 'Tested pairs',
+      pairsHint: 'Only pairs that have already produced children, sorted by the best child obtained.',
+      breedersTitle: 'Elevator breeders',
+      breedersHint: 'Average child distance for each breeder: those that lower their offspring the most come first.',
+      nChildren: 'Children',
+      bestChild: 'Best child',
+      avgChild: 'Avg child',
+      midParent: 'Parent avg',
+      gain: 'Gain',
+      ownDist: 'Own distance',
+      empty: 'No children registered with linked parents yet.',
     },
     target: {
       colours: 'Target colours',
