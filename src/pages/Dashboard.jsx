@@ -29,7 +29,7 @@ function Dashboard() {
     const { data: speciesData } = await supabase.from('species').select('*').order('name', { ascending: true })
     setSpecies(speciesData || [])
     if (speciesData && speciesData.length > 0) setNewProject(prev => ({ ...prev, species_id: speciesData[0].id }))
-    const { data: projectsData } = await supabase.from('projects').select('*, species(name)').eq('owner_id', user.id).order('created_at', { ascending: false })
+    const { data: projectsData } = await supabase.from('lines').select('*, species(name)').eq('owner_id', user.id).order('created_at', { ascending: false })
     if (projectsData) setProjects(projectsData)
     setLoading(false)
   }
@@ -42,7 +42,7 @@ function Dashboard() {
   const handleCreateProject = async (e) => {
     e.preventDefault()
     const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('projects').insert({
+    const { data, error } = await supabase.from('lines').insert({
       owner_id: user.id, name: newProject.name, species_id: newProject.species_id,
       author: newProject.author || null, collaborators: newProject.collaborators || null, project_notes: newProject.project_notes || null,
     }).select('*, species(name)').single()

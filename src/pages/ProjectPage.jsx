@@ -265,7 +265,7 @@ function ProjectPage() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { data: projectData } = await supabase.from('projects').select('*, species(name)').eq('id', id).single()
+    const { data: projectData } = await supabase.from('lines').select('*, species(name)').eq('id', id).single()
     if (!projectData) { navigate('/dashboard'); return }
 
     setProject(projectData)
@@ -289,7 +289,7 @@ function ProjectPage() {
     const { data: speciesData } = await supabase.from('species').select('*').order('name', { ascending: true })
     setSpeciesList(speciesData || [])
 
-    const { data: petsData } = await supabase.from('pets').select('*').eq('project_id', id).order('code', { ascending: true })
+    const { data: petsData } = await supabase.from('pets').select('*').eq('line_id', id).order('code', { ascending: true })
     setPets(petsData || [])
 
     if (petsData && petsData.length > 0) {
@@ -305,12 +305,12 @@ function ProjectPage() {
     const { data: pairsData } = await supabase
       .from('pairs')
       .select('*, mother:mother_id(id, code, letter), father:father_id(id, code, letter)')
-      .eq('project_id', id)
+      .eq('line_id', id)
       .order('round_number', { ascending: true })
       .order('created_at', { ascending: false })
     setPairs(pairsData || [])
 
-    const { data: projMuts } = await supabase.from('project_mutations').select('mutation_id').eq('project_id', id)
+    const { data: projMuts } = await supabase.from('line_mutations').select('mutation_id').eq('line_id', id)
     setTargetMutationIds((projMuts || []).map(pm => pm.mutation_id))
 
     setLoading(false)
@@ -375,7 +375,7 @@ function ProjectPage() {
     e.preventDefault()
     setActionError('')
     const payload = {
-      project_id: id, code: petForm.code, sex: petForm.sex,
+      line_id: id, code: petForm.code, sex: petForm.sex,
       letter: petForm.letter || null, generation: parseInt(petForm.generation) || 0,
       mother_id: petForm.mother_id || null, father_id: petForm.father_id || null,
       eyes: petForm.eyes || null, body1: petForm.body1 || null, body2: petForm.body2 || null,
@@ -427,13 +427,13 @@ function ProjectPage() {
   const handleTargetSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault()
     setActionError('')
-    const { error } = await supabase.from('projects').update(targetForm).eq('id', id)
+    const { error } = await supabase.from('lines').update(targetForm).eq('id', id)
     if (fail(error, t('project.errors.saveTargetColours'))) return
-    const { error: delErr } = await supabase.from('project_mutations').delete().eq('project_id', id)
+    const { error: delErr } = await supabase.from('line_mutations').delete().eq('line_id', id)
     if (fail(delErr, t('project.errors.updateTargetMutations'))) return
     if (targetMutationIds.length > 0) {
-      const rows = targetMutationIds.map(mutationId => ({ project_id: id, mutation_id: mutationId }))
-      const { error: insErr } = await supabase.from('project_mutations').insert(rows)
+      const rows = targetMutationIds.map(mutationId => ({ line_id: id, mutation_id: mutationId }))
+      const { error: insErr } = await supabase.from('line_mutations').insert(rows)
       if (fail(insErr, t('project.errors.saveTargetMutations'))) return
     }
     loadAll()
@@ -462,7 +462,7 @@ function ProjectPage() {
     } else {
       // Crea nuova coppia
       const { error } = await supabase.from('pairs').insert({
-        project_id: id,
+        line_id: id,
         mother_id: female.id,
         father_id: male.id,
         round_number: round,
@@ -475,7 +475,7 @@ function ProjectPage() {
     // Se c'è un codice figlio, crea il pet ND
     if (childCode.trim()) {
       const { error } = await supabase.from('pets').insert({
-        project_id: id,
+        line_id: id,
         code: childCode.trim(),
         sex: 'ND',
         generation: 1,
@@ -502,7 +502,7 @@ function ProjectPage() {
   const handleEditProjectSubmit = async (e) => {
     e.preventDefault()
     setActionError('')
-    const { error } = await supabase.from('projects').update({
+    const { error } = await supabase.from('lines').update({
       name: editProjectForm.name,
       species_id: editProjectForm.species_id,
       author: editProjectForm.author || null,
@@ -521,7 +521,7 @@ function ProjectPage() {
     const next = !project.is_public
     if (!next && !window.confirm(t('project.confirm.makePrivate'))) return
     setActionError('')
-    const { error } = await supabase.from('projects').update({ is_public: next }).eq('id', id)
+    const { error } = await supabase.from('lines').update({ is_public: next }).eq('id', id)
     if (fail(error, t('project.errors.toggleVisibility'))) return
     loadAll()
   }
@@ -542,7 +542,7 @@ function ProjectPage() {
     const confirmed = window.confirm(t('project.confirm.deleteProject', { name: project.name }))
     if (!confirmed) return
     setActionError('')
-    const { error } = await supabase.from('projects').delete().eq('id', id)
+    const { error } = await supabase.from('lines').delete().eq('id', id)
     if (fail(error, t('project.errors.deleteProject'))) return
     navigate('/dashboard')
   }
@@ -630,7 +630,7 @@ function ProjectPage() {
   const saveRoster = async () => {
     setActionError('')
     const next = { ...(project.round_rosters || {}), [String(activeRound)]: rosterDraft }
-    const { error } = await supabase.from('projects').update({ round_rosters: next }).eq('id', id)
+    const { error } = await supabase.from('lines').update({ round_rosters: next }).eq('id', id)
     if (fail(error, t('project.roster.saveError'))) return
     setShowRosterEditor(false)
     loadAll()
@@ -639,7 +639,7 @@ function ProjectPage() {
     setActionError('')
     const next = { ...(project.round_rosters || {}) }
     delete next[String(activeRound)]
-    const { error } = await supabase.from('projects').update({ round_rosters: next }).eq('id', id)
+    const { error } = await supabase.from('lines').update({ round_rosters: next }).eq('id', id)
     if (fail(error, t('project.roster.saveError'))) return
     setShowRosterEditor(false)
     loadAll()
@@ -657,7 +657,7 @@ function ProjectPage() {
     const v = genRenameValue.trim()
     if (v) next[String(genRenameTarget)] = v
     else delete next[String(genRenameTarget)]
-    const { error } = await supabase.from('projects').update({ generation_labels: next }).eq('id', id)
+    const { error } = await supabase.from('lines').update({ generation_labels: next }).eq('id', id)
     if (fail(error, t('project.gen.saveError'))) return
     setShowGenRename(false)
     loadAll()
