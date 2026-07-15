@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import ProjectDashboard from './pages/ProjectDashboard'
 import ProjectPage from './pages/ProjectPage'
 import Layout from './pages/Layout'
 
@@ -51,7 +52,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/project/:id" element={<ProjectPage />} />
+        <Route path="/project/:projectId" element={<ProjectDashboard />} />
+        <Route path="/line/:id" element={<ProjectPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>
