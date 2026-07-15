@@ -90,6 +90,8 @@ const en = {
     copied: 'Copied!',
     confirmPrivate: 'Make this project private?\n\nAnyone holding the link will lose access.',
     dangerZone: 'Danger zone',
+    linesLabel: 'Lines',
+    noInfo: 'No description yet — add it from "Edit project".',
     newLine: 'New line',
     count: { one: '{count} line', other: '{count} lines' },
     empty: 'This project has no lines yet',

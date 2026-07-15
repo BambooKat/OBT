@@ -90,6 +90,8 @@ const it = {
     copied: 'Copiato!',
     confirmPrivate: 'Rendere il progetto privato?\n\nChi ha il link non potrà più aprirlo.',
     dangerZone: 'Zona pericolosa',
+    linesLabel: 'Linee',
+    noInfo: 'Nessuna descrizione — aggiungila da "Modifica progetto".',
     newLine: 'Nuova linea',
     count: { one: '{count} linea', other: '{count} linee' },
     empty: 'Questo progetto non ha ancora linee',

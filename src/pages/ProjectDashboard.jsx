@@ -6,7 +6,7 @@ import NewLineModal from './NewLineModal'
 import { useT } from '../i18n'
 
 function ProjectDashboard() {
-  const { t } = useT()
+  const { t, formatDate } = useT()
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [container, setContainer] = useState(null)
@@ -121,12 +121,27 @@ function ProjectDashboard() {
               </button>
             )}
             {!isOwner && (
-              <span className="obt-btn obt-btn--ghost obt-btn--sm" title={t('projectDash.readOnlyTitle')} style={{ cursor: 'default' }}>👁 {t('projectDash.readOnly')}</span>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'var(--card)', border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-pill)', padding: '6px 14px',
+                fontSize: 12, fontWeight: 700, color: 'var(--muted)',
+              }}>
+                <i className="ti ti-eye" /> {t('projectDash.readOnly')}
+              </span>
             )}
           </div>
+          <div className="obt-hero-title">
+            <h1>{container.name}</h1>
+            {container.notes
+              ? <p className="obt-hero-desc">{container.notes}</p>
+              : isOwner ? <p className="obt-hero-desc obt-hero-desc--empty">{t('projectDash.noInfo')}</p> : null}
+          </div>
+          <div className="obt-hero-info">
+            <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('projectDash.linesLabel')}</span> {lines.length}</div>
+            <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.created')}</span> {formatDate(container.created_at)}</div>
+          </div>
         </div>
-        <h1>{container.name}</h1>
-        <div className="obt-hero-sub">{t('projectDash.count', { count: lines.length })}</div>
       </div>
 
       <div className="obt-page">
