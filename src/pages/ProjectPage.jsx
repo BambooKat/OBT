@@ -544,7 +544,7 @@ function ProjectPage() {
     setActionError('')
     const { error } = await supabase.from('lines').delete().eq('id', id)
     if (fail(error, t('project.errors.deleteProject'))) return
-    navigate('/dashboard')
+    navigate(project?.project_id ? `/project/${project.project_id}` : '/dashboard')
   }
 
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
@@ -785,7 +785,7 @@ function ProjectPage() {
       <div className="obt-hero">
         <div className="obt-hero-top">
           <div className="obt-hero-back">
-            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; {t('project.back')}</button>
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate(project?.project_id ? `/project/${project.project_id}` : '/dashboard')}>&larr; {project?.project_id ? t('project.backToProject') : t('project.back')}</button>
             {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>✎ {t('project.edit')}</button>}
             {isOwner && (
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleToggleVisibility} title={project.is_public ? t('project.publicTitle') : t('project.privateTitle')}>
