@@ -115,7 +115,7 @@ function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner })
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'separate', borderSpacing: 4, minWidth: 300 }}>
+      <table style={{ borderCollapse: 'separate', borderSpacing: 4, minWidth: 300, margin: '0 auto' }}>
         <thead>
           <tr>
             <th style={{
@@ -879,25 +879,26 @@ const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
 
             {/* Griglia cliccabile */}
             <div className="obt-panel">
-              <h3 style={{ marginBottom: 16 }}>
-                {t('project.pairs.roundLabel')} {activeRound}
-                {pairsInActiveRound.length > 0 && (
-                  <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>
-                    — {pairsInActiveRound.length} {t('project.pairs.pairsCount')}
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0 }}>
+                  {t('project.pairs.roundLabel')} {activeRound}
+                  {pairsInActiveRound.length > 0 && (
+                    <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>
+                      — {pairsInActiveRound.length} {t('project.pairs.pairsCount')}
+                    </span>
+                  )}
+                </h3>
+                {isOwner && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span className="obt-text-soft" style={{ fontSize: 12 }}>
+                      {rosterIsCustom ? t('project.roster.custom') : t('project.roster.auto', { gen: activeRound - 1 })}
+                    </span>
+                    <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={openRosterEditor}>
+                      ✎ {t('project.roster.edit')}
+                    </button>
+                  </div>
                 )}
-              </h3>
-
-              {isOwner && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-                  <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={openRosterEditor}>
-                    ✎ {t('project.roster.edit')}
-                  </button>
-                  <span className="obt-text-soft" style={{ fontSize: 12 }}>
-                    {rosterIsCustom ? t('project.roster.custom') : t('project.roster.auto', { gen: activeRound - 1 })}
-                  </span>
-                </div>
-              )}
+              </div>
 
               <Modal open={showRosterEditor} onClose={() => setShowRosterEditor(false)} title={`${t('project.roster.title')} — ${t('project.pairs.roundLabel')} ${activeRound}`} size="lg">
                 <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 16 }}>{t('project.roster.hint')}</p>
