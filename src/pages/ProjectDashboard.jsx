@@ -21,7 +21,7 @@ function ProjectDashboard() {
   const [showManage, setShowManage] = useState(false)
   const [manageChecked, setManageChecked] = useState([])
   const [showEdit, setShowEdit] = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', notes: '', is_public: false })
+  const [editForm, setEditForm] = useState({ name: '', notes: '', author: '', is_public: false })
   const [copied, setCopied] = useState(false)
 
   const shareUrl = `${window.location.origin}/project/${projectId}`
@@ -41,7 +41,7 @@ function ProjectDashboard() {
     setContainer(cont)
     const owner = user.id === cont.owner_id
     setIsOwner(owner)
-    setEditForm({ name: cont.name, notes: cont.notes || '', is_public: cont.is_public === true })
+    setEditForm({ name: cont.name, notes: cont.notes || '', author: cont.author || '', is_public: cont.is_public === true })
     const { data: linesData } = await supabase.from('lines').select('*, species(name)').eq('project_id', projectId).order('created_at', { ascending: false })
     setLines(linesData || [])
     if (owner) {
@@ -70,7 +70,7 @@ function ProjectDashboard() {
 
   const saveEdit = async () => {
     const { error } = await supabase.from('projects').update({
-      name: editForm.name, notes: editForm.notes || null, is_public: editForm.is_public,
+      name: editForm.name, notes: editForm.notes || null, author: editForm.author || null, is_public: editForm.is_public,
     }).eq('id', projectId)
     if (error) return
     setShowEdit(false)
@@ -138,6 +138,7 @@ function ProjectDashboard() {
               : isOwner ? <p className="obt-hero-desc obt-hero-desc--empty">{t('projectDash.noInfo')}</p> : null}
           </div>
           <div className="obt-hero-info">
+            {container.author && <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('dashboard.author')}</span> {container.author}</div>}
             <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('projectDash.linesLabel')}</span> {lines.length}</div>
             <div className="obt-hero-info-row"><span className="obt-hero-info-label">{t('project.created')}</span> {formatDate(container.created_at)}</div>
           </div>
@@ -182,6 +183,7 @@ function ProjectDashboard() {
 
             <Modal open={showEdit} onClose={() => setShowEdit(false)} title={t('projectDash.editTitle')}>
               <div className="obt-field"><label>{t('dashboard.containerName')} *</label><input className="obt-input" type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required autoFocus /></div>
+              <div className="obt-field"><label>{t('dashboard.author')} <span className="obt-optional">{t('common.optional')}</span></label><input className="obt-input" type="text" value={editForm.author} onChange={(e) => setEditForm({ ...editForm, author: e.target.value })} /></div>
               <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></div>
 
               <div style={{ borderTop: '0.5px solid var(--line)', margin: '14px 0', paddingTop: 14 }}>

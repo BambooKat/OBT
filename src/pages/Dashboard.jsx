@@ -42,7 +42,7 @@ function Dashboard() {
     e.preventDefault()
     const { data: { user } } = await supabase.auth.getUser()
     const { data, error } = await supabase.from('projects').insert({
-      owner_id: user.id, name: containerForm.name, notes: containerForm.notes || null,
+      owner_id: user.id, name: containerForm.name, notes: containerForm.notes || null, author: username || null,
     }).select('*').single()
     if (!error && data) {
       setContainers([data, ...containers])
