@@ -515,7 +515,7 @@ function ProjectPage() {
     loadAll()
   }
 
-  const shareUrl = `${window.location.origin}/project/${id}`
+  const shareUrl = `${window.location.origin}/line/${id}`
 
   const handleToggleVisibility = async () => {
     const next = !project.is_public
