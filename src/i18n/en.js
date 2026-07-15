@@ -157,6 +157,15 @@ const en = {
       ownDist: 'Own distance',
       empty: 'No children registered with linked parents yet.',
     },
+    roster: {
+      edit: 'Edit roster',
+      title: 'Edit roster',
+      hint: 'Check the pets taking part in this round. Defaults to the previous generation: add or remove them here.',
+      auto: 'Automatic: generation {gen}',
+      custom: 'Custom roster',
+      reset: 'Reset to default',
+      saveError: 'Failed to save roster',
+    },
     target: {
       colours: 'Target colours',
       mutations: 'Target mutations',

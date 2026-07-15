@@ -225,6 +225,8 @@ function ProjectPage() {
 
   //Ordine
   const [petSort, setPetSort] = useState({})
+  const [showRosterEditor, setShowRosterEditor] = useState(false)
+  const [rosterDraft, setRosterDraft] = useState([])
 
   // Edit progetto
   const [showEditProject, setShowEditProject] = useState(false)
@@ -544,6 +546,33 @@ function ProjectPage() {
   }
   const activeRoster = rosterFor(activeRound)
 
+const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
+
+  const openRosterEditor = () => {
+    setRosterDraft([...activeRoster.females, ...activeRoster.males].map(p => p.id))
+    setShowRosterEditor(true)
+  }
+  const toggleRosterPet = (petId) => {
+    setRosterDraft(prev => prev.includes(petId) ? prev.filter(x => x !== petId) : [...prev, petId])
+  }
+  const saveRoster = async () => {
+    setActionError('')
+    const next = { ...(project.round_rosters || {}), [String(activeRound)]: rosterDraft }
+    const { error } = await supabase.from('projects').update({ round_rosters: next }).eq('id', id)
+    if (fail(error, t('project.roster.saveError'))) return
+    setShowRosterEditor(false)
+    loadAll()
+  }
+  const resetRoster = async () => {
+    setActionError('')
+    const next = { ...(project.round_rosters || {}) }
+    delete next[String(activeRound)]
+    const { error } = await supabase.from('projects').update({ round_rosters: next }).eq('id', id)
+    if (fail(error, t('project.roster.saveError'))) return
+    setShowRosterEditor(false)
+    loadAll()
+  }
+
   // Calcola i round esistenti
   const existingRounds = [...new Set(pairs.map(p => p.round_number || 1))].sort((a, b) => a - b)
   const maxRound = existingRounds.length > 0 ? Math.max(...existingRounds) : 0
@@ -858,6 +887,46 @@ function ProjectPage() {
                   </span>
                 )}
               </h3>
+
+              {isOwner && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={openRosterEditor}>
+                    ✎ {t('project.roster.edit')}
+                  </button>
+                  <span className="obt-text-soft" style={{ fontSize: 12 }}>
+                    {rosterIsCustom ? t('project.roster.custom') : t('project.roster.auto', { gen: activeRound - 1 })}
+                  </span>
+                </div>
+              )}
+
+              <Modal open={showRosterEditor} onClose={() => setShowRosterEditor(false)} title={`${t('project.roster.title')} — ${t('project.pairs.roundLabel')} ${activeRound}`} size="lg">
+                <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 16 }}>{t('project.roster.hint')}</p>
+                <div className="obt-row">
+                  <div className="obt-field" style={{ minWidth: 220 }}>
+                    <label>♀ {t('project.groups.females')}</label>
+                    {females.length === 0 ? <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p> : females.map(f => (
+                      <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
+                        <input type="checkbox" checked={rosterDraft.includes(f.id)} onChange={() => toggleRosterPet(f.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                        {petLabel(f)} <span className="obt-text-soft" style={{ fontSize: 11 }}>· G{f.generation}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="obt-field" style={{ minWidth: 220 }}>
+                    <label>♂ {t('project.groups.males')}</label>
+                    {males.length === 0 ? <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p> : males.map(m => (
+                      <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
+                        <input type="checkbox" checked={rosterDraft.includes(m.id)} onChange={() => toggleRosterPet(m.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                        {petLabel(m)} <span className="obt-text-soft" style={{ fontSize: 11 }}>· G{m.generation}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="obt-actions" style={{ marginTop: 8 }}>
+                  <button type="button" className="obt-btn obt-btn--primary" onClick={saveRoster}>{t('common.saveChanges')}</button>
+                  <button type="button" className="obt-btn obt-btn--ghost" onClick={resetRoster}>{t('project.roster.reset')}</button>
+                  <button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowRosterEditor(false)}>{t('common.cancel')}</button>
+                </div>
+              </Modal>
 
               {activeRoster.males.length === 0 || activeRoster.females.length === 0 ? (
                 <div style={{ padding: '12px 0' }}>

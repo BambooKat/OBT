@@ -198,6 +198,15 @@ const it = {
       ownDist: 'Distanza propria',
       empty: 'Ancora nessun figlio registrato con genitori collegati.',
     },
+    roster: {
+      edit: 'Modifica roster',
+      title: 'Modifica roster',
+      hint: 'Spunta i pet che partecipano a questo round. Il default è la generazione precedente: qui puoi aggiungerne o toglierne.',
+      auto: 'Automatico: generazione {gen}',
+      custom: 'Roster personalizzato',
+      reset: 'Ripristina default',
+      saveError: 'Errore nel salvataggio del roster',
+    },
   },
   mutations: {
     loading: 'Caricamento mutazioni…',
