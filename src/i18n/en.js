@@ -143,6 +143,9 @@ const en = {
       cellRegister: 'Click to register this pairing',
       emptyTitle: 'No pairs registered yet',
       emptyText: 'Click a grid cell to register the first pairing.',
+      prev: 'Back',
+      next: 'Next',
+      pageOf: 'Page {page} of {total}',
     },
     suggester: {
       pairsTitle: 'Tested pairs',

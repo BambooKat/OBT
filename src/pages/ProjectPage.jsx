@@ -236,8 +236,13 @@ function ProjectPage() {
   })
   const [copied, setCopied] = useState(false)
 
+  const [pairsPage, setPairsPage] = useState(1)
+
+
+
   useEffect(() => { loadAll() }, [id])
   useEffect(() => { setShowPetForm(false) }, [activeTab])
+  useEffect(() => { setPairsPage(1) }, [activeRound])
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -582,6 +587,11 @@ const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
     : [...existingRounds, maxRound + 1]
 
   const pairsInActiveRound = pairs.filter(p => (p.round_number || 1) === activeRound)
+
+  const PAIRS_PER_PAGE = 15
+  const pairsTotalPages = Math.max(1, Math.ceil(pairsInActiveRound.length / PAIRS_PER_PAGE))
+  const pairsPageSafe = Math.min(pairsPage, pairsTotalPages)
+  const pairsPageItems = pairsInActiveRound.slice((pairsPageSafe - 1) * PAIRS_PER_PAGE, pairsPageSafe * PAIRS_PER_PAGE)
 
   const PetTable = ({ list, title }) => {
     const sort = petSort[title] || { key: null, dir: 1 }
@@ -958,7 +968,7 @@ const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
                       </tr>
                     </thead>
                     <tbody>
-                      {pairsInActiveRound.map(pair => (
+                      {pairsPageItems.map(pair => (
                         <tr key={pair.id}>
                           <td>{pair.mother ? petLabel(pair.mother) : '-'}</td>
                           <td>{pair.father ? petLabel(pair.father) : '-'}</td>
@@ -983,6 +993,19 @@ const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
                       ))}
                     </tbody>
                   </table>
+                  {pairsTotalPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 14 }}>
+                      <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setPairsPage(p => Math.max(1, p - 1))} disabled={pairsPageSafe <= 1}>
+                        ← {t('project.pairs.prev')}
+                      </button>
+                      <span className="obt-text-soft" style={{ fontSize: 13, fontWeight: 600 }}>
+                        {t('project.pairs.pageOf', { page: pairsPageSafe, total: pairsTotalPages })}
+                      </span>
+                      <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setPairsPage(p => Math.min(pairsTotalPages, p + 1))} disabled={pairsPageSafe >= pairsTotalPages}>
+                        {t('project.pairs.next')} →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

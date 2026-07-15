@@ -143,6 +143,9 @@ const it = {
       cellRegister: 'Clicca per registrare questo accoppiamento',
       emptyTitle: 'Nessuna coppia ancora registrata',
       emptyText: 'Clicca una cella della griglia per registrare il primo accoppiamento.',
+      prev: 'Indietro',
+      next: 'Avanti',
+      pageOf: 'Pagina {page} di {total}',
     },
     target: {
       colours: 'Colori target',
