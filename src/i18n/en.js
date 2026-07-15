@@ -71,6 +71,10 @@ const en = {
   },
   projectDash: {
     back: 'All projects',
+    manage: 'Manage lines',
+    manageTitle: 'Manage project lines',
+    manageHint: 'Check the lines that belong to this project. Uncheck to move them back to the loose lines.',
+    manageEmpty: 'No lines available.',
     newLine: 'New line',
     count: { one: '{count} line', other: '{count} lines' },
     empty: 'This project has no lines yet',

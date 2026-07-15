@@ -71,6 +71,10 @@ const it = {
   },
   projectDash: {
     back: 'Tutti i progetti',
+    manage: 'Gestisci linee',
+    manageTitle: 'Gestisci linee del progetto',
+    manageHint: 'Spunta le linee che appartengono a questo progetto. Togli la spunta per rimetterle tra le linee sciolte.',
+    manageEmpty: 'Nessuna linea disponibile.',
     newLine: 'Nuova linea',
     count: { one: '{count} linea', other: '{count} linee' },
     empty: 'Questo progetto non ha ancora linee',
