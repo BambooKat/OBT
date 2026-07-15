@@ -198,6 +198,11 @@ function ProjectPage() {
   const [isOwner, setIsOwner] = useState(false)
   const [actionError, setActionError] = useState('')
 
+  const [activeChildGen, setActiveChildGen] = useState(null)
+  const [showGenRename, setShowGenRename] = useState(false)
+  const [genRenameTarget, setGenRenameTarget] = useState(null)
+  const [genRenameValue, setGenRenameValue] = useState('')
+
   // Form pet
   const [showPetForm, setShowPetForm] = useState(false)
   const [editingPetId, setEditingPetId] = useState(null)
@@ -535,6 +540,11 @@ function ProjectPage() {
 
   const starters = pets.filter(p => p.generation === 0)
   const children = pets.filter(p => p.generation > 0)
+  const childGenerations = [...new Set(children.map(p => p.generation))].sort((a, b) => a - b)
+  const currentChildGen = activeChildGen != null && childGenerations.includes(activeChildGen)
+    ? activeChildGen
+    : (childGenerations[0] ?? null)
+  const genChildren = children.filter(p => p.generation === currentChildGen)
   const males = pets.filter(p => p.sex === 'M')
   const females = pets.filter(p => p.sex === 'F')
 
@@ -551,7 +561,7 @@ function ProjectPage() {
   }
   const activeRoster = rosterFor(activeRound)
 
-const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
+  const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
 
   const openRosterEditor = () => {
     setRosterDraft([...activeRoster.females, ...activeRoster.males].map(p => p.id))
@@ -575,6 +585,24 @@ const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
     const { error } = await supabase.from('projects').update({ round_rosters: next }).eq('id', id)
     if (fail(error, t('project.roster.saveError'))) return
     setShowRosterEditor(false)
+    loadAll()
+  }
+
+  const genLabel = (g) => project?.generation_labels?.[String(g)] || `G${g}`
+  const openGenRename = (g) => {
+    setGenRenameTarget(g)
+    setGenRenameValue(project?.generation_labels?.[String(g)] || '')
+    setShowGenRename(true)
+  }
+  const saveGenLabel = async () => {
+    setActionError('')
+    const next = { ...(project.generation_labels || {}) }
+    const v = genRenameValue.trim()
+    if (v) next[String(genRenameTarget)] = v
+    else delete next[String(genRenameTarget)]
+    const { error } = await supabase.from('projects').update({ generation_labels: next }).eq('id', id)
+    if (fail(error, t('project.gen.saveError'))) return
+    setShowGenRename(false)
     loadAll()
   }
 
@@ -846,8 +874,48 @@ const rosterIsCustom = !!project?.round_rosters?.[String(activeRound)]
             </Modal>
             {activeTab === 'starters' ? (
               <><PetTable list={starters.filter(p => p.sex === 'F')} title={t('project.groups.females')} /><PetTable list={starters.filter(p => p.sex === 'M')} title={t('project.groups.males')} /></>
+            ) : childGenerations.length === 0 ? (
+              <PetTable list={[]} title={t('project.groups.females')} />
             ) : (
-              <><PetTable list={children.filter(p => p.sex === 'F')} title={t('project.groups.females')} /><PetTable list={children.filter(p => p.sex === 'M')} title={t('project.groups.males')} /><PetTable list={children.filter(p => p.sex === 'ND')} title={t('project.groups.unhatched')} /></>
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {childGenerations.map(g => (
+                    <button
+                      key={g}
+                      onClick={() => setActiveChildGen(g)}
+                      style={{
+                        padding: '6px 16px', borderRadius: 'var(--radius-pill)',
+                        border: g === currentChildGen ? '2px solid var(--primary)' : '2px solid var(--line)',
+                        background: g === currentChildGen ? 'var(--primary)' : 'var(--surface)',
+                        color: g === currentChildGen ? '#fff' : 'var(--ink)',
+                        fontWeight: g === currentChildGen ? 700 : 500, fontSize: 13,
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}
+                    >
+                      {genLabel(g)}
+                    </button>
+                  ))}
+                  {isOwner && currentChildGen != null && (
+                    <button className="obt-icon-btn" onClick={() => openGenRename(currentChildGen)} title={t('project.gen.rename')}>
+                      <i className="ti ti-pencil" />
+                    </button>
+                  )}
+                </div>
+                <PetTable list={genChildren.filter(p => p.sex === 'F')} title={t('project.groups.females')} />
+                <PetTable list={genChildren.filter(p => p.sex === 'M')} title={t('project.groups.males')} />
+                <PetTable list={genChildren.filter(p => p.sex === 'ND')} title={t('project.groups.unhatched')} />
+                <Modal open={showGenRename} onClose={() => setShowGenRename(false)} title={t('project.gen.renameTitle')} size="sm">
+                  <div className="obt-field">
+                    <label>{t('project.gen.name')}</label>
+                    <input className="obt-input" value={genRenameValue} onChange={e => setGenRenameValue(e.target.value)} placeholder={genRenameTarget != null ? `G${genRenameTarget}` : ''} autoFocus />
+                  </div>
+                  <p className="obt-text-soft" style={{ fontSize: 12, marginTop: 4 }}>{t('project.gen.renameHint')}</p>
+                  <div className="obt-actions" style={{ marginTop: 12 }}>
+                    <button type="button" className="obt-btn obt-btn--primary" onClick={saveGenLabel}>{t('common.saveChanges')}</button>
+                    <button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowGenRename(false)}>{t('common.cancel')}</button>
+                  </div>
+                </Modal>
+              </>
             )}
           </>
         )}

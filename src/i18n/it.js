@@ -147,6 +147,13 @@ const it = {
       next: 'Avanti',
       pageOf: 'Pagina {page} di {total}',
     },
+    gen: {
+      rename: 'Rinomina generazione',
+      renameTitle: 'Rinomina generazione',
+      name: 'Nome',
+      renameHint: 'Lascia vuoto per tornare al nome predefinito (G1, G2, ...).',
+      saveError: 'Errore nel salvataggio del nome',
+    },
     target: {
       colours: 'Colori target',
       mutations: 'Mutazioni target',

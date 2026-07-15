@@ -147,6 +147,13 @@ const en = {
       next: 'Next',
       pageOf: 'Page {page} of {total}',
     },
+    gen: {
+      rename: 'Rename generation',
+      renameTitle: 'Rename generation',
+      name: 'Name',
+      renameHint: 'Leave empty to reset to the default name (G1, G2, ...).',
+      saveError: 'Failed to save name',
+    },
     suggester: {
       pairsTitle: 'Tested pairs',
       pairsHint: 'Only pairs that have already produced children, sorted by the best child obtained.',
