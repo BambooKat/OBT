@@ -36,7 +36,7 @@ export default function NewLineModal({ open, onClose, onCreated, species, defaul
       <form onSubmit={submit}>
         <div className="obt-hint">{t('dashboard.lineHint')}</div>
         <div className="obt-row">
-          <div className="obt-field"><label>{t('dashboard.name')} *</label><input className="obt-input" type="text" placeholder={t('dashboard.namePlaceholder')} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus /></div>
+          <div className="obt-field"><label>{t('dashboard.name')} *</label><input className="obt-input" type="text" placeholder={t('dashboard.namePlaceholder')} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
           <div className="obt-field"><label>{t('dashboard.species')} *</label><select className="obt-select" value={form.species_id} onChange={e => setForm({ ...form, species_id: e.target.value })} required>{species.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
         </div>
         <div className="obt-row">

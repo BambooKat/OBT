@@ -1,10 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useT } from '../i18n'
 
-// Modal riusabile. Si chiude con Esc, con click sull'overlay, o col bottone ✕.
-// Usalo per form di creazione/modifica: così quando l'utente naviga via
-// (cambio tab, cambio pagina) il form smette semplicemente di esistere
-// invece di restare aperto in background.
+// Modal riusabile. Si chiude con Esc o col bottone ✕ (NON al click fuori, per non perdere dati).
+//
+// Nota sullo scroll: qui NON si tocca lo scroll in nessun modo.
+// Storia dei tentativi falliti, per non ripeterli:
+//  - overflow:hidden sul body  -> con html{overflow-y:scroll} la pagina torna in cima
+//  - position:fixed sul body   -> stesso effetto se l'effetto si rimonta
+//  - focus({preventScroll})    -> il browser scrolla lo stesso l'input dell'overlay
+// L'overlay è già position:fixed con scroll interno, quindi non serve altro.
+// NON usare auto-Focus nei form dentro il modal: scrolla la pagina.
 //
 // Props:
 //   open: boolean, se mostrare il modal
@@ -14,32 +19,26 @@ import { useT } from '../i18n'
 //   children: contenuto del modal (tipicamente un form)
 function Modal({ open, onClose, title, size = 'md', children }) {
   const { t } = useT()
+
+  // onClose è quasi sempre una arrow inline: cambia identità a ogni render.
+  // Tenerlo in un ref evita che l'effetto si rimonti di continuo.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
-    const handleKey = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
+    const handleKey = (e) => { if (e.key === 'Escape') onCloseRef.current?.() }
     window.addEventListener('keydown', handleKey)
-    // Blocca lo scroll della pagina sotto mentre il modal è aperto
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', handleKey)
-      document.body.style.overflow = ''
-    }
-  }, [open, onClose])
+
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [open])
 
   if (!open) return null
 
   const sizeClass = size === 'sm' ? 'obt-modal--sm' : size === 'lg' ? 'obt-modal--lg' : ''
 
   return (
-    <div
-      className="obt-modal-overlay"
-      onClick={(e) => {
-        // Chiudi solo se si clicca esattamente sull'overlay, non sul contenuto
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
+    <div className="obt-modal-overlay">
       <div className={`obt-modal ${sizeClass}`}>
         <div className="obt-modal-head">
           <div>

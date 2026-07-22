@@ -6,6 +6,11 @@ import Dashboard from './pages/Dashboard'
 import ProjectDashboard from './pages/ProjectDashboard'
 import ProjectPage from './pages/ProjectPage'
 import Layout from './pages/Layout'
+import Credits from './pages/Credits'
+import Privacy from './pages/Privacy'
+import Journal from './pages/Journal'
+import JournalEntry from './pages/JournalEntry'
+import Guide from './pages/Guide'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -51,9 +56,15 @@ function App() {
     <Layout username={username} onLogout={handleLogout}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/journal/:entryId" element={<JournalEntry />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/project/:projectId" element={<ProjectDashboard />} />
         <Route path="/line/:id" element={<ProjectPage />} />
+        <Route path="/credits" element={<Credits />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/guide" element={<Guide />} />
+        <Route path="/faq" element={<Guide initialTab="faq" />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>

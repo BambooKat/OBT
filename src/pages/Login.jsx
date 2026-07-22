@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
+import { CONTACT_EMAIL } from '../config'
 import LanguageSwitcher from './LanguageSwitcher'
 
 function Login() {
   const { t } = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState('')
   const [mode, setMode] = useState(null) // null | 'login' | 'signup'
   const [error, setError] = useState('')
@@ -162,14 +164,30 @@ function Login() {
 
                 <div className="obt-field">
                   <label>{t('login.password')}</label>
-                  <input
-                    className="obt-input"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      className="obt-input"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      style={{ paddingRight: 40 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                      title={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                      style={{
+                        position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 6,
+                        fontSize: 15, lineHeight: 1, color: 'var(--muted)',
+                      }}
+                    >
+                      {showPassword ? '🙈' : '👁'}
+                    </button>
+                  </div>
                 </div>
 
                 {error && <div className="obt-alert obt-alert--error">{error}</div>}
@@ -278,7 +296,7 @@ function Login() {
       }}>
         {t('layout.tagline')} ·{' '}
         <a 
-          href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" 
+          href={`mailto:${CONTACT_EMAIL}?subject=OBT%20Tool`} 
           style={{ color: 'var(--primary)', textDecoration: 'none' }}
         >
           {t('layout.contact')}

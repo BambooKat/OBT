@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import Modal from './Modal'
 import NewLineModal from './NewLineModal'
 import { useT } from '../i18n'
+import { useCardSort, SortControl } from './useCardSort'
 
 function ProjectDashboard() {
   const { t, formatDate } = useT()
@@ -97,6 +98,10 @@ function ProjectDashboard() {
     if (!error) navigate('/dashboard')
   }
 
+  const lineSort = useCardSort({
+    listKey: 'projectDash.lines', items: lines, table: 'lines', onReorder: setLines, canReorder: isOwner,
+  })
+
   const cardVariant = (i) => ['', 'obt-card--secondary', 'obt-card--tertiary'][i % 3]
 
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
@@ -114,10 +119,10 @@ function ProjectDashboard() {
         <div className="obt-hero-top">
           <div className="obt-hero-back">
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; {t('projectDash.back')}</button>
-            {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEdit(true)}>✎ {t('projectDash.edit')}</button>}
+            {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEdit(true)}><i className="ti ti-pencil" /> {t('projectDash.edit')}</button>}
             {isOwner && (
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={toggleVisibility} title={container.is_public ? t('projectDash.publicTitle') : t('projectDash.privateTitle')}>
-                {container.is_public ? `🔓 ${t('projectDash.public')}` : `🔒 ${t('projectDash.private')}`}
+                {container.is_public ? <><i className="ti ti-lock-open" /> {t('projectDash.public')}</> : <><i className="ti ti-lock" /> {t('projectDash.private')}</>}
               </button>
             )}
             {!isOwner && (
@@ -148,11 +153,11 @@ function ProjectDashboard() {
       <div className="obt-page">
         {isOwner && (
           <div className="obt-section-head">
-            <div />
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={openManage}>{t('projectDash.manage')}</button>
               <button className="obt-btn obt-btn--primary" onClick={() => setShowNewLine(true)}>{t('projectDash.newLine')}</button>
             </div>
+            <div />
           </div>
         )}
 
@@ -182,7 +187,7 @@ function ProjectDashboard() {
             </Modal>
 
             <Modal open={showEdit} onClose={() => setShowEdit(false)} title={t('projectDash.editTitle')}>
-              <div className="obt-field"><label>{t('dashboard.containerName')} *</label><input className="obt-input" type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required autoFocus /></div>
+              <div className="obt-field"><label>{t('dashboard.containerName')} *</label><input className="obt-input" type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></div>
               <div className="obt-field"><label>{t('dashboard.author')} <span className="obt-optional">{t('common.optional')}</span></label><input className="obt-input" type="text" value={editForm.author} onChange={(e) => setEditForm({ ...editForm, author: e.target.value })} /></div>
               <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></div>
 
@@ -205,24 +210,29 @@ function ProjectDashboard() {
 
               <div style={{ borderTop: '0.5px solid var(--line)', marginTop: 14, paddingTop: 14 }}>
                 <p className="obt-text-soft" style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>{t('projectDash.dangerZone')}</p>
-                <button type="button" className="obt-btn obt-btn--danger obt-btn--sm" onClick={deleteContainer}>🗑 {t('projectDash.deleteContainer')}</button>
+                <button type="button" className="obt-btn obt-btn--danger obt-btn--sm" onClick={deleteContainer}><i className="ti ti-trash" /> {t('projectDash.deleteContainer')}</button>
               </div>
             </Modal>
           </>
         )}
 
         {lines.length === 0 ? (
-          <div className="obt-panel obt-empty"><div className="obt-empty-icon">🥚</div><h3>{t('projectDash.empty')}</h3>{isOwner && <><p>{t('projectDash.emptyText')}</p><button className="obt-btn obt-btn--primary" onClick={() => setShowNewLine(true)}>{t('projectDash.newLine')}</button></>}</div>
+          <div className="obt-panel obt-empty"><div className="obt-empty-icon"><i className="ti ti-egg" /></div><h3>{t('projectDash.empty')}</h3>{isOwner && <><p>{t('projectDash.emptyText')}</p><button className="obt-btn obt-btn--primary" onClick={() => setShowNewLine(true)}>{t('projectDash.newLine')}</button></>}</div>
         ) : (
+          <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 14px' }}>
+            <SortControl mode={lineSort.mode} setMode={lineSort.setMode} dragEnabled={lineSort.dragEnabled} />
+          </div>
           <div className="obt-grid">
-            {lines.map((l, i) => (
-              <div key={l.id} onClick={() => navigate(`/line/${l.id}`)} className={`obt-card ${cardVariant(i)}`}>
+            {lineSort.sorted.map((l, i) => (
+              <div key={l.id} onClick={() => navigate(`/line/${l.id}`)} className={`obt-card ${cardVariant(i)}`} {...lineSort.dragProps(l)}>
                 <span className="obt-badge">{l.species?.name || '—'}</span>
                 <h3>{l.name}</h3>
-                <div className="obt-meta">👤 {l.author || t('dashboard.authorUnset')}</div>
+                <div className="obt-meta"><i className="ti ti-user" /> {l.author || t('dashboard.authorUnset')}</div>
               </div>
             ))}
           </div>
+          </>
         )}
       </div>
     </>

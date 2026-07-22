@@ -1,201 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import MutationSelector from './MutationSelector'
+import { effectiveCooldown } from './research'
 import Modal from './Modal'
+import Help from './Help'
+import PetTable, { ColorCell } from './PetTable'
+import PairGrid, { PairCellModal } from './PairGrid'
 import { useT } from '../i18n'
-import SuggesterTab from './SuggesterTab'
-
-const ColorCell = ({ hex }) => {
-  if (!hex) return <span style={{ color: 'var(--ink-soft)' }}>-</span>
-  const clean = hex.startsWith('#') ? hex : `#${hex}`
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <span style={{
-        display: 'inline-block', width: 16, height: 16, borderRadius: 4,
-        background: clean, border: '1px solid rgba(0,0,0,0.12)', flexShrink: 0,
-      }} />
-      <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{clean.toUpperCase()}</span>
-    </span>
-  )
-}
-
-const petLabel = (pet) => pet?.letter ? `${pet.letter} — ${pet.code}` : (pet?.code || '?')
-
-// ---- Mini-form griglia ----
-function PairCellModal({ open, onClose, pair, female, male, round, onSave, onDelete, isOwner }) {
-  const { t } = useT()
-  const [date, setDate] = useState('')
-  const [notes, setNotes] = useState('')
-  const [childCode, setChildCode] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setDate(pair?.pair_date || '')
-      setNotes(pair?.outcome_notes || '')
-      setChildCode('')
-    }
-  }, [open, pair])
-
-  if (!open) return null
-
-  const handleSave = async () => {
-    setSaving(true)
-    await onSave({ date, notes, childCode })
-    setSaving(false)
-  }
-
-  const handleDelete = async () => {
-    setSaving(true)
-    await onDelete()
-    setSaving(false)
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={pair
-        ? `${t('project.pairs.editPair')}: ${petLabel(female)} × ${petLabel(male)}`
-        : `${t('project.pairs.newPair')}: ${petLabel(female)} × ${petLabel(male)}`
-      }
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}>
-            <label className="obt-label">{t('project.pairs.roundLabel')} {round}</label>
-          </div>
-        </div>
-        <div className="obt-field">
-          <label>{t('project.pairs.date')}</label>
-          <input type="date" className="obt-input" value={date} onChange={e => setDate(e.target.value)} />
-        </div>
-        <div className="obt-field">
-          <label>{t('project.pairs.outcome')}</label>
-          <input className="obt-input" value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('project.pairs.notesPlaceholder')} />
-        </div>
-        <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-          <label>🥚 {t('project.pairs.addChildCode')}</label>
-          <input className="obt-input" value={childCode} onChange={e => setChildCode(e.target.value)} placeholder={t('project.pairs.childCodePlaceholder')} />
-          <p className="obt-hint" style={{ marginTop: 4 }}>{t('project.pairs.childHint')}</p>
-        </div>
-        <div className="obt-actions" style={{ marginTop: 4 }}>
-          {isOwner && (
-            <button className="obt-btn obt-btn--primary" onClick={handleSave} disabled={saving}>
-              {saving ? t('common.loading') : (pair ? t('common.saveChanges') : t('project.pairs.submit'))}
-            </button>
-          )}
-          {isOwner && pair && (
-            <button className="obt-btn obt-btn--danger obt-btn--sm" onClick={handleDelete} disabled={saving}>
-              {t('common.delete')}
-            </button>
-          )}
-          <button className="obt-btn obt-btn--ghost" onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
-// ---- Componente griglia ----
-function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner, forbidden = {} }) {
-  const { t } = useT()
-  // mappa fId:mId -> pair
-  const cellMap = {}
-  pairsInRound.forEach(p => {
-    const fId = p.mother?.id || p.mother_id
-    const mId = p.father?.id || p.father_id
-    if (fId && mId) cellMap[`${fId}:${mId}`] = p
-  })
-
-  if (females.length === 0 || males.length === 0) {
-    return <p className="obt-text-soft" style={{ fontSize: 13, padding: '8px 0' }}>{t('project.pairs.gridNeedBoth')}</p>
-  }
-
-  return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'separate', borderSpacing: 4, minWidth: 300, margin: '0 auto' }}>
-        <thead>
-          <tr>
-            <th style={{
-              padding: '6px 12px', fontSize: 12, fontWeight: 700,
-              color: 'var(--muted)', textAlign: 'left', background: 'transparent',
-            }}>♀ \ ♂</th>
-            {males.map(m => (
-              <th key={m.id} style={{
-                padding: '6px 10px', fontSize: 12, fontWeight: 700,
-                color: 'var(--ink)', textAlign: 'center', background: 'transparent',
-                whiteSpace: 'nowrap',
-              }}>
-                {m.letter && <span style={{ color: 'var(--primary)', fontWeight: 900 }}>{m.letter}</span>}
-                {m.letter && ' '}
-                <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.code}</span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {females.map(f => (
-            <tr key={f.id}>
-              <td style={{
-                padding: '6px 12px', fontSize: 12, fontWeight: 600,
-                whiteSpace: 'nowrap', color: 'var(--ink)',
-              }}>
-                {f.letter && <span style={{ color: 'var(--primary)', fontWeight: 900 }}>{f.letter}</span>}
-                {f.letter && ' '}
-                <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{f.code}</span>
-              </td>
-              {males.map(m => {
-                const pair = cellMap[`${f.id}:${m.id}`]
-                const done = !!pair
-                const forb = !done ? forbidden[`${f.id}:${m.id}`] : null
-                if (forb) {
-                  return (
-                    <td key={m.id} style={{ padding: 2, textAlign: 'center' }}>
-                      <div title={forb.label} style={{
-                        width: 52, height: 36, borderRadius: 8,
-                        border: '2px solid var(--bad-text)',
-                        background: 'var(--bg)', color: 'var(--muted)',
-                        cursor: 'not-allowed', opacity: 0.7,
-                        fontSize: 18, fontWeight: 700,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>·</div>
-                    </td>
-                  )
-                }
-                return (
-                  <td key={m.id} style={{ padding: 2, textAlign: 'center' }}>
-                    <button
-                      onClick={() => onCellClick(f, m, pair)}
-                      disabled={!isOwner && !done}
-                      title={done
-                        ? (pair.outcome_notes || `${petLabel(f)} × ${petLabel(m)}`)
-                        : (isOwner ? t('project.pairs.cellRegister') : '')
-                      }
-                      style={{
-                        width: 52, height: 36, borderRadius: 8,
-                        border: done ? '2px solid var(--primary)' : '2px dashed var(--line)',
-                        background: done ? 'var(--primary)' : 'var(--surface)',
-                        color: done ? '#fff' : 'var(--muted)',
-                        cursor: isOwner ? 'pointer' : (done ? 'default' : 'not-allowed'),
-                        fontSize: done ? 16 : 20, fontWeight: 700,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.15s', flexShrink: 0,
-                      }}
-                    >
-                      {done ? '✓' : '·'}
-                    </button>
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
+import InspectorTab from './InspectorTab'
+import { todayISO, normalizeHex, petLabel, downloadCsv, petsToRows } from './petUtils'
 
 function ProjectPage() {
   const { t, formatDate } = useT()
@@ -209,8 +23,22 @@ function ProjectPage() {
   const [activeTab, setActiveTab] = useState('starters')
   const [isOwner, setIsOwner] = useState(false)
   const [actionError, setActionError] = useState('')
+  const [researchLevel, setResearchLevel] = useState(1)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [])
 
   const [activeChildGen, setActiveChildGen] = useState(null)
+  // sotto-tab F / M / ND della sezione Figli, ricordata per linea
+  const [childSexTab, setChildSexTab] = useState(() => {
+    try { return localStorage.getItem('obt.childSexTab.' + id) || 'F' } catch { return 'F' }
+  })
+  const selectChildSexTab = (v) => {
+    setChildSexTab(v)
+    try { localStorage.setItem('obt.childSexTab.' + id, v) } catch { /* storage non disponibile */ }
+  }
   const [showGenRename, setShowGenRename] = useState(false)
   const [genRenameTarget, setGenRenameTarget] = useState(null)
   const [genRenameValue, setGenRenameValue] = useState('')
@@ -219,18 +47,17 @@ function ProjectPage() {
   const [showPetForm, setShowPetForm] = useState(false)
   const [editingPetId, setEditingPetId] = useState(null)
   const [petForm, setPetForm] = useState({
-    code: '', sex: 'M', letter: '', generation: 0,
+    name: '', sex: 'M', code: '', generation: 0,
     mother_id: '', father_id: '',
-    eyes: '', body1: '', body2: '', extra1: '', extra2: '', notes: ''
+    colors: {}, notes: ''
   })
   const [selectedMutationIds, setSelectedMutationIds] = useState([])
-  const [petMutationCounts, setPetMutationCounts] = useState({})
+  const [petMutationIds, setPetMutationIds] = useState({})
 
   // Target
-  const [targetForm, setTargetForm] = useState({
-    target_eyes: '', target_body1: '', target_body2: '', target_extra1: '', target_extra2: ''
-  })
+  const [targetForm, setTargetForm] = useState({ colors: {} })
   const [targetMutationIds, setTargetMutationIds] = useState([])
+  const [targetSaved, setTargetSaved] = useState(null)
 
   // Griglia: stato cella aperta
   const [cellModal, setCellModal] = useState({
@@ -248,8 +75,9 @@ function ProjectPage() {
   // Edit progetto
   const [showEditProject, setShowEditProject] = useState(false)
   const [speciesList, setSpeciesList] = useState([])
+  const [containerList, setContainerList] = useState([])   // progetti-contenitore dell'utente
   const [editProjectForm, setEditProjectForm] = useState({
-    name: '', species_id: '', author: '', collaborators: '', project_notes: '', is_public: false
+    name: '', species_id: '', author: '', collaborators: '', project_notes: '', is_public: false, project_id: ''
   })
   const [copied, setCopied] = useState(false)
 
@@ -261,11 +89,14 @@ function ProjectPage() {
   useEffect(() => { setShowPetForm(false) }, [activeTab])
   useEffect(() => { setPairsPage(1) }, [activeRound])
 
+  const firstLoadRef = useRef(true)
   const loadAll = useCallback(async () => {
-    setLoading(true)
+    // spinner a tutta pagina solo al primo caricamento: nei refresh dopo un
+    // salvataggio la pagina resta montata, così non si perde la posizione di scroll
+    if (firstLoadRef.current) setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { data: projectData } = await supabase.from('lines').select('*, species(name)').eq('id', id).single()
+    const { data: projectData } = await supabase.from('lines').select('*, species(name, color_slots, cooldown_hours)').eq('id', id).single()
     if (!projectData) { navigate('/dashboard'); return }
 
     setProject(projectData)
@@ -277,48 +108,60 @@ function ProjectPage() {
       collaborators: projectData.collaborators || '',
       project_notes: projectData.project_notes || '',
       is_public: projectData.is_public === true,
+      project_id: projectData.project_id || '',
     })
-    setTargetForm({
-      target_eyes: projectData.target_eyes || '',
-      target_body1: projectData.target_body1 || '',
-      target_body2: projectData.target_body2 || '',
-      target_extra1: projectData.target_extra1 || '',
-      target_extra2: projectData.target_extra2 || '',
-    })
+    setTargetForm({ colors: projectData.target_colors || {} })
 
     const { data: speciesData } = await supabase.from('species').select('*').order('name', { ascending: true })
     setSpeciesList(speciesData || [])
 
-    const { data: petsData } = await supabase.from('pets').select('*').eq('line_id', id).order('code', { ascending: true })
+    // progetti-contenitore in cui questa linea può essere spostata
+    if (user && user.id === projectData.owner_id) {
+      const { data: contData } = await supabase.from('projects').select('id, name')
+        .eq('owner_id', user.id).order('name', { ascending: true })
+      setContainerList(contData || [])
+    }
+
+    const { data: petsData } = await supabase.from('pets').select('*').eq('line_id', id).order('name', { ascending: true })
     setPets(petsData || [])
 
     if (petsData && petsData.length > 0) {
       const petIds = petsData.map(p => p.id)
-      const { data: petMutsData } = await supabase.from('pet_mutations').select('pet_id').in('pet_id', petIds)
-      const counts = {}
-      ;(petMutsData || []).forEach(pm => { counts[pm.pet_id] = (counts[pm.pet_id] || 0) + 1 })
-      setPetMutationCounts(counts)
+      const { data: petMutsData } = await supabase.from('pet_mutations').select('pet_id, mutation_id').in('pet_id', petIds)
+      const map = {}
+      ;(petMutsData || []).forEach(pm => {
+        (map[pm.pet_id] ||= []).push(pm.mutation_id)
+      })
+      setPetMutationIds(map)
     } else {
-      setPetMutationCounts({})
+      setPetMutationIds({})
     }
 
     const { data: pairsData } = await supabase
       .from('pairs')
-      .select('*, mother:mother_id(id, code, letter), father:father_id(id, code, letter)')
+      .select('*, mother:mother_id(id, name, code), father:father_id(id, name, code)')
       .eq('line_id', id)
       .order('round_number', { ascending: true })
       .order('created_at', { ascending: false })
     setPairs(pairsData || [])
 
+    if (user && projectData?.species_id) {
+      const { data: usRow } = await supabase.from('user_species')
+        .select('research_level').eq('user_id', user.id).eq('species_id', projectData.species_id).maybeSingle()
+      setResearchLevel(usRow?.research_level || 1)
+    }
+
     const { data: projMuts } = await supabase.from('line_mutations').select('mutation_id').eq('line_id', id)
     setTargetMutationIds((projMuts || []).map(pm => pm.mutation_id))
+
+    firstLoadRef.current = false
 
     setLoading(false)
   }, [id, navigate])
 
   const hexToRgb = (hex) => {
     if (!hex) return null
-    const h = hex.replace('#', '')
+    const h = hex.trim().replace('#', '')
     if (h.length !== 6) return null
     return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
   }
@@ -329,16 +172,18 @@ function ProjectPage() {
     return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2)
   }
 
+  const DEFAULT_SLOTS = ['eyes', 'body1', 'body2', 'extra1', 'extra2']
+  const slots = (project?.species?.color_slots && project.species.color_slots.length)
+    ? project.species.color_slots : DEFAULT_SLOTS
+  const slotLabel = (key) => t('project.slot.' + key)
+
   const totalDist = (pet) => {
     if (!project) return null
-    const pairsList = [
-      [pet.eyes, project.target_eyes], [pet.body1, project.target_body1],
-      [pet.body2, project.target_body2], [pet.extra1, project.target_extra1],
-      [pet.extra2, project.target_extra2],
-    ]
+    const target = project.target_colors || {}
+    const petColors = pet.colors || {}
     let total = 0, count = 0
-    for (const [a, b] of pairsList) {
-      const d = colorDist(a, b)
+    for (const s of slots) {
+      const d = colorDist(petColors[s], target[s])
       if (d !== null) { total += d; count++ }
     }
     return count > 0 ? total : null
@@ -359,27 +204,45 @@ function ProjectPage() {
   }
 
   const resetPetForm = () => {
-    setPetForm({ code: '', sex: 'M', letter: '', generation: 0, mother_id: '', father_id: '', eyes: '', body1: '', body2: '', extra1: '', extra2: '', notes: '' })
+    setPetForm({ name: '', sex: 'M', code: '', generation: 0, mother_id: '', father_id: '', colors: {}, notes: '' })
     setSelectedMutationIds([])
     setEditingPetId(null)
     setShowPetForm(false)
   }
 
+  // Quando scegli un genitore nel form, la generazione si ricalcola da sola:
+  // max(gen madre, gen padre) + 1. Resta comunque modificabile a mano.
+  const withDerivedGen = (form) => {
+    const mum = pets.find(p => p.id === form.mother_id)
+    const dad = pets.find(p => p.id === form.father_id)
+    if (!mum && !dad) return form
+    const gen = Math.max(mum?.generation ?? 0, dad?.generation ?? 0) + 1
+    return { ...form, generation: gen }
+  }
+
   const openNewPetForm = (prefill = {}) => {
     resetPetForm()
-    setPetForm(prev => ({ ...prev, generation: activeTab === 'children' ? 1 : 0, ...prefill }))
+    setPetForm(prev => ({
+      ...prev,
+      generation: activeTab === 'children' ? (currentChildGen ?? 1) : 0,
+      ...prefill,
+    }))
     setShowPetForm(true)
   }
 
   const handlePetSubmit = async (e) => {
     e.preventDefault()
     setActionError('')
+    const cleanColors = {}
+    for (const k of Object.keys(petForm.colors || {})) {
+      const norm = normalizeHex(petForm.colors[k])
+      if (norm) cleanColors[k] = norm
+    }
     const payload = {
-      line_id: id, code: petForm.code, sex: petForm.sex,
-      letter: petForm.letter || null, generation: parseInt(petForm.generation) || 0,
+      line_id: id, name: petForm.name, sex: petForm.sex,
+      code: petForm.code || null, generation: parseInt(petForm.generation) || 0,
       mother_id: petForm.mother_id || null, father_id: petForm.father_id || null,
-      eyes: petForm.eyes || null, body1: petForm.body1 || null, body2: petForm.body2 || null,
-      extra1: petForm.extra1 || null, extra2: petForm.extra2 || null, notes: petForm.notes || null,
+      colors: cleanColors, notes: petForm.notes || null,
     }
     let petId = editingPetId
     if (editingPetId) {
@@ -404,10 +267,9 @@ function ProjectPage() {
 
   const handleEditPet = async (pet) => {
     setPetForm({
-      code: pet.code, sex: pet.sex, letter: pet.letter || '', generation: pet.generation,
+      name: pet.name, sex: pet.sex, code: pet.code || '', generation: pet.generation,
       mother_id: pet.mother_id || '', father_id: pet.father_id || '',
-      eyes: pet.eyes || '', body1: pet.body1 || '', body2: pet.body2 || '',
-      extra1: pet.extra1 || '', extra2: pet.extra2 || '', notes: pet.notes || ''
+      colors: pet.colors || {}, notes: pet.notes || ''
     })
     const { data: petMuts } = await supabase.from('pet_mutations').select('mutation_id').eq('pet_id', pet.id)
     setSelectedMutationIds((petMuts || []).map(pm => pm.mutation_id))
@@ -417,17 +279,23 @@ function ProjectPage() {
 
   const handleDeletePet = async (petId) => {
     const pet = pets.find(p => p.id === petId)
-    if (!window.confirm(t('project.confirm.deletePet', { code: pet?.code || '' }))) return
+    if (!window.confirm(t('project.confirm.deletePet', { code: pet?.name || '' }))) return
     setActionError('')
     const { error } = await supabase.from('pets').delete().eq('id', petId)
     if (fail(error, t('project.errors.deletePet'))) return
     loadAll()
   }
 
-  const handleTargetSubmit = async (e) => {
+  const handleTargetSubmit = async (e, which = 'colors') => {
     if (e && e.preventDefault) e.preventDefault()
     setActionError('')
-    const { error } = await supabase.from('lines').update(targetForm).eq('id', id)
+    // pulisce ogni slot prima di scrivere: niente spazi o cancelletti mancanti
+    const cleanColors = {}
+    for (const [slot, val] of Object.entries(targetForm.colors || {})) {
+      const norm = normalizeHex(val)
+      if (norm) cleanColors[slot] = norm
+    }
+    const { error } = await supabase.from('lines').update({ target_colors: cleanColors }).eq('id', id)
     if (fail(error, t('project.errors.saveTargetColours'))) return
     const { error: delErr } = await supabase.from('line_mutations').delete().eq('line_id', id)
     if (fail(delErr, t('project.errors.updateTargetMutations'))) return
@@ -436,6 +304,8 @@ function ProjectPage() {
       const { error: insErr } = await supabase.from('line_mutations').insert(rows)
       if (fail(insErr, t('project.errors.saveTargetMutations'))) return
     }
+    setTargetSaved(which)
+    setTimeout(() => setTargetSaved(null), 2500)
     loadAll()
   }
 
@@ -467,6 +337,7 @@ function ProjectPage() {
         father_id: male.id,
         round_number: round,
         pair_date: date || null,
+        pair_at: date === todayISO() ? new Date().toISOString() : null,
         outcome_notes: notes || null,
       })
       if (fail(error, t('project.errors.registerPair'))) return
@@ -476,9 +347,10 @@ function ProjectPage() {
     if (childCode.trim()) {
       const { error } = await supabase.from('pets').insert({
         line_id: id,
-        code: childCode.trim(),
+        name: childCode.trim(),
         sex: 'ND',
-        generation: 1,
+        // la generazione nasce dai genitori: figli di G1 sono G2, non G1
+        generation: Math.max(female.generation ?? 0, male.generation ?? 0) + 1,
         mother_id: female.id,
         father_id: male.id,
       })
@@ -509,6 +381,7 @@ function ProjectPage() {
       collaborators: editProjectForm.collaborators || null,
       project_notes: editProjectForm.project_notes || null,
       is_public: editProjectForm.is_public,
+      project_id: editProjectForm.project_id || null,
     }).eq('id', id)
     if (fail(error, t('project.errors.saveProject'))) return
     setShowEditProject(false)
@@ -610,7 +483,7 @@ function ProjectPage() {
         }
         if (!best) continue
         const anc = petById.get(best.id)
-        const who = anc ? `${anc.letter ? anc.letter + ' ' : ''}${anc.code}/${anc.sex}` : '?'
+        const who = anc ? `${anc.code ? anc.code + ' ' : ''}${anc.name}/${anc.sex}` : '?'
         const extra = count - 1
         map[`${f.id}:${m.id}`] = { label: `${t('project.kin.' + tierKeys[best.d])} · ${who}${extra > 0 ? ` +${extra}` : ''}` }
       }
@@ -673,110 +546,45 @@ function ProjectPage() {
 
   const pairsInActiveRound = pairs.filter(p => (p.round_number || 1) === activeRound)
 
+  // Aggiorna un singolo campo del pet direttamente dalla riga della tabella.
+  // Update ottimistico: la UI cambia subito, e in caso di errore si rimette a posto.
+  const updatePetField = async (petId, patch) => {
+    const before = pets.find(p => p.id === petId)
+    setPets(prev => prev.map(p => (p.id === petId ? { ...p, ...patch } : p)))
+    const { error } = await supabase.from('pets').update(patch).eq('id', petId)
+    if (error) {
+      setPets(prev => prev.map(p => (p.id === petId ? before : p)))
+      setActionError(t('project.errors.savePet'))
+      return false
+    }
+    setActionError('')
+    return true
+  }
+
+  // esporta la lista attualmente mostrata: rispetta tab e generazione scelte
+  const petsById = Object.fromEntries(pets.map(p => [p.id, p]))
+  const exportList = (list, suffix) => {
+    const rows = petsToRows(list, { slots, project, petsById, petMutationIds, targetMutationIds })
+    const slug = (project?.name || 'linea').replace(/[^\w-]+/g, '_')
+    downloadCsv(rows, `${slug}_${suffix}.csv`)
+  }
+
+  const tableCtx = {
+    petSort, setPetSort, slots, slotLabel, totalDist, colorDist, project,
+    petMutationIds, targetMutationIds, isOwner, handleEditPet, handleDeletePet, t, distClass,
+    updatePetField,
+  }
+
   const PAIRS_PER_PAGE = 15
   const pairsTotalPages = Math.max(1, Math.ceil(pairsInActiveRound.length / PAIRS_PER_PAGE))
   const pairsPageSafe = Math.min(pairsPage, pairsTotalPages)
   const pairsPageItems = pairsInActiveRound.slice((pairsPageSafe - 1) * PAIRS_PER_PAGE, pairsPageSafe * PAIRS_PER_PAGE)
 
-  const PetTable = ({ list, title }) => {
-    const sort = petSort[title] || { key: null, dir: 1 }
-    const applySort = (key) =>
-      setPetSort(prev => {
-        const cur = prev[title] || { key: null, dir: 1 }
-        const next = cur.key === key ? { key, dir: -cur.dir } : { key, dir: 1 }
-        return { ...prev, [title]: next }
-      })
-    const slotKeys = ['eyes', 'body1', 'body2', 'extra1', 'extra2']
-    const sortVal = (pet, key) => {
-      if (key === 'gen') return pet.generation ?? 0
-      if (key === 'mut') return petMutationCounts[pet.id] || 0
-      if (key === 'distance') return totalDist(pet)
-      if (slotKeys.includes(key)) return colorDist(pet[key], project['target_' + key])
-      return (pet[key] ?? '').toString().toLowerCase()
-    }
-    const sorted = sort.key
-      ? [...list].sort((a, b) => {
-          const va = sortVal(a, sort.key), vb = sortVal(b, sort.key)
-          if (va == null && vb == null) return 0
-          if (va == null) return 1
-          if (vb == null) return -1
-          if (va < vb) return -sort.dir
-          if (va > vb) return sort.dir
-          return 0
-        })
-      : list
-    const Th = ({ k, children }) => (
-      <th onClick={() => applySort(k)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }} title={t('project.table.sortHint')}>
-        {children}
-        <span style={{ marginLeft: 4, fontSize: 10, opacity: sort.key === k ? 0.9 : 0.25 }}>
-          {sort.key === k ? (sort.dir === 1 ? '▲' : '▼') : '↕'}
-        </span>
-      </th>
-    )
-    return (
-      <div className="obt-panel">
-        <h3 style={{ marginBottom: 14 }}>{title}</h3>
-        {list.length === 0 ? (
-          <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>{t('common.none')}</p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="obt-table">
-              <thead>
-                <tr>
-                  <Th k="code">{t('project.table.code')}</Th>
-                  <Th k="sex">{t('project.table.sex')}</Th>
-                  <Th k="letter">{t('project.table.letter')}</Th>
-                  <Th k="gen">{t('project.table.gen')}</Th>
-                  <Th k="eyes">{t('project.table.eyes')}</Th>
-                  <Th k="body1">{t('project.table.body1')}</Th>
-                  <Th k="body2">{t('project.table.body2')}</Th>
-                  <Th k="extra1">{t('project.table.extra1')}</Th>
-                  <Th k="extra2">{t('project.table.extra2')}</Th>
-                  <Th k="mut">{t('project.table.mut')}</Th>
-                  <Th k="distance">{t('project.table.distance')}</Th>
-                  <Th k="notes">{t('project.table.notes')}</Th>
-                  {isOwner && <th></th>}
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map(pet => {
-                  const d = totalDist(pet)
-                  return (
-                    <tr key={pet.id}>
-                      <td><strong>{pet.code}</strong></td>
-                      <td>{pet.sex}</td>
-                      <td>{pet.letter || '-'}</td>
-                      <td>{pet.generation}</td>
-                      <td><ColorCell hex={pet.eyes} /></td>
-                      <td><ColorCell hex={pet.body1} /></td>
-                      <td><ColorCell hex={pet.body2} /></td>
-                      <td><ColorCell hex={pet.extra1} /></td>
-                      <td><ColorCell hex={pet.extra2} /></td>
-                      <td>{petMutationCounts[pet.id] || 0}v</td>
-                      <td>{d !== null ? <span className={`obt-dist-pill ${distClass(d)}`}>{Math.round(d)}</span> : '-'}</td>
-                      <td>{pet.notes || ''}</td>
-                      {isOwner && (
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <button className="obt-icon-btn" onClick={() => handleEditPet(pet)} title={t('common.edit')}><i className="ti ti-pencil" /></button>
-                          <button className="obt-icon-btn obt-icon-btn--danger" onClick={() => handleDeletePet(pet.id)} title={t('common.delete')}><i className="ti ti-trash" /></button>
-                        </td>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   const tabLabels = {
     starters: t('project.tabs.starters'),
     children: t('project.tabs.children'),
     pairs: t('project.tabs.pairs'),
-    suggester: t('project.tabs.suggester'),
+    inspector: t('project.tabs.lab'),
     target: t('project.tabs.target')
   }
 
@@ -786,10 +594,10 @@ function ProjectPage() {
         <div className="obt-hero-top">
           <div className="obt-hero-back">
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate(project?.project_id ? `/project/${project.project_id}` : '/dashboard')}>&larr; {project?.project_id ? t('project.backToProject') : t('project.back')}</button>
-            {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}>✎ {t('project.edit')}</button>}
+            {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}><i className="ti ti-pencil" /> {t('project.edit')}</button>}
             {isOwner && (
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleToggleVisibility} title={project.is_public ? t('project.publicTitle') : t('project.privateTitle')}>
-                {project.is_public ? `🔓 ${t('project.public')}` : `🔒 ${t('project.private')}`}
+                {project.is_public ? <><i className="ti ti-lock-open" /> {t('project.public')}</> : <><i className="ti ti-lock" /> {t('project.private')}</>}
               </button>
             )}
             {!isOwner && (
@@ -817,7 +625,7 @@ function ProjectPage() {
           </div>
         </div>
         <div className="obt-tabs">
-          {['starters', 'children', 'pairs', 'suggester', 'target'].map(tab => (
+          {['starters', 'children', 'pairs', 'inspector', 'target'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`obt-tab${activeTab === tab ? ' obt-tab--active' : ''}`}>{tabLabels[tab]}</button>
           ))}
         </div>
@@ -840,6 +648,15 @@ function ProjectPage() {
           <div className="obt-row">
             <div className="obt-field"><label>{t('dashboard.author')}</label><input className="obt-input" type="text" value={editProjectForm.author} onChange={(e) => setEditProjectForm({ ...editProjectForm, author: e.target.value })} /></div>
             <div className="obt-field"><label>{t('dashboard.collaborators')} <span className="obt-optional">{t('common.optional')}</span></label><input className="obt-input" type="text" value={editProjectForm.collaborators} onChange={(e) => setEditProjectForm({ ...editProjectForm, collaborators: e.target.value })} /></div>
+          </div>
+          <div className="obt-field">
+            <label>{t('project.container')} <span className="obt-optional">{t('common.optional')}</span></label>
+            <select className="obt-select" value={editProjectForm.project_id}
+              onChange={(e) => setEditProjectForm({ ...editProjectForm, project_id: e.target.value })}>
+              <option value="">{t('project.containerNone')}</option>
+              {containerList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <p className="obt-hint" style={{ marginTop: 6 }}>{t('project.containerHint')}</p>
           </div>
           <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editProjectForm.project_notes} onChange={(e) => setEditProjectForm({ ...editProjectForm, project_notes: e.target.value })} /></div>
           <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 16, marginTop: 8 }}>
@@ -891,23 +708,23 @@ function ProjectPage() {
             <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? t('project.pet.editTitle') : (activeTab === 'starters' ? t('project.pet.newStarter') : t('project.pet.newChild'))} size="lg">
               <form onSubmit={handlePetSubmit}>
                 <div className="obt-row">
-                  <div className="obt-field"><label>{t('project.pet.code')}</label><input className="obt-input" value={petForm.code} onChange={e => setPetForm({...petForm, code: e.target.value})} required autoFocus /></div>
+                  <div className="obt-field"><label>{t('project.pet.name')} <Help text={t('project.help.name')} /></label><input className="obt-input" value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required autoFocus /></div>
                   <div className="obt-field"><label>{t('project.pet.sex')}</label><select className="obt-select" value={petForm.sex} onChange={e => setPetForm({...petForm, sex: e.target.value})}><option value="M">M</option><option value="F">F</option><option value="ND">ND</option></select></div>
-                  <div className="obt-field"><label>{t('project.pet.letter')}</label><input className="obt-input" maxLength={1} value={petForm.letter} onChange={e => setPetForm({...petForm, letter: e.target.value})} /></div>
+                  <div className="obt-field"><label>{t('project.pet.code')} <Help text={t('project.help.code')} /></label><input className="obt-input" value={petForm.code} onChange={e => setPetForm({...petForm, code: e.target.value})} /></div>
                   <div className="obt-field"><label>{t('project.pet.generation')}</label><input type="number" min="0" className="obt-input" value={petForm.generation} onChange={e => setPetForm({...petForm, generation: e.target.value})} /></div>
                 </div>
                 {petForm.generation > 0 && (
                   <div className="obt-row">
                     <div className="obt-field">
                       <label>{t('project.pet.mother')}</label>
-                      <select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm({...petForm, mother_id: e.target.value})}>
+                      <select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm(withDerivedGen({...petForm, mother_id: e.target.value}))}>
                         <option value="">{t('project.pet.noMother')}</option>
                         {females.map(f => <option key={f.id} value={f.id}>{petLabel(f)}</option>)}
                       </select>
                     </div>
                     <div className="obt-field">
                       <label>{t('project.pet.father')}</label>
-                      <select className="obt-select" value={petForm.father_id} onChange={e => setPetForm({...petForm, father_id: e.target.value})}>
+                      <select className="obt-select" value={petForm.father_id} onChange={e => setPetForm(withDerivedGen({...petForm, father_id: e.target.value}))}>
                         <option value="">{t('project.pet.noFather')}</option>
                         {males.map(m => <option key={m.id} value={m.id}>{petLabel(m)}</option>)}
                       </select>
@@ -915,11 +732,12 @@ function ProjectPage() {
                   </div>
                 )}
                 <div className="obt-row">
-                  <div className="obt-field"><label>{t('project.pet.eyes')}</label><input className="obt-input" placeholder="6A786D" value={petForm.eyes} onChange={e => setPetForm({...petForm, eyes: e.target.value})} /></div>
-                  <div className="obt-field"><label>{t('project.pet.body1')}</label><input className="obt-input" placeholder="22565B" value={petForm.body1} onChange={e => setPetForm({...petForm, body1: e.target.value})} /></div>
-                  <div className="obt-field"><label>{t('project.pet.body2')}</label><input className="obt-input" placeholder="181B23" value={petForm.body2} onChange={e => setPetForm({...petForm, body2: e.target.value})} /></div>
-                  <div className="obt-field"><label>{t('project.pet.extra1')}</label><input className="obt-input" placeholder="4D565C" value={petForm.extra1} onChange={e => setPetForm({...petForm, extra1: e.target.value})} /></div>
-                  <div className="obt-field"><label>{t('project.pet.extra2')}</label><input className="obt-input" placeholder="8CABAE" value={petForm.extra2} onChange={e => setPetForm({...petForm, extra2: e.target.value})} /></div>
+                  {slots.map(s => (
+                    <div className="obt-field" key={s}>
+                      <label>{slotLabel(s)} <Help text={t('project.help.color')} /></label>
+                      <input className="obt-input" placeholder="000000" value={(petForm.colors || {})[s] || ''} onChange={e => setPetForm({ ...petForm, colors: { ...petForm.colors, [s]: e.target.value } })} onBlur={e => { const n = normalizeHex(e.target.value); if (n) setPetForm({ ...petForm, colors: { ...petForm.colors, [s]: n } }) }} />
+                    </div>
+                  ))}
                 </div>
                 <div className="obt-field"><label>{t('project.pet.notes')}</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
                 <div className="obt-field"><label>{t('project.pet.mutations')}</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
@@ -930,9 +748,20 @@ function ProjectPage() {
               </form>
             </Modal>
             {activeTab === 'starters' ? (
-              <><PetTable list={starters.filter(p => p.sex === 'F')} title={t('project.groups.females')} /><PetTable list={starters.filter(p => p.sex === 'M')} title={t('project.groups.males')} /></>
+              <>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                  <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                    disabled={starters.length === 0}
+                    onClick={() => exportList(starters, 'G0')}
+                    title={t('project.export.hint')}>
+                    <i className="ti ti-download" /> {t('project.export.csv')}
+                  </button>
+                </div>
+                <PetTable list={starters.filter(p => p.sex === 'F')} title={t('project.groups.females')} ctx={tableCtx} />
+                <PetTable list={starters.filter(p => p.sex === 'M')} title={t('project.groups.males')} ctx={tableCtx} />
+              </>
             ) : childGenerations.length === 0 ? (
-              <PetTable list={[]} title={t('project.groups.females')} />
+              <PetTable list={[]} title={t('project.groups.females')} ctx={tableCtx} />
             ) : (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -958,9 +787,40 @@ function ProjectPage() {
                     </button>
                   )}
                 </div>
-                <PetTable list={genChildren.filter(p => p.sex === 'F')} title={t('project.groups.females')} />
-                <PetTable list={genChildren.filter(p => p.sex === 'M')} title={t('project.groups.males')} />
-                <PetTable list={genChildren.filter(p => p.sex === 'ND')} title={t('project.groups.unhatched')} />
+                {(() => {
+                  const groups = [
+                    { key: 'F', label: t('project.groups.females'), list: genChildren.filter(p => p.sex === 'F') },
+                    { key: 'M', label: t('project.groups.males'), list: genChildren.filter(p => p.sex === 'M') },
+                    { key: 'ND', label: t('project.groups.unhatched'), list: genChildren.filter(p => p.sex === 'ND') },
+                    { key: 'ALL', label: t('project.groups.all'), list: genChildren },
+                  ]
+                  const active = groups.find(g => g.key === childSexTab) || groups[0]
+                  return (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <div className="obt-subtabs" style={{ flex: 1 }}>
+                          {groups.map(g => (
+                            <button
+                              key={g.key}
+                              className={'obt-subtab' + (g.key === active.key ? ' is-active' : '')}
+                              onClick={() => selectChildSexTab(g.key)}
+                            >
+                              {g.label}
+                              <span className="obt-subtab__count">{g.list.length}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                          disabled={active.list.length === 0}
+                          onClick={() => exportList(active.list, `G${currentChildGen}_${active.key}`)}
+                          title={t('project.export.hint')}>
+                          <i className="ti ti-download" /> {t('project.export.csv')}
+                        </button>
+                      </div>
+                      <PetTable list={active.list} title={active.label} ctx={tableCtx} />
+                    </>
+                  )
+                })()}
                 <Modal open={showGenRename} onClose={() => setShowGenRename(false)} title={t('project.gen.renameTitle')} size="sm">
                   <div className="obt-field">
                     <label>{t('project.gen.name')}</label>
@@ -1029,7 +889,7 @@ function ProjectPage() {
                       {rosterIsCustom ? t('project.roster.custom') : t('project.roster.auto', { gen: activeRound - 1 })}
                     </span>
                     <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={openRosterEditor}>
-                      ✎ {t('project.roster.edit')}
+                      <i className="ti ti-pencil" /> {t('project.roster.edit')}
                     </button>
                   </div>
                 )}
@@ -1072,6 +932,9 @@ function ProjectPage() {
                 <PairGrid
                   round={activeRound}
                   females={activeRoster.females}
+                  allPairs={pairs}
+                  cooldownHours={effectiveCooldown(project?.species?.cooldown_hours, researchLevel)}
+                  now={now}
                   males={activeRoster.males}
                   pairsInRound={pairsInActiveRound}
                   onCellClick={openCellModal}
@@ -1138,8 +1001,8 @@ function ProjectPage() {
           </>
         )}
 
-        {activeTab === 'suggester' && (
-          <SuggesterTab pets={pets} project={project} />
+        {activeTab === 'inspector' && (
+          <InspectorTab pets={pets} project={project} />
         )}
 
         {/* ---- TARGET ---- */}
@@ -1148,25 +1011,29 @@ function ProjectPage() {
             <form onSubmit={handleTargetSubmit} className="obt-panel">
               <h2 style={{ marginBottom: 18 }}>{t('project.target.colours')}</h2>
               <div className="obt-row">
-                {[
-                  { label: t('project.pet.eyes'), key: 'target_eyes' },
-                  { label: t('project.pet.body1'), key: 'target_body1' },
-                  { label: t('project.pet.body2'), key: 'target_body2' },
-                  { label: t('project.pet.extra1'), key: 'target_extra1' },
-                  { label: t('project.pet.extra2'), key: 'target_extra2' },
-                ].map(({ label, key }) => (
-                  <div className="obt-field" key={key}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{label}<ColorCell hex={targetForm[key]} /></label>
-                    <input className="obt-input" disabled={!isOwner} value={targetForm[key]} onChange={e => setTargetForm({ ...targetForm, [key]: e.target.value })} placeholder={t('project.target.placeholder')} />
+                {slots.map(s => (
+                  <div className="obt-field" key={s}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{slotLabel(s)}<ColorCell hex={(targetForm.colors || {})[s]} showHex /></label>
+                    <input className="obt-input" disabled={!isOwner} value={(targetForm.colors || {})[s] || ''} onChange={e => setTargetForm({ ...targetForm, colors: { ...targetForm.colors, [s]: e.target.value } })} onBlur={e => { const n = normalizeHex(e.target.value); if (n) setTargetForm({ ...targetForm, colors: { ...targetForm.colors, [s]: n } }) }} placeholder={t('project.target.placeholder')} />
                   </div>
                 ))}
               </div>
-              {isOwner && <button type="submit" className="obt-btn obt-btn--primary">{t('project.target.save')}</button>}
+              {isOwner && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button type="submit" className="obt-btn obt-btn--primary">{t('project.target.save')}</button>
+                  {targetSaved === 'colors' && <span style={{ color: 'var(--good-text)', fontWeight: 700, fontSize: 13 }}>✓ {t('common.saved')}</span>}
+                </div>
+              )}
             </form>
             <div className="obt-panel">
               <h3 style={{ marginBottom: 14 }}>{t('project.target.mutations')}</h3>
               <MutationSelector speciesId={project.species_id} selectedIds={targetMutationIds} onChange={setTargetMutationIds} readOnly={!isOwner} />
-              {isOwner && <button className="obt-btn obt-btn--primary obt-mt-md" onClick={handleTargetSubmit}>{t('project.target.saveMutations')}</button>}
+              {isOwner && (
+                <div className="obt-mt-md" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button className="obt-btn obt-btn--primary" onClick={e => handleTargetSubmit(e, 'mutations')}>{t('project.target.saveMutations')}</button>
+                  {targetSaved === 'mutations' && <span style={{ color: 'var(--good-text)', fontWeight: 700, fontSize: 13 }}>✓ {t('common.saved')}</span>}
+                </div>
+              )}
             </div>
           </>
         )}

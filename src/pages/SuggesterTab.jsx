@@ -1,46 +1,23 @@
 // src/pages/SuggesterTab.jsx
-// Tab "Suggeritore" — SOLO dati reali dei round, nessuna previsione.
-// Riusa la stessa metrica di ProjectPage: distanza RGB per-slot verso il target,
-// così i numeri combaciano sempre con quelli mostrati nelle altre tabelle.
+// "Verifica" (dentro Laboratorio) — SOLO dati reali dei round, nessuna previsione.
+// Confronta ciò che le coppie hanno prodotto davvero con il floor che avrebbero
+// potuto raggiungere: è l'unica vista che dice se una coppia è stata sfruttata.
 
+import { useState, useMemo } from 'react'
 import { useT } from '../i18n'
+import { totalDist, petLabel, Pill, pairFloor } from './petUtils'
 
-const SLOTS = ['eyes', 'body1', 'body2', 'extra1', 'extra2']
+// Il filtro agisce sui FIGLI: "G1" significa "coppie che hanno prodotto figli G1",
+// non "coppie composte da pet G1".
+const inGen = (pet, gen) => gen === '' || String(pet.generation ?? 0) === gen
 
-const hexToRgb = (hex) => {
-  if (!hex) return null
-  const h = hex.replace('#', '')
-  if (h.length !== 6) return null
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
-}
-const colorDist = (h1, h2) => {
-  const a = hexToRgb(h1), b = hexToRgb(h2)
-  if (!a || !b) return null
-  return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
-}
-const totalDist = (pet, project) => {
-  if (!pet || !project) return null
-  let total = 0, count = 0
-  for (const s of SLOTS) {
-    const d = colorDist(pet[s], project['target_' + s])
-    if (d !== null) { total += d; count++ }
-  }
-  return count > 0 ? total : null
-}
-const distClass = (d) =>
-  d == null ? '' : d < 60 ? 'obt-dist-pill--good' : d < 130 ? 'obt-dist-pill--mid' : 'obt-dist-pill--bad'
-
-const petLabel = (pet) => (pet?.letter ? `${pet.letter} — ${pet.code}` : pet?.code || '?')
-
-const Pill = ({ d }) =>
-  d == null ? <span>-</span> : <span className={`obt-dist-pill ${distClass(d)}`}>{Math.round(d)}</span>
-
-// --- Coppie che hanno GIA' prodotto figli: miglior figlio, media, guadagno ---
-function computePairs(pets, project) {
+// --- Coppie che hanno GIA' prodotto figli: miglior figlio, media, floor ---
+function computePairs(pets, project, gen) {
   const byId = new Map(pets.map((p) => [p.id, p]))
   const groups = new Map()
   for (const c of pets) {
     if (!c.mother_id || !c.father_id) continue
+    if (!inGen(c, gen)) continue
     const key = c.mother_id + '|' + c.father_id
     if (!groups.has(key)) {
       groups.set(key, { mother: byId.get(c.mother_id), father: byId.get(c.father_id), children: [] })
@@ -55,19 +32,25 @@ function computePairs(pets, project) {
     const cd = g.children.map((c) => totalDist(c, project)).filter((d) => d != null)
     if (!cd.length) continue
     const avg = cd.reduce((a, b) => a + b, 0) / cd.length
+    const best = Math.min(...cd)
+    const floor = pairFloor(g.mother, g.father, project)
     rows.push({
       mother: g.mother, father: g.father, n: cd.length,
-      best: Math.min(...cd), avg, mid, gain: mid != null ? mid - avg : null,
+      best, avg, mid, floor,
+      // quanto il miglior figlio dista dal minimo teorico: piccolo = coppia sfruttata
+      overFloor: floor != null ? best - floor : null,
+      gain: mid != null ? mid - avg : null,
     })
   }
   return rows.sort((a, b) => a.best - b.best)
 }
 
 // --- Riproduttori "elevatori": media distanza figli per ogni genitore ---
-function computeBreeders(pets, project) {
+function computeBreeders(pets, project, gen) {
   const byId = new Map(pets.map((p) => [p.id, p]))
   const acc = new Map()
   for (const c of pets) {
+    if (!inGen(c, gen)) continue
     const d = totalDist(c, project)
     if (d == null) continue
     for (const pid of [c.mother_id, c.father_id]) {
@@ -91,8 +74,40 @@ function computeBreeders(pets, project) {
 
 export default function SuggesterTab({ pets, project }) {
   const { t } = useT()
-  const pairs = computePairs(pets, project)
-  const breeders = computeBreeders(pets, project)
+  const [gen, setGen] = useState('')
+
+  // solo le generazioni che hanno davvero dei figli: la G0 non compare
+  const generations = useMemo(
+    () => [...new Set(pets.filter(p => (p.generation ?? 0) > 0).map(p => p.generation))].sort((a, b) => a - b),
+    [pets]
+  )
+
+  const pairs = useMemo(() => computePairs(pets, project, gen), [pets, project, gen])
+  const breeders = useMemo(() => computeBreeders(pets, project, gen), [pets, project, gen])
+
+  const GenFilter = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+      <span className="obt-text-soft" style={{ fontSize: 12, fontWeight: 700 }}>
+        {t('project.filter.generation')}
+      </span>
+      {['', ...generations.map(String)].map(g => (
+        <button
+          key={g || 'all'}
+          onClick={() => setGen(g)}
+          style={{
+            padding: '4px 12px', borderRadius: 'var(--radius-pill)',
+            border: g === gen ? '2px solid var(--primary)' : '2px solid var(--line)',
+            background: g === gen ? 'var(--primary)' : 'var(--card)',
+            color: g === gen ? '#fff' : 'var(--ink)',
+            fontWeight: g === gen ? 700 : 600, fontSize: 12,
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {g === '' ? t('project.filter.allGens') : `G${g}`}
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <>
@@ -102,6 +117,7 @@ export default function SuggesterTab({ pets, project }) {
         <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 14 }}>
           {t('project.suggester.pairsHint')}
         </p>
+        <GenFilter />
         {pairs.length === 0 ? (
           <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
             {t('project.suggester.empty')}
@@ -115,6 +131,8 @@ export default function SuggesterTab({ pets, project }) {
                   <th>{t('project.pairs.father')}</th>
                   <th>{t('project.suggester.nChildren')}</th>
                   <th>{t('project.suggester.bestChild')}</th>
+                  <th>{t('project.inspector.floor')}</th>
+                  <th>{t('project.suggester.overFloor')}</th>
                   <th>{t('project.suggester.avgChild')}</th>
                   <th>{t('project.suggester.midParent')}</th>
                   <th>{t('project.suggester.gain')}</th>
@@ -127,6 +145,10 @@ export default function SuggesterTab({ pets, project }) {
                     <td>{petLabel(r.father)}</td>
                     <td>{r.n}</td>
                     <td><Pill d={r.best} /></td>
+                    <td><Pill d={r.floor} /></td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700 }}>
+                      {r.overFloor != null ? `+${Math.round(r.overFloor)}` : '-'}
+                    </td>
                     <td><Pill d={r.avg} /></td>
                     <td>{r.mid != null ? Math.round(r.mid) : '-'}</td>
                     <td style={{ fontWeight: 700, color: r.gain > 0 ? 'var(--primary)' : 'var(--muted)' }}>
@@ -155,7 +177,7 @@ export default function SuggesterTab({ pets, project }) {
             <table className="obt-table">
               <thead>
                 <tr>
-                  <th>{t('project.table.code')}</th>
+                  <th>{t('project.table.name')}</th>
                   <th>{t('project.table.sex')}</th>
                   <th>{t('project.suggester.ownDist')}</th>
                   <th>{t('project.suggester.avgChild')}</th>
@@ -166,7 +188,7 @@ export default function SuggesterTab({ pets, project }) {
               <tbody>
                 {breeders.map((r, i) => (
                   <tr key={i}>
-                    <td><strong>{r.pet.code}</strong></td>
+                    <td><strong>{r.pet.name}</strong></td>
                     <td>{r.pet.sex}</td>
                     <td><Pill d={r.own} /></td>
                     <td><Pill d={r.avg} /></td>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { CONTACT_EMAIL } from '../config'
 import { useT } from '../i18n'
 import LanguageSwitcher from './LanguageSwitcher'
 
@@ -22,8 +23,14 @@ function Layout({ username, onLogout, children }) {
         boxShadow: 'var(--shadow)',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
           <LanguageSwitcher />
+          <Link to="/guide" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+            <i className="ti ti-book" /> {t('layout.guide')}
+          </Link>
+          <Link to="/faq" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+            <i className="ti ti-help" /> {t('layout.faq')}
+          </Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Link to="/dashboard" style={{ display: 'flex' }}>
@@ -32,10 +39,15 @@ function Layout({ username, onLogout, children }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
           {username && (
-            <div className="obt-user-chip">
-              <span className="obt-avatar">{username.slice(0, 2).toUpperCase()}</span>
-              {username}
-            </div>
+            <Link to="/dashboard" className="obt-btn obt-btn--ghost obt-btn--sm"
+              title={t('layout.dashboardAlt')} style={{ textDecoration: 'none' }}>
+              <i className="ti ti-user" /> {username}
+            </Link>
+          )}
+          {username && (
+            <Link to="/journal" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+              <i className="ti ti-notebook" /> {t('layout.journal')}
+            </Link>
           )}
           {onLogout && (
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={onLogout}>{t('common.logout')}</button>
@@ -69,9 +81,13 @@ function Layout({ username, onLogout, children }) {
         marginTop: 'auto',
       }}>
         {t('layout.tagline')} ·{' '}
-        <a href="mailto:makie.kojima+obt@gmail.com?subject=OBT%20Tool" style={{ color: 'var(--primary)', textDecoration: 'none' }}>{t('layout.contact')}</a>
+        <a href={`mailto:${CONTACT_EMAIL}?subject=OBT%20Tool`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{t('layout.contact')}</a>
         {' '}·{' '}
         <a href="https://ovipets.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', textDecoration: 'none' }}>Ovipets.com</a>
+        {' '}·{' '}
+        <Link to="/credits" style={{ color: 'var(--muted)', textDecoration: 'none' }}>{t('layout.credits')}</Link>
+        {' '}·{' '}
+        <Link to="/privacy" style={{ color: 'var(--muted)', textDecoration: 'none' }}>{t('layout.privacy')}</Link>
       </footer>
 
     </div>
