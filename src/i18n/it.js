@@ -58,6 +58,12 @@ const it = {
       mutationDef: 'Una caratteristica extra del pet oltre al colore. Ogni specie ha le sue, e puoi indicare nel target quali ti servono.',
     },
 
+  step0: {
+    title: 'Cos\u2019\u00e8 OBT',
+    a: 'OBT \u00e8 un quaderno che fa i conti al posto tuo. Tu giochi su OviPets come hai sempre fatto; qui annoti i pet che possiedi, e OBT ti dice quanto ognuno \u00e8 lontano dal tuo obiettivo e quali accoppiamenti vale la pena di provare. Non si collega al gioco, non automatizza niente e non ti chieder\u00e0 mai la password di OviPets: tutto quello che vedi qui dentro l\u2019hai scritto tu.',
+    b: 'Non serve sapere niente di breeding per cominciare. La scheda Glossario spiega le parole, questa pagina spiega in che ordine fare le cose. Se ti sei appena iscritta/o a OviPets, leggila una volta dall\u2019inizio alla fine: sono dieci minuti e ti risparmiano parecchie uova buttate.',
+  },
+
   step1: {
     title: '1. Creare un progetto e scegliere il target',
     a: 'Un progetto \u00e8 un obiettivo di breeding: una specie, un target di colori, e tutti i pet che ci lavori sopra. Creane uno dalla dashboard, scegli la specie, e nella scheda Target inserisci il colore che vuoi ottenere per ogni slot. Gli slot cambiano da specie a specie: OBT ti mostra solo quelli giusti.',
@@ -68,6 +74,7 @@ const it = {
     title: '2. Inserire i founder (G0)',
     a: 'I founder sono i pet da cui parti, quelli che prendi in gioco. Inseriscili con generazione 0 e copia i colori dalla scheda del pet su OviPets. Conviene farlo mentre giochi, con le due finestre aperte: gli errori di trascrizione si notano subito, mentre a distanza di giorni diventano invisibili.',
     b: 'A ogni founder puoi dare un codice: una lettera singola, A, B, C. Non serve al gioco, serve a te: quando arriveranno i figli, guardando il nome capirai subito da quale coppia vengono. \u00c8 facoltativo, ma con pi\u00f9 di quattro o cinque founder diventa difficile farne a meno.',
+    c: 'Dove si trovano i colori: apri la pagina del pet su OviPets. Sotto \u201cColors\u201d vedi una fila di pallini colorati, uno per slot. Nella barra in basso c\u2019\u00e8 un pulsante che cambia quella vista: premilo e accanto a ogni pallino compare il codice hex (#EF1818, #1C1612 e cos\u00ec via). Sono quelli che copi in OBT, uno per slot, nello stesso ordine. Le mutazioni sono elencate poco sotto, nella riga \u201cMutations\u201d.',
   },
 
   step3: {
@@ -84,10 +91,24 @@ const it = {
   },
 
   step5: {
-    title: '5. Decidere la generazione dopo',
-    a: 'L\u2019Ispettore confronta due pet e ti dice il floor della coppia: la distanza pi\u00f9 bassa che i loro figli potranno mai raggiungere. Serve a non sprecare uova. Se il floor \u00e8 alto, quella coppia non pu\u00f2 darti niente di buono, per quanto insisti; se \u00e8 basso e i figli restano lontani, vuol dire che devi solo farne altri.',
-    b: 'Il Suggeritore guarda invece i dati che hai gi\u00e0 raccolto: quali coppie hanno prodotto i figli migliori, e quali riproduttori tendono a migliorare la loro discendenza. Non fa previsioni, riassume solo quello che \u00e8 successo davvero.',
-    c: 'Un\u2019avvertenza che vale per tutta la selezione: il pet con il punteggio migliore non \u00e8 sempre il partner migliore. Quello che conta \u00e8 il floor della coppia, cio\u00e8 come i due si completano. Due pet mediocri che coprono difetti diversi possono battere due pet ottimi che sbagliano lo stesso colore.',
+    title: '5. Il Laboratorio',
+    a: 'Analisi mette a confronto due pet e ti d\u00e0 il floor della coppia: la distanza pi\u00f9 bassa che i loro figli potranno mai raggiungere. Ti risparmia uova sprecate. Un floor alto vuol dire che quella coppia non ha niente di buono da darti, per quanto tu insista; un floor basso con figli deludenti vuol dire soltanto che devi covare di pi\u00f9.',
+    b: 'Classifica fa la stessa cosa su tutte le coppie non imparentate del progetto in una volta sola, ordinate per floor. \u00c8 il modo pi\u00f9 rapido per scoprire combinazioni che non avresti mai pensato di provare: la matematica non ha preferenze.',
+    c: 'Compatibili trova le coppie di coppie che non condividono nessun fondatore. Serve quando vuoi portare avanti due linee indipendenti in parallelo, per poterle incrociare pi\u00f9 avanti senza problemi di consanguineit\u00e0.',
+    d: 'Verifica guarda invece all\u2019indietro: prende le coppie che hanno gi\u00e0 prodotto figli e confronta il miglior figlio con il floor che avrebbero potuto raggiungere. La colonna \u201csopra il floor\u201d ti dice quanto potenziale \u00e8 ancora inutilizzato, cio\u00e8 se conviene covare ancora da quella coppia o passare oltre.',
+  },
+
+  step6: {
+    title: '6. Il ciclo di lavoro',
+    a: 'Una volta impostato tutto, OBT prende un ritmo: accoppi in gioco, registri qui la coppia e i figli, guardi Classifica e Verifica, decidi chi passa alla generazione successiva, ricominci. Ogni generazione dovrebbe restringere il campo: meno pet, pi\u00f9 vicini al target.',
+    b: 'Un avvertimento che vale sempre: il pet con il punteggio migliore non \u00e8 sempre il partner migliore. Quello che conta \u00e8 il floor della coppia, cio\u00e8 come i due si completano a vicenda. Due pet mediocri che coprono debolezze diverse possono battere due pet ottimi che sbagliano lo stesso colore.',
+  },
+
+  step7: {
+    title: 'Cosa OBT non fa',
+    a: 'Non prevede il futuro. Il floor \u00e8 un limite matematico, non una previsione: ti dice cosa non pu\u00f2 succedere, non cosa succeder\u00e0. Dentro quel limite il gioco resta casuale.',
+    b: 'Non legge il gioco. Ogni numero che vedi nasce da quello che hai scritto tu: un hex sbagliato o un genitore sbagliato avvelenano in silenzio tutti i calcoli a valle. Se qualcosa non torna, controlla i dati prima di dare la colpa alla matematica.',
+    c: 'Non gioca al posto tuo, e non ti chieder\u00e0 mai le credenziali di OviPets. Se qualcosa te le chiede a nome di OBT, non siamo noi.',
   },
 
   faq: {
@@ -100,6 +121,8 @@ const it = {
     a3: 'S\u00ec: un progetto pu\u00f2 essere reso pubblico, e in quel caso chiunque abbia il link pu\u00f2 vederlo in sola lettura. Solo tu puoi modificarlo.',
     q4: 'OBT \u00e8 ufficiale? \u00c8 collegato a OviPets?',
     a4: 'No. OBT \u00e8 uno strumento fan-made, indipendente, non affiliato n\u00e9 approvato da OviPets. I dettagli sono nella pagina Crediti.',
+    q5: 'Non mi \u00e8 arrivata l\u2019email di conferma.',
+    a5: 'Controlla prima nello spam o nella cartella promozioni: \u00e8 l\u00ec che finisce quasi sempre. Se non c\u2019\u00e8 nemmeno l\u00ec, riprova a registrarti dopo qualche minuto, oppure scrivici e confermiamo l\u2019account a mano.',
   },
   },
   privacy: {
@@ -247,7 +270,7 @@ const it = {
     createAccount: 'Crea un account',
     signInSub: 'Inserisci le tue credenziali per continuare',
     signUpSub: 'Unisciti alla community di OBT',
-    confirmationSent: 'Registrazione quasi completata. Controlla la tua email e clicca sul link di conferma prima di accedere.',
+    confirmationSent: 'Registrazione quasi completata. Controlla la tua email e clicca sul link di conferma prima di accedere. Se non la trovi, guarda nello spam o nella cartella promozioni: \u00e8 l\u00ec che finisce di solito.',
     username: 'Username',
     email: 'Email',
     password: 'Password',
@@ -256,6 +279,7 @@ const it = {
     startFree: 'Inizia gratis',
     haveAccount: 'Ho già un account',
     features: { starters: 'Gestisci starter', distance: 'Distanza cromatica', pairs: 'Coppie & figli', target: 'Colore target' },
+    disclaimer: 'OBT \u00e8 un progetto fan-made, non affiliato n\u00e9 approvato da OviPets o IO|HAZE PTE LTD.',
   },
   dashboard: {
     title: 'I tuoi progetti',

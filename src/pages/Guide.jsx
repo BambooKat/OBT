@@ -81,6 +81,11 @@ export default function Guide({ initialTab = 'glossary' }) {
 
         {/* ---- PERCORSO ---- */}
         {activeTab === 'guide' && (<>
+        <Section title={t('guide.step0.title')}>
+          <P>{t('guide.step0.a')}</P>
+          <P>{t('guide.step0.b')}</P>
+        </Section>
+
         <Section title={t('guide.step1.title')}>
           <P>{t('guide.step1.a')}</P>
           <P>{t('guide.step1.b')}</P>
@@ -89,6 +94,7 @@ export default function Guide({ initialTab = 'glossary' }) {
         <Section title={t('guide.step2.title')}>
           <P>{t('guide.step2.a')}</P>
           <P>{t('guide.step2.b')}</P>
+          <P>{t('guide.step2.c')}</P>
         </Section>
 
         <Section title={t('guide.step3.title')}>
@@ -106,6 +112,18 @@ export default function Guide({ initialTab = 'glossary' }) {
           <P>{t('guide.step5.a')}</P>
           <P>{t('guide.step5.b')}</P>
           <P>{t('guide.step5.c')}</P>
+          <P>{t('guide.step5.d')}</P>
+        </Section>
+
+        <Section title={t('guide.step6.title')}>
+          <P>{t('guide.step6.a')}</P>
+          <P>{t('guide.step6.b')}</P>
+        </Section>
+
+        <Section title={t('guide.step7.title')}>
+          <P>{t('guide.step7.a')}</P>
+          <P>{t('guide.step7.b')}</P>
+          <P>{t('guide.step7.c')}</P>
         </Section>
         </>)}
 
@@ -120,6 +138,8 @@ export default function Guide({ initialTab = 'glossary' }) {
           <P>{t('guide.faq.a3')}</P>
           <P><strong>{t('guide.faq.q4')}</strong></P>
           <P>{t('guide.faq.a4')}</P>
+          <P><strong>{t('guide.faq.q5')}</strong></P>
+          <P>{t('guide.faq.a5')}</P>
         </Section>
         )}
 

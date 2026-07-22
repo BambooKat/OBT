@@ -310,6 +310,9 @@ function Login() {
         >
           Ovipets.com
         </a>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', opacity: .85 }}>
+          {t('login.disclaimer')}
+        </div>
       </footer>
 
       <style>{`

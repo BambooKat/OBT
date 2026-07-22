@@ -58,6 +58,12 @@ const en = {
       mutationDef: 'An extra trait beyond colour. Each species has its own set, and you can mark in the target which ones you need.',
     },
 
+  step0: {
+    title: 'What OBT is',
+    a: 'OBT is a notebook that does the maths for you. You play on OviPets as you always have; here you write down the pets you own, and OBT tells you how far each one is from your goal and which pairings are worth spending eggs on. It doesn\u2019t connect to the game, doesn\u2019t automate anything and never asks for your OviPets password: everything you see here is what you typed in.',
+    b: 'You don\u2019t need to know anything about breeding to start. The Glossary tab explains the words, this page explains the order to do things in. If you\u2019ve only just joined OviPets, read it once from top to bottom \u2014 it takes ten minutes and saves a lot of wasted eggs.',
+  },
+
   step1: {
     title: '1. Create a project and set the target',
     a: 'A project is a breeding goal: one species, one colour target, and all the pets working towards it. Create one from the dashboard, pick the species, then enter the colour you want for each slot in the Target tab. Slots differ by species \u2014 OBT only shows the ones that apply.',
@@ -68,6 +74,7 @@ const en = {
     title: '2. Add your founders (G0)',
     a: 'Founders are the pets you start from, the ones you bring in from the game. Add them as generation 0 and copy the colours from the pet\u2019s page on OviPets. It helps to do this while you play, with both windows open: typos jump out immediately, whereas days later they become invisible.',
     b: 'You can give each founder a code: a single letter, A, B, C. The game doesn\u2019t use it \u2014 you do. Once children start arriving, the name alone tells you which pairing they came from. It\u2019s optional, but past four or five founders it\u2019s hard to manage without.',
+    c: 'Where to find the colours: open the pet\u2019s page on OviPets. Under \u201cColors\u201d you\u2019ll see a row of coloured dots \u2014 one per slot. The bottom toolbar has a button that switches that view: press it and the hex code appears next to each dot (#EF1818, #1C1612 and so on). Those are the codes you copy into OBT, one per slot, in the same order. The mutations are listed just below, in the \u201cMutations\u201d row.',
   },
 
   step3: {
@@ -84,10 +91,24 @@ const en = {
   },
 
   step5: {
-    title: '5. Planning the next generation',
-    a: 'The Inspector compares two pets and gives you the pairing\u2019s floor: the lowest distance their children could ever reach. It saves you wasted eggs. A high floor means that pairing has nothing good to give you, however long you persist; a low floor with disappointing children just means you need to hatch more.',
-    b: 'The Suggester instead looks at the data you\u2019ve already gathered: which pairings produced the best children, and which breeders tend to improve on themselves. It makes no predictions \u2014 it only summarises what actually happened.',
-    c: 'One caveat that applies throughout: the pet with the best score isn\u2019t always the best partner. What matters is the pairing\u2019s floor \u2014 how the two complement each other. Two mediocre pets covering different weaknesses can beat two excellent ones that get the same colour wrong.',
+    title: '5. The Lab',
+    a: 'Analysis compares two pets and gives you the pairing\u2019s floor: the lowest distance their children could ever reach. It saves wasted eggs. A high floor means that pairing has nothing good to give you, however long you persist; a low floor with disappointing children just means you need to hatch more.',
+    b: 'Ranking does the same thing for every non-related pair in the project at once, sorted by floor. It\u2019s the fastest way to spot combinations you\u2019d never have thought to try \u2014 the maths has no favourites.',
+    c: 'Compatible finds pairs of pairs that share no founders. Use it when you want two independent lines running in parallel, so that later on you can cross them without hitting consanguinity.',
+    d: 'Results looks backwards instead: it takes the pairings that already produced children and compares the best child against the floor they could have reached. The \u201cover floor\u201d column tells you how much potential is still unused \u2014 in other words, whether it\u2019s worth hatching more from that pair or moving on.',
+  },
+
+  step6: {
+    title: '6. The working loop',
+    a: 'Once everything is set up, OBT settles into a rhythm: pair up in the game, record the pairing and the children here, look at Ranking and Results, decide who moves on to the next generation, repeat. Each generation should narrow the field \u2014 fewer pets, closer to target.',
+    b: 'One caveat that applies throughout: the pet with the best score isn\u2019t always the best partner. What matters is the pairing\u2019s floor \u2014 how the two complement each other. Two mediocre pets covering different weaknesses can beat two excellent ones that get the same colour wrong.',
+  },
+
+  step7: {
+    title: 'What OBT doesn\u2019t do',
+    a: 'It doesn\u2019t predict the future. The floor is a mathematical limit, not a forecast: it tells you what can\u2019t happen, not what will. Within that limit, the game is still random.',
+    b: 'It doesn\u2019t read the game. Every number here comes from what you typed in \u2014 a wrong hex or a wrong parent quietly poisons every calculation downstream. If something looks off, check the data before blaming the maths.',
+    c: 'It doesn\u2019t play for you, and it will never ask for your OviPets credentials. If anything ever asks for them in OBT\u2019s name, it isn\u2019t us.',
   },
 
   faq: {
@@ -100,6 +121,8 @@ const en = {
     a3: 'Yes \u2014 a project can be made public, and anyone with the link can then view it read-only. Only you can edit it.',
     q4: 'Is OBT official? Is it connected to OviPets?',
     a4: 'No. OBT is an independent, fan-made tool, not affiliated with or endorsed by OviPets. Full details are on the Credits page.',
+    q5: 'The confirmation email never arrived.',
+    a5: 'Check your spam or promotions folder first \u2014 that\u2019s where it usually ends up. If it isn\u2019t there either, try signing up again after a few minutes, or get in touch and we\u2019ll confirm the account by hand.',
   },
   },
   privacy: {
@@ -247,7 +270,7 @@ const en = {
     createAccount: 'Create an account',
     signInSub: 'Enter your credentials to continue',
     signUpSub: 'Join the OBT community',
-    confirmationSent: 'Almost there! Check your inbox and click the confirmation link before signing in.',
+    confirmationSent: 'Almost there! Check your inbox and click the confirmation link before signing in. If you can\u2019t find it, look in your spam or promotions folder \u2014 that\u2019s usually where it lands.',
     username: 'Username',
     email: 'Email',
     password: 'Password',
@@ -256,6 +279,7 @@ const en = {
     startFree: 'Start for free',
     haveAccount: 'I already have an account',
     features: { starters: 'Manage starters', distance: 'Colour distance', pairs: 'Pairs & children', target: 'Target colour' },
+    disclaimer: 'OBT is a fan-made project, not affiliated with or endorsed by OviPets or IO|HAZE PTE LTD.',
   },
   dashboard: {
     title: 'Your projects',
