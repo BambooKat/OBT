@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useT } from '../i18n'
 
-// Bandierina + menu a tendina. Si popola da solo leggendo LANGUAGES,
+// Codice lingua + menu a tendina. Si popola da solo leggendo LANGUAGES,
 // quindi aggiungere una lingua non richiede di toccare questo file.
 function LanguageSwitcher() {
   const { lang, setLang, languages, t } = useT()
@@ -34,16 +34,10 @@ function LanguageSwitcher() {
         aria-expanded={open}
         aria-label={t('layout.language')}
         title={t('layout.language')}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: 'transparent', border: '1px solid var(--line)',
-          borderRadius: 'var(--radius-pill)', padding: '5px 10px',
-          cursor: 'pointer', fontSize: 15, lineHeight: 1,
-          color: 'var(--ink-soft)', fontWeight: 700, fontFamily: 'inherit',
-        }}
+        className="obt-btn obt-btn--ghost obt-btn--sm"
       >
-        <span style={{ fontSize: 12 }}>{current?.flag}</span>
-        <span style={{ fontSize: 11 }}>{open ? '▴' : '▾'}</span>
+        <span style={{ letterSpacing: '.5px' }}>{current?.flag}</span>
+        <span style={{ fontSize: 10, opacity: .7 }}>{open ? '▴' : '▾'}</span>
       </button>
 
       {open && (
@@ -73,7 +67,10 @@ function LanguageSwitcher() {
                   fontSize: 13, fontFamily: 'inherit',
                 }}
               >
-                <span style={{ fontSize: 12 }}>{flag}</span>
+                <span style={{
+                  minWidth: 22, letterSpacing: '.5px',
+                  color: code === lang ? 'var(--primary-dark)' : 'var(--muted)',
+                }}>{flag}</span>
                 {label}
                 {code === lang && <span style={{ marginLeft: 'auto' }}>✓</span>}
               </button>
