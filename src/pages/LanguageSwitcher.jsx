@@ -42,7 +42,7 @@ function LanguageSwitcher() {
           color: 'var(--ink-soft)', fontWeight: 700, fontFamily: 'inherit',
         }}
       >
-        <span style={{ fontSize: 17 }}>{current?.flag}</span>
+        <span style={{ fontSize: 12 }}>{current?.flag}</span>
         <span style={{ fontSize: 11 }}>{open ? '▴' : '▾'}</span>
       </button>
 
@@ -73,7 +73,7 @@ function LanguageSwitcher() {
                   fontSize: 13, fontFamily: 'inherit',
                 }}
               >
-                <span style={{ fontSize: 16 }}>{flag}</span>
+                <span style={{ fontSize: 12 }}>{flag}</span>
                 {label}
                 {code === lang && <span style={{ marginLeft: 'auto' }}>✓</span>}
               </button>
