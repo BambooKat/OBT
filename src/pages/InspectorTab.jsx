@@ -5,7 +5,7 @@
 // al bordo più vicino. Somma dei floor per slot = distanza minima raggiungibile.
 // Metrica identica a ProjectPage/SuggesterTab, così i numeri combaciano sempre.
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useT } from '../i18n'
 import Help from './Help'
 import { slotsOf, hexToRgb, totalDist, petLabel, Pill, downloadCsv, analyseSlot } from './petUtils'
@@ -116,6 +116,8 @@ export default function InspectorTab({ pets, project }) {
   const [rankLimit, setRankLimit] = useState(25)
   const [rankExportN, setRankExportN] = useState(50)
   const [view, setView] = useState('analyse')
+  const [petFilter, setPetFilter] = useState('')
+  const [plan, setPlan] = useState([])   // [{ fId, mId, floor }] — piano di accoppiamento in costruzione
 
   const slots = slotsOf(project)
   const slotLabel = (key) => t('project.slot.' + key)
@@ -264,6 +266,70 @@ export default function InspectorTab({ pets, project }) {
     return set
   }
 
+  // --- PIANO DI ACCOPPIAMENTO -------------------------------------------
+  // Il piano vive in localStorage per progetto: non è un dato di gioco, è una
+  // bozza di lavoro, quindi non vale la pena farne una tabella su DB.
+  const planKey = project?.id ? `obt.plan.${project.id}` : null
+
+  useEffect(() => {
+    if (!planKey) return
+    try {
+      const raw = localStorage.getItem(planKey)
+      setPlan(raw ? JSON.parse(raw) : [])
+    } catch { setPlan([]) }
+  }, [planKey])
+
+  useEffect(() => {
+    if (!planKey) return
+    try { localStorage.setItem(planKey, JSON.stringify(plan)) } catch { /* quota piena, pazienza */ }
+  }, [plan, planKey])
+
+  // pet già impegnati: un pet in cooldown non può stare in due coppie insieme
+  const usedPetIds = useMemo(() => {
+    const s = new Set()
+    for (const p of plan) { s.add(p.fId); s.add(p.mId) }
+    return s
+  }, [plan])
+
+  const planPairKeys = useMemo(
+    () => new Set(plan.map(p => p.fId + ':' + p.mId)),
+    [plan]
+  )
+
+  // founder già usati dal piano, coppia per coppia: serve a segnalare le righe
+  // che sarebbero imparentate con qualcosa che hai già scelto
+  const planFounderSets = useMemo(
+    () => plan.map(p => {
+      const set = new Set()
+      for (const x of founderCodes(p.fId)) set.add(x)
+      for (const x of founderCodes(p.mId)) set.add(x)
+      return set
+    }),
+    [plan, founderCodes]
+  )
+
+  const planRows = useMemo(() => plan.map(p => ({
+    ...p,
+    f: pets.find(x => x.id === p.fId),
+    m: pets.find(x => x.id === p.mId),
+  })).filter(r => r.f && r.m), [plan, pets])
+
+  const addToPlan = (r) => setPlan(prev =>
+    prev.some(p => p.fId === r.f.id && p.mId === r.m.id)
+      ? prev
+      : [...prev, { fId: r.f.id, mId: r.m.id, floor: Math.round(r.floor) }]
+  )
+  const removeFromPlan = (fId, mId) =>
+    setPlan(prev => prev.filter(p => !(p.fId === fId && p.mId === mId)))
+
+  const exportPlan = () => {
+    const rows = planRows.map((r, i) => ({
+      n: i + 1, madre: r.f.name, padre: r.m.name, floor: r.floor,
+    }))
+    const slug = (project?.name || 'linea').replace(/[^\w-]+/g, '_')
+    downloadCsv(rows, `${slug}_piano_accoppiamenti.csv`)
+  }
+
   // Cerca due coppie che non condividano nemmeno un founder: sono le uniche
   // che possono dare figli incrociabili tra loro (e quindi una breeding pair).
   const disjointPairs = useMemo(() => {
@@ -282,6 +348,35 @@ export default function InspectorTab({ pets, project }) {
     out.sort((x, y) => x.worst - y.worst)
     return out.slice(0, 20)
   }, [ranking, founderCodes])
+
+  // Righe della Classifica arricchite con lo stato rispetto al piano.
+  // busy  = uno dei due pet è già impegnato in una coppia scelta
+  // kin   = la coppia condivide founder con una coppia già nel piano
+  //         (non è vietata: è un avviso se stai cercando linee indipendenti)
+  const visibleRows = useMemo(() => {
+    if (!ranking) return []
+    const q = petFilter.trim().toLowerCase()
+    const rows = q
+      ? ranking.rows.filter(r =>
+          String(r.f.name).toLowerCase().includes(q) ||
+          String(r.m.name).toLowerCase().includes(q) ||
+          String(r.f.code || '').toLowerCase() === q ||
+          String(r.m.code || '').toLowerCase() === q)
+      : ranking.rows
+    return rows.map(r => {
+      const chosen = planPairKeys.has(r.f.id + ':' + r.m.id)
+      const busyF = !chosen && usedPetIds.has(r.f.id)
+      const busyM = !chosen && usedPetIds.has(r.m.id)
+      let kinCodes = new Set()
+      if (!chosen && !busyF && !busyM && planFounderSets.length) {
+        const own = pairFounders(r)
+        for (const set of planFounderSets) {
+          for (const x of own) if (set.has(x)) kinCodes.add(x)
+        }
+      }
+      return { ...r, chosen, busyF, busyM, busy: busyF || busyM, kin: kinCodes.size > 0, kinCodes }
+    })
+  }, [ranking, petFilter, planPairKeys, usedPetIds, planFounderSets])
 
   const exportRanking = () => {
     if (!ranking) return
@@ -512,9 +607,68 @@ export default function InspectorTab({ pets, project }) {
 
           <GenFilter />
 
+          {/* --- piano di accoppiamento --- */}
+          {planRows.length > 0 && (
+            <div style={{
+              border: '2px solid var(--primary)', borderRadius: 'var(--radius)',
+              padding: '12px 14px', marginBottom: 16, background: 'var(--bg)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                <strong style={{ fontSize: 13 }}>
+                  <i className="ti ti-clipboard-list" /> {t('project.inspector.planTitle')}
+                </strong>
+                <span className="obt-text-soft" style={{ fontSize: 12 }}>
+                  {t('project.inspector.planCount', { n: planRows.length, pets: usedPetIds.size })}
+                </span>
+                <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                  <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={exportPlan}>
+                    <i className="ti ti-download" /> {t('project.export.csv')}
+                  </button>
+                  <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setPlan([])}>
+                    {t('project.inspector.planClear')}
+                  </button>
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {planRows.map((r, i) => (
+                  <span key={r.fId + ':' + r.mId} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    background: 'var(--card)', border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-pill)', padding: '5px 6px 5px 12px', fontSize: 12,
+                  }}>
+                    <span className="obt-text-soft">{i + 1}.</span>
+                    <span>♀ {r.f.name} × ♂ {r.m.name}</span>
+                    <Pill d={r.floor} />
+                    <button
+                      onClick={() => removeFromPlan(r.fId, r.mId)}
+                      title={t('project.inspector.planRemove')}
+                      style={{
+                        border: 'none', background: 'none', cursor: 'pointer',
+                        color: 'var(--muted)', fontSize: 14, lineHeight: 1, padding: '0 4px',
+                      }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+            <input
+              type="text"
+              value={petFilter}
+              onChange={e => { setPetFilter(e.target.value); setRankLimit(25) }}
+              placeholder={t('project.inspector.rankFilterPlaceholder')}
+              className="obt-input"
+              style={{ width: 210, padding: '5px 10px', fontSize: 12 }}
+            />
+            {petFilter && (
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setPetFilter('')}>
+                {t('common.cancel')}
+              </button>
+            )}
             <span className="obt-text-soft" style={{ fontSize: 12, marginLeft: 4 }}>
-              {t('project.inspector.rankCount', { shown: ranking.rows.length, skipped: ranking.skipped })}
+              {t('project.inspector.rankCount', { shown: visibleRows.length, skipped: ranking.skipped })}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
               <input
@@ -547,15 +701,43 @@ export default function InspectorTab({ pets, project }) {
                 </tr>
               </thead>
               <tbody>
-                {ranking.rows.slice(0, rankLimit).map((r, i) => (
-                  <tr key={r.f.id + ':' + r.m.id}>
+                {visibleRows.slice(0, rankLimit).map((r, i) => (
+                  <tr key={r.f.id + ':' + r.m.id} style={{
+                    opacity: r.busy ? 0.4 : 1,
+                    background: r.chosen ? 'var(--bg)' : undefined,
+                  }}>
                     <td className="obt-text-soft">{i + 1}</td>
-                    <td>{petLabel(r.f)}</td>
-                    <td>{petLabel(r.m)}</td>
-                    <td><Pill d={r.floor} /></td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.ok}/{r.tot}</td>
                     <td>
-                      <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                      {petLabel(r.f)}
+                      {r.busyF && <i className="ti ti-lock" title={t('project.inspector.rankBusy')} style={{ marginLeft: 5, color: 'var(--muted)' }} />}
+                    </td>
+                    <td>
+                      {petLabel(r.m)}
+                      {r.busyM && <i className="ti ti-lock" title={t('project.inspector.rankBusy')} style={{ marginLeft: 5, color: 'var(--muted)' }} />}
+                    </td>
+                    <td><Pill d={r.floor} /></td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      {r.ok}/{r.tot}
+                      {!r.busy && r.kin && (
+                        <i className="ti ti-alert-triangle"
+                          title={t('project.inspector.rankKin', { codes: [...r.kinCodes].sort().join(', ') })}
+                          style={{ marginLeft: 6, color: 'var(--bad-text)' }} />
+                      )}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {r.chosen ? (
+                        <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                          onClick={() => removeFromPlan(r.f.id, r.m.id)}>
+                          {t('project.inspector.rankRemove')}
+                        </button>
+                      ) : (
+                        <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                          disabled={r.busy}
+                          onClick={() => addToPlan(r)}>
+                          <i className="ti ti-plus" /> {t('project.inspector.rankAdd')}
+                        </button>
+                      )}
+                      <button className="obt-btn obt-btn--ghost obt-btn--sm" style={{ marginLeft: 6 }}
                         onClick={() => { setMotherId(r.f.id); setFatherId(r.m.id); setView('analyse') }}>
                         {t('project.inspector.rankOpen')}
                       </button>
@@ -566,7 +748,7 @@ export default function InspectorTab({ pets, project }) {
             </table>
           </div>
 
-          {ranking.rows.length > rankLimit && (
+          {visibleRows.length > rankLimit && (
             <div style={{ textAlign: 'center', marginTop: 14 }}>
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setRankLimit(n => n + 25)}>
                 {t('project.inspector.rankMore')}
