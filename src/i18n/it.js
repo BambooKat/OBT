@@ -257,9 +257,8 @@ const it = {
     tagline: 'OBT — Tool per Ovipets by BambooKat',
     contact: 'Contatti',
     language: 'Lingua',
-    dashboardAlt: 'Vai alla dashboard', 
-    guide: 'Guida',
-    faq: 'FAQ',
+    dashboardAlt: 'Vai alla dashboard',
+    guideFaq: 'Guida / FAQ',
   },
   login: {
     showPassword: 'Mostra password',

@@ -26,10 +26,7 @@ function Layout({ username, onLogout, children }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
           <LanguageSwitcher />
           <Link to="/guide" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
-            <i className="ti ti-book" /> {t('layout.guide')}
-          </Link>
-          <Link to="/faq" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
-            <i className="ti ti-help" /> {t('layout.faq')}
+            <i className="ti ti-book" /> {t('layout.guideFaq')}
           </Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -258,8 +258,7 @@ const en = {
     contact: 'Contact',
     language: 'Language',
     dashboardAlt: 'Go to your dashboard',
-    guide: 'Guide',
-    faq: 'FAQ'
+    guideFaq: 'Guide / FAQ',
   },
   login: {
     showPassword: 'Show password',

@@ -24,7 +24,7 @@ const Term = ({ name, children }) => (
   </div>
 )
 
-export default function Guide({ initialTab = 'glossary' }) {
+export default function Guide({ initialTab = 'guide' }) {
   const { t } = useT()
   const [activeTab, setActiveTab] = useState(initialTab)
 
