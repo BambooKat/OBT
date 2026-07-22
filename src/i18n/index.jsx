@@ -11,8 +11,8 @@ import it from './it'
 // Le chiavi mancanti ricadono automaticamente sull'inglese.
 // ---------------------------------------------------------------------------
 export const LANGUAGES = {
-  en: { label: 'English',  flag: '🇬🇧', dict: en, locale: 'en-GB' },
-  it: { label: 'Italiano', flag: '🇮🇹', dict: it, locale: 'it-IT' },
+  en: { label: 'English',  flag: 'EN' },
+  it: { label: 'Italiano', flag: 'IT' },
 }
 
 export const DEFAULT_LANG = 'en'
