@@ -490,7 +490,7 @@ const en = {
       tabAnalyse: 'Analysis',
       tabRanking: 'Ranking',
       tabDisjoint: 'Compatible',
-      tabVerify: 'Results',
+      tabVerify: 'Pair Results',
       planTitle: 'Breeding plan',
       planCount: '{n} pairs · {pets} pets committed',
       planClear: 'Clear plan',

@@ -531,7 +531,7 @@ const it = {
       tabAnalyse: 'Analisi',
       tabRanking: 'Classifica',
       tabDisjoint: 'Compatibili',
-      tabVerify: 'Verifica',
+      tabVerify: 'Risultati coppie',
       planTitle: 'Piano di accoppiamento',
       planCount: '{n} coppie · {pets} pet impegnati',
       planClear: 'Svuota piano',
