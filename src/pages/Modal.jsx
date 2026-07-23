@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 
 // Modal riusabile. Si chiude con Esc o col bottone ✕ (NON al click fuori, per non perdere dati).
@@ -17,8 +17,17 @@ import { useT } from '../i18n'
 //   title: titolo mostrato in alto
 //   size: 'sm' | 'md' | 'lg' (default 'md')
 //   children: contenuto del modal (tipicamente un form)
+//
+// Modali sovrapposti: dal Laboratorio si apre il form pet SOPRA la lista figli.
+// Uno stack a livello di modulo tiene traccia dell'ordine di apertura, così
+// Esc chiude solo quello in cima e lo z-index cresce con la profondita'
+// (senza, l'ordine nel DOM decide chi sta sopra e il risultato e' casuale).
+let modalStack = []
+
 function Modal({ open, onClose, title, size = 'md', children }) {
   const { t } = useT()
+  const idRef = useRef({})
+  const [depth, setDepth] = useState(0)
 
   // onClose è quasi sempre una arrow inline: cambia identità a ogni render.
   // Tenerlo in un ref evita che l'effetto si rimonti di continuo.
@@ -27,10 +36,22 @@ function Modal({ open, onClose, title, size = 'md', children }) {
 
   useEffect(() => {
     if (!open) return
-    const handleKey = (e) => { if (e.key === 'Escape') onCloseRef.current?.() }
+    const id = idRef.current
+    modalStack.push(id)
+    setDepth(modalStack.length - 1)
+
+    const handleKey = (e) => {
+      if (e.key !== 'Escape') return
+      // solo il modal in cima reagisce, altrimenti Esc li chiude tutti insieme
+      if (modalStack[modalStack.length - 1] !== id) return
+      onCloseRef.current?.()
+    }
     window.addEventListener('keydown', handleKey)
 
-    return () => window.removeEventListener('keydown', handleKey)
+    return () => {
+      window.removeEventListener('keydown', handleKey)
+      modalStack = modalStack.filter((x) => x !== id)
+    }
   }, [open])
 
   if (!open) return null
@@ -38,7 +59,7 @@ function Modal({ open, onClose, title, size = 'md', children }) {
   const sizeClass = size === 'sm' ? 'obt-modal--sm' : size === 'lg' ? 'obt-modal--lg' : ''
 
   return (
-    <div className="obt-modal-overlay">
+    <div className="obt-modal-overlay" style={{ zIndex: 1000 + depth * 10 }}>
       <div className={`obt-modal ${sizeClass}`}>
         <div className="obt-modal-head">
           <div>

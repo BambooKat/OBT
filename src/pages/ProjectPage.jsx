@@ -705,48 +705,6 @@ function ProjectPage() {
                 </button>
               )}
             </div>
-            <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? t('project.pet.editTitle') : (activeTab === 'starters' ? t('project.pet.newStarter') : t('project.pet.newChild'))} size="lg">
-              <form onSubmit={handlePetSubmit}>
-                <div className="obt-row">
-                  <div className="obt-field"><label>{t('project.pet.name')} <Help text={t('project.help.name')} /></label><input className="obt-input" value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required autoFocus /></div>
-                  <div className="obt-field"><label>{t('project.pet.sex')}</label><select className="obt-select" value={petForm.sex} onChange={e => setPetForm({...petForm, sex: e.target.value})}><option value="M">M</option><option value="F">F</option><option value="ND">ND</option></select></div>
-                  <div className="obt-field"><label>{t('project.pet.code')} <Help text={t('project.help.code')} /></label><input className="obt-input" value={petForm.code} onChange={e => setPetForm({...petForm, code: e.target.value})} /></div>
-                  <div className="obt-field"><label>{t('project.pet.generation')}</label><input type="number" min="0" className="obt-input" value={petForm.generation} onChange={e => setPetForm({...petForm, generation: e.target.value})} /></div>
-                </div>
-                {petForm.generation > 0 && (
-                  <div className="obt-row">
-                    <div className="obt-field">
-                      <label>{t('project.pet.mother')}</label>
-                      <select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm(withDerivedGen({...petForm, mother_id: e.target.value}))}>
-                        <option value="">{t('project.pet.noMother')}</option>
-                        {females.map(f => <option key={f.id} value={f.id}>{petLabel(f)}</option>)}
-                      </select>
-                    </div>
-                    <div className="obt-field">
-                      <label>{t('project.pet.father')}</label>
-                      <select className="obt-select" value={petForm.father_id} onChange={e => setPetForm(withDerivedGen({...petForm, father_id: e.target.value}))}>
-                        <option value="">{t('project.pet.noFather')}</option>
-                        {males.map(m => <option key={m.id} value={m.id}>{petLabel(m)}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                )}
-                <div className="obt-row">
-                  {slots.map(s => (
-                    <div className="obt-field" key={s}>
-                      <label>{slotLabel(s)} <Help text={t('project.help.color')} /></label>
-                      <input className="obt-input" placeholder="000000" value={(petForm.colors || {})[s] || ''} onChange={e => setPetForm({ ...petForm, colors: { ...petForm.colors, [s]: e.target.value } })} onBlur={e => { const n = normalizeHex(e.target.value); if (n) setPetForm({ ...petForm, colors: { ...petForm.colors, [s]: n } }) }} />
-                    </div>
-                  ))}
-                </div>
-                <div className="obt-field"><label>{t('project.pet.notes')}</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
-                <div className="obt-field"><label>{t('project.pet.mutations')}</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
-                <div className="obt-actions">
-                  <button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button>
-                  <button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>{t('common.cancel')}</button>
-                </div>
-              </form>
-            </Modal>
             {activeTab === 'starters' ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
@@ -1002,7 +960,7 @@ function ProjectPage() {
         )}
 
         {activeTab === 'inspector' && (
-          <InspectorTab pets={pets} project={project} />
+          <InspectorTab pets={pets} project={project} isOwner={isOwner} onEditPet={handleEditPet} />
         )}
 
         {/* ---- TARGET ---- */}
@@ -1038,6 +996,50 @@ function ProjectPage() {
           </>
         )}
       </div>
+
+      {/* Form pet: fuori dai tab, così è raggiungibile anche dal Laboratorio */}
+      <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? t('project.pet.editTitle') : (activeTab === 'starters' ? t('project.pet.newStarter') : t('project.pet.newChild'))} size="lg">
+        <form onSubmit={handlePetSubmit}>
+          <div className="obt-row">
+            <div className="obt-field"><label>{t('project.pet.name')} <Help text={t('project.help.name')} /></label><input className="obt-input" value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
+            <div className="obt-field"><label>{t('project.pet.sex')}</label><select className="obt-select" value={petForm.sex} onChange={e => setPetForm({...petForm, sex: e.target.value})}><option value="M">M</option><option value="F">F</option><option value="ND">ND</option></select></div>
+            <div className="obt-field"><label>{t('project.pet.code')} <Help text={t('project.help.code')} /></label><input className="obt-input" value={petForm.code} onChange={e => setPetForm({...petForm, code: e.target.value})} /></div>
+            <div className="obt-field"><label>{t('project.pet.generation')}</label><input type="number" min="0" className="obt-input" value={petForm.generation} onChange={e => setPetForm({...petForm, generation: e.target.value})} /></div>
+          </div>
+          {petForm.generation > 0 && (
+            <div className="obt-row">
+              <div className="obt-field">
+                <label>{t('project.pet.mother')}</label>
+                <select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm(withDerivedGen({...petForm, mother_id: e.target.value}))}>
+                  <option value="">{t('project.pet.noMother')}</option>
+                  {females.map(f => <option key={f.id} value={f.id}>{petLabel(f)}</option>)}
+                </select>
+              </div>
+              <div className="obt-field">
+                <label>{t('project.pet.father')}</label>
+                <select className="obt-select" value={petForm.father_id} onChange={e => setPetForm(withDerivedGen({...petForm, father_id: e.target.value}))}>
+                  <option value="">{t('project.pet.noFather')}</option>
+                  {males.map(m => <option key={m.id} value={m.id}>{petLabel(m)}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+          <div className="obt-row">
+            {slots.map(s => (
+              <div className="obt-field" key={s}>
+                <label>{slotLabel(s)} <Help text={t('project.help.color')} /></label>
+                <input className="obt-input" placeholder="000000" value={(petForm.colors || {})[s] || ''} onChange={e => setPetForm({ ...petForm, colors: { ...petForm.colors, [s]: e.target.value } })} onBlur={e => { const n = normalizeHex(e.target.value); if (n) setPetForm({ ...petForm, colors: { ...petForm.colors, [s]: n } }) }} />
+              </div>
+            ))}
+          </div>
+          <div className="obt-field"><label>{t('project.pet.notes')}</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
+          <div className="obt-field"><label>{t('project.pet.mutations')}</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
+          <div className="obt-actions">
+            <button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button>
+            <button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>{t('common.cancel')}</button>
+          </div>
+        </form>
+      </Modal>
     </>
   )
 }

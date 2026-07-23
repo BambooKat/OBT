@@ -92,7 +92,7 @@ function computeBreeders(pets, project, gen) {
 }
 
 // --- Modal: elenco dei figli di una coppia, ordinabile ---
-function ChildrenModal({ open, onClose, row, project }) {
+function ChildrenModal({ open, onClose, row, project, isOwner, onEditPet }) {
   const { t } = useT()
   const [sort, setSort] = useState({ key: 'distance', dir: 1 })
   const slots = slotsOf(project)
@@ -159,6 +159,7 @@ function ChildrenModal({ open, onClose, row, project }) {
               <th>{t('project.suggester.colors')}</th>
               <Th k="distance">{t('project.table.distance')}</Th>
               <Th k="notes">{t('project.table.notes')}</Th>
+              {isOwner && onEditPet && <th style={{ width: 40 }} />}
             </tr>
           </thead>
           <tbody>
@@ -175,6 +176,13 @@ function ChildrenModal({ open, onClose, row, project }) {
                 </td>
                 <td><Pill d={totalDist(c, project)} /></td>
                 <td>{c.notes || ''}</td>
+                {isOwner && onEditPet && (
+                  <td>
+                    <button className="obt-icon-btn" onClick={() => onEditPet(c)} title={t('common.edit')}>
+                      <i className="ti ti-pencil" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -187,10 +195,10 @@ function ChildrenModal({ open, onClose, row, project }) {
   )
 }
 
-export default function SuggesterTab({ pets, project }) {
+export default function SuggesterTab({ pets, project, isOwner, onEditPet }) {
   const { t } = useT()
   const [gen, setGen] = useState('')
-  const [openRow, setOpenRow] = useState(null)
+  const [openKey, setOpenKey] = useState(null)
 
   // solo le generazioni che hanno davvero dei figli: la G0 non compare
   const generations = useMemo(
@@ -201,6 +209,12 @@ export default function SuggesterTab({ pets, project }) {
   const pairs = useMemo(() => computePairs(pets, project, gen), [pets, project, gen])
   const breeders = useMemo(() => computeBreeders(pets, project, gen), [pets, project, gen])
   const expected = useMemo(() => expectedClutch(pairs), [pairs])
+
+  // La riga aperta si rilegge da `pairs` a ogni render: se salvi una modifica dal
+  // modale, la lista figli si aggiorna invece di restare ferma su una copia vecchia.
+  const openRow = openKey
+    ? pairs.find((r) => r.mother.id === openKey.m && r.father.id === openKey.f) || null
+    : null
 
   const GenFilter = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -264,7 +278,7 @@ export default function SuggesterTab({ pets, project }) {
                       <td>{petLabel(r.father)}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <button
-                          onClick={() => setOpenRow(r)}
+                          onClick={() => setOpenKey({ m: r.mother.id, f: r.father.id })}
                           title={t('project.suggester.childrenOpen')}
                           style={{
                             background: 'none', border: 'none', padding: 0,
@@ -342,9 +356,11 @@ export default function SuggesterTab({ pets, project }) {
 
       <ChildrenModal
         open={!!openRow}
-        onClose={() => setOpenRow(null)}
+        onClose={() => setOpenKey(null)}
         row={openRow}
         project={project}
+        isOwner={isOwner}
+        onEditPet={onEditPet}
       />
     </>
   )

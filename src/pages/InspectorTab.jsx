@@ -108,7 +108,7 @@ function ChannelLegend() {
   )
 }
 
-export default function InspectorTab({ pets, project }) {
+export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
   const { t } = useT()
   const [motherId, setMotherId] = useState('')
   const [fatherId, setFatherId] = useState('')
@@ -760,7 +760,7 @@ export default function InspectorTab({ pets, project }) {
         </>
       )}
 
-      {view === 'verify' && <SuggesterTab pets={pets} project={project} />}
+      {view === 'verify' && <SuggesterTab pets={pets} project={project} isOwner={isOwner} onEditPet={onEditPet} />}
 
       {view === 'disjoint' && (
         <>
