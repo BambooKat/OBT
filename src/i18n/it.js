@@ -587,6 +587,12 @@ const it = {
       overFloor: 'Sopra il floor',
       ownDist: 'Distanza propria',
       empty: 'Ancora nessun figlio registrato con genitori collegati.',
+      colors: 'Colori',
+      childrenTitle: 'Figli',
+      childrenHint: '{count} figli registrati per questa coppia.',
+      childrenUnscored: '{count} senza colori completi, esclusi dalle medie',
+      childrenOpen: 'Mostra i figli di questa coppia',
+      clutchWarn: 'Più figli della cucciolata abituale del progetto ({expected}). Conviene controllare se un pet è assegnato ai genitori sbagliati.',
     },
     roster: {
       edit: 'Modifica roster',

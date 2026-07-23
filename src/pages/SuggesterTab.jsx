@@ -5,7 +5,8 @@
 
 import { useState, useMemo } from 'react'
 import { useT } from '../i18n'
-import { totalDist, petLabel, Pill, pairFloor } from './petUtils'
+import Modal from './Modal'
+import { totalDist, petLabel, Pill, pairFloor, slotsOf } from './petUtils'
 
 // Il filtro agisce sui FIGLI: "G1" significa "coppie che hanno prodotto figli G1",
 // non "coppie composte da pet G1".
@@ -35,7 +36,10 @@ function computePairs(pets, project, gen) {
     const best = Math.min(...cd)
     const floor = pairFloor(g.mother, g.father, project)
     rows.push({
-      mother: g.mother, father: g.father, n: cd.length,
+      mother: g.mother, father: g.father,
+      children: g.children,
+      // n = figli registrati; nScored = quelli con colori completi (base delle medie)
+      n: g.children.length, nScored: cd.length,
       best, avg, mid, floor,
       // quanto il miglior figlio dista dal minimo teorico: piccolo = coppia sfruttata
       overFloor: floor != null ? best - floor : null,
@@ -43,6 +47,21 @@ function computePairs(pets, project, gen) {
     })
   }
   return rows.sort((a, b) => a.best - b.best)
+}
+
+// --- Cucciolata "attesa": la dimensione più frequente fra le coppie a schermo ---
+// Serve a scovare gli errori di inserimento: se 20 coppie hanno 9 figli e una ne
+// ha 10, quel 10 è quasi sempre un pet assegnato ai genitori sbagliati.
+// Nessuna configurazione: se non c'è una maggioranza chiara, non si segnala niente.
+function expectedClutch(rows) {
+  if (rows.length < 3) return null
+  const freq = new Map()
+  for (const r of rows) freq.set(r.n, (freq.get(r.n) || 0) + 1)
+  let mode = null, top = 0
+  for (const [n, c] of freq) {
+    if (c > top || (c === top && n > mode)) { mode = n; top = c }
+  }
+  return top >= Math.max(2, rows.length / 2) ? mode : null
 }
 
 // --- Riproduttori "elevatori": media distanza figli per ogni genitore ---
@@ -72,9 +91,106 @@ function computeBreeders(pets, project, gen) {
   return rows.sort((a, b) => a.avg - b.avg)
 }
 
+// --- Modal: elenco dei figli di una coppia, ordinabile ---
+function ChildrenModal({ open, onClose, row, project }) {
+  const { t } = useT()
+  const [sort, setSort] = useState({ key: 'distance', dir: 1 })
+  const slots = slotsOf(project)
+
+  const applySort = (key) =>
+    setSort((cur) => (cur.key === key ? { key, dir: -cur.dir } : { key, dir: 1 }))
+
+  const sortVal = (pet, key) => {
+    if (key === 'gen') return pet.generation ?? 0
+    if (key === 'distance') return totalDist(pet, project)
+    return (pet[key] ?? '').toString().toLowerCase()
+  }
+
+  const sorted = useMemo(() => {
+    if (!row) return []
+    return [...row.children].sort((a, b) => {
+      const va = sortVal(a, sort.key), vb = sortVal(b, sort.key)
+      if (va == null && vb == null) return 0
+      if (va == null) return 1
+      if (vb == null) return -1
+      if (va < vb) return -sort.dir
+      if (va > vb) return sort.dir
+      return 0
+    })
+  }, [row, sort, project])
+
+  if (!open || !row) return null
+
+  const Th = ({ k, children }) => (
+    <th onClick={() => applySort(k)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }} title={t('project.table.sortHint')}>
+      {children}
+      <span style={{ marginLeft: 4, fontSize: 10, opacity: sort.key === k ? 0.9 : 0.25 }}>
+        {sort.key === k ? (sort.dir === 1 ? '▲' : '▼') : '↕'}
+      </span>
+    </th>
+  )
+
+  const Swatch = ({ hex }) => (
+    <span style={{
+      display: 'inline-block', width: 16, height: 16, borderRadius: 4,
+      border: '1px solid var(--line)', background: hex || 'transparent',
+    }} title={hex || '-'} />
+  )
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title={`${t('project.suggester.childrenTitle')}: ${petLabel(row.mother)} × ${petLabel(row.father)}`}
+    >
+      <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 12 }}>
+        {t('project.suggester.childrenHint', { count: row.n })}
+        {row.nScored < row.n && ` — ${t('project.suggester.childrenUnscored', { count: row.n - row.nScored })}`}
+      </p>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="obt-table">
+          <thead>
+            <tr>
+              <Th k="name">{t('project.table.name')}</Th>
+              <Th k="code">{t('project.table.code')}</Th>
+              <Th k="sex">{t('project.table.sex')}</Th>
+              <Th k="gen">{t('project.table.gen')}</Th>
+              <th>{t('project.suggester.colors')}</th>
+              <Th k="distance">{t('project.table.distance')}</Th>
+              <Th k="notes">{t('project.table.notes')}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((c) => (
+              <tr key={c.id}>
+                <td><strong>{c.name}</strong></td>
+                <td>{c.code || '-'}</td>
+                <td>{c.sex || '-'}</td>
+                <td>{c.generation ?? '-'}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {slots.map((s) => (
+                    <span key={s} style={{ marginRight: 3 }}><Swatch hex={(c.colors || {})[s]} /></span>
+                  ))}
+                </td>
+                <td><Pill d={totalDist(c, project)} /></td>
+                <td>{c.notes || ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="obt-actions" style={{ marginTop: 14 }}>
+        <button type="button" className="obt-btn obt-btn--ghost" onClick={onClose}>{t('common.close')}</button>
+      </div>
+    </Modal>
+  )
+}
+
 export default function SuggesterTab({ pets, project }) {
   const { t } = useT()
   const [gen, setGen] = useState('')
+  const [openRow, setOpenRow] = useState(null)
 
   // solo le generazioni che hanno davvero dei figli: la G0 non compare
   const generations = useMemo(
@@ -84,6 +200,7 @@ export default function SuggesterTab({ pets, project }) {
 
   const pairs = useMemo(() => computePairs(pets, project, gen), [pets, project, gen])
   const breeders = useMemo(() => computeBreeders(pets, project, gen), [pets, project, gen])
+  const expected = useMemo(() => expectedClutch(pairs), [pairs])
 
   const GenFilter = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -139,23 +256,44 @@ export default function SuggesterTab({ pets, project }) {
                 </tr>
               </thead>
               <tbody>
-                {pairs.map((r, i) => (
-                  <tr key={i}>
-                    <td>{petLabel(r.mother)}</td>
-                    <td>{petLabel(r.father)}</td>
-                    <td>{r.n}</td>
-                    <td><Pill d={r.best} /></td>
-                    <td><Pill d={r.floor} /></td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700 }}>
-                      {r.overFloor != null ? `+${Math.round(r.overFloor)}` : '-'}
-                    </td>
-                    <td><Pill d={r.avg} /></td>
-                    <td>{r.mid != null ? Math.round(r.mid) : '-'}</td>
-                    <td style={{ fontWeight: 700, color: r.gain > 0 ? 'var(--primary)' : 'var(--muted)' }}>
-                      {r.gain != null ? (r.gain > 0 ? '+' : '') + Math.round(r.gain) : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {pairs.map((r, i) => {
+                  const odd = expected != null && r.n > expected
+                  return (
+                    <tr key={i}>
+                      <td>{petLabel(r.mother)}</td>
+                      <td>{petLabel(r.father)}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <button
+                          onClick={() => setOpenRow(r)}
+                          title={t('project.suggester.childrenOpen')}
+                          style={{
+                            background: 'none', border: 'none', padding: 0,
+                            font: 'inherit', fontWeight: 700, cursor: 'pointer',
+                            color: 'var(--primary)', textDecoration: 'underline',
+                          }}
+                        >
+                          {r.n}
+                        </button>
+                        {odd && (
+                          <span
+                            title={t('project.suggester.clutchWarn', { expected })}
+                            style={{ marginLeft: 5, cursor: 'help' }}
+                          >⚠️</span>
+                        )}
+                      </td>
+                      <td><Pill d={r.best} /></td>
+                      <td><Pill d={r.floor} /></td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700 }}>
+                        {r.overFloor != null ? `+${Math.round(r.overFloor)}` : '-'}
+                      </td>
+                      <td><Pill d={r.avg} /></td>
+                      <td>{r.mid != null ? Math.round(r.mid) : '-'}</td>
+                      <td style={{ fontWeight: 700, color: r.gain > 0 ? 'var(--primary)' : 'var(--muted)' }}>
+                        {r.gain != null ? (r.gain > 0 ? '+' : '') + Math.round(r.gain) : '-'}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -201,6 +339,13 @@ export default function SuggesterTab({ pets, project }) {
           </div>
         )}
       </div>
+
+      <ChildrenModal
+        open={!!openRow}
+        onClose={() => setOpenRow(null)}
+        row={openRow}
+        project={project}
+      />
     </>
   )
 }

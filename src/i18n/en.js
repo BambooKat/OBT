@@ -546,6 +546,12 @@ const en = {
       overFloor: 'Over floor',
       ownDist: 'Own distance',
       empty: 'No children registered with linked parents yet.',
+      colors: 'Colours',
+      childrenTitle: 'Children',
+      childrenHint: '{count} children recorded for this pair.',
+      childrenUnscored: '{count} without complete colours, excluded from the averages',
+      childrenOpen: 'Show the children of this pair',
+      clutchWarn: 'More children than the usual clutch in this project ({expected}). Worth checking whether a pet was assigned to the wrong parents.',
     },
     roster: {
       edit: 'Edit roster',
