@@ -97,7 +97,7 @@ a { color: var(--primary-dark); }
    dello schermo così lo sfondo azzurro fa da cornice tutto intorno
    (ispirato a OviExtra). L'header è sticky solo all'interno dello shell. */
 .obt-shell {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 24px auto 40px;
   background: var(--card);
   border-radius: var(--radius-lg);
