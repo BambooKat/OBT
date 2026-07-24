@@ -9,6 +9,7 @@ import PetTable, { ColorCell } from './PetTable'
 import PairGrid, { PairCellModal } from './PairGrid'
 import { useT } from '../i18n'
 import InspectorTab from './InspectorTab'
+import FavoritesCompare from './FavoritesCompare'
 import { todayISO, normalizeHex, petLabel, downloadCsv, petsToRows } from './petUtils'
 
 function ProjectPage() {
@@ -282,6 +283,17 @@ function ProjectPage() {
     if (!window.confirm(t('project.confirm.deletePet', { code: pet?.name || '' }))) return
     setActionError('')
     const { error } = await supabase.from('pets').delete().eq('id', petId)
+    if (fail(error, t('project.errors.deletePet'))) return
+    loadAll()
+  }
+
+  // Eliminazione multipla: stessa conferma singola ma su un batch di id.
+  // Utile per ripulire gli scarti dopo la selezione G1->G2.
+  const handleDeleteMany = async (ids) => {
+    if (!ids || ids.length === 0) return
+    if (!window.confirm(t('project.confirm.deleteMany', { n: ids.length }))) return
+    setActionError('')
+    const { error } = await supabase.from('pets').delete().in('id', ids)
     if (fail(error, t('project.errors.deletePet'))) return
     loadAll()
   }
@@ -571,8 +583,9 @@ function ProjectPage() {
 
   const tableCtx = {
     petSort, setPetSort, slots, slotLabel, totalDist, colorDist, project,
-    petMutationIds, targetMutationIds, isOwner, handleEditPet, handleDeletePet, t, distClass,
+    petMutationIds, targetMutationIds, isOwner, handleEditPet, handleDeletePet, handleDeleteMany, t, distClass,
     updatePetField,
+    groupOptions: [...new Set(pets.map(p => p.group_tag).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
   }
 
   const PAIRS_PER_PAGE = 15
@@ -584,6 +597,7 @@ function ProjectPage() {
     starters: t('project.tabs.starters'),
     children: t('project.tabs.children'),
     pairs: t('project.tabs.pairs'),
+    favorites: t('project.tabs.favorites'),
     inspector: t('project.tabs.lab'),
     target: t('project.tabs.target')
   }
@@ -625,7 +639,7 @@ function ProjectPage() {
           </div>
         </div>
         <div className="obt-tabs">
-          {['starters', 'children', 'pairs', 'inspector', 'target'].map(tab => (
+          {['starters', 'children', 'pairs', 'favorites', 'inspector', 'target'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`obt-tab${activeTab === tab ? ' obt-tab--active' : ''}`}>{tabLabels[tab]}</button>
           ))}
         </div>
@@ -957,6 +971,10 @@ function ProjectPage() {
               )}
             </div>
           </>
+        )}
+
+        {activeTab === 'favorites' && (
+          <FavoritesCompare pets={pets} project={project} />
         )}
 
         {activeTab === 'inspector' && (

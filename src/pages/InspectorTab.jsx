@@ -117,6 +117,9 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
   const [rankExportN, setRankExportN] = useState(50)
   const [view, setView] = useState('analyse')
   const [petFilter, setPetFilter] = useState('')
+  const [groupSel, setGroupSel] = useState('')        // '' = tutti i gruppi
+  const [groupMode, setGroupMode] = useState('within') // within | exclude
+  const [partnerId, setPartnerId] = useState('')       // vista Partner: pet scelto
   const [plan, setPlan] = useState([])   // [{ fId, mId, floor }] — piano di accoppiamento in costruzione
 
   const slots = slotsOf(project)
@@ -213,6 +216,19 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
   }
 
   // Classifica di TUTTE le coppie possibili, escluse quelle vietate dal gioco.
+  const groups = useMemo(
+    () => [...new Set(pets.map(p => p.group_tag).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [pets]
+  )
+  // filtro gruppo: 'within' = entrambi i genitori nel gruppo scelto,
+  // 'exclude' = nessuno dei due nel gruppo scelto. Serve a tenere separate
+  // le sotto-linee (es. i lock rosso/verde/blu) finché non le vuoi incrociare.
+  const passGroup = (f, m) => {
+    if (!groupSel) return true
+    if (groupMode === 'exclude') return f.group_tag !== groupSel && m.group_tag !== groupSel
+    return f.group_tag === groupSel && m.group_tag === groupSel
+  }
+
   const ranking = useMemo(() => {
     if (!hasTarget) return null
     const pick = (list) => rankGen === '' ? list : list.filter(p => String(p.generation ?? 0) === rankGen)
@@ -221,6 +237,7 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
     let skipped = 0
     for (const f of fs) {
       for (const m of ms) {
+        if (!passGroup(f, m)) continue
         if (areRelated(f, m)) { skipped++; continue }
         let floor = 0, ok = 0, tot = 0, valid = 0
         for (const s of slots) {
@@ -234,7 +251,7 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
     }
     out.sort((a, b) => a.floor - b.floor)
     return { rows: out, skipped, considered: fs.length * ms.length }
-  }, [females, males, rankGen, slots, target, hasTarget, ancestorsOf])
+  }, [females, males, rankGen, slots, target, hasTarget, ancestorsOf, groupSel, groupMode])
 
   // I founder di un pet si ricavano risalendo la genealogia fino alla G0:
   // leggere le lettere del nome non funziona per i G0 stessi, che non ne hanno.
@@ -349,6 +366,36 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
     return out.slice(0, 20)
   }, [ranking, founderCodes])
 
+  // --- VISTA PARTNER (pet-centrica) --------------------------------------
+  // Scelto un pet, elenca tutti i partner del sesso opposto ordinati per floor.
+  // Stessa matematica della Classifica, ma è una riga della matrice invece di
+  // tutti-contro-tutti: comodo quando hai in mente un pet preciso.
+  const partnerSelf = pets.find(p => p.id === partnerId) || null
+  const partnerRows = useMemo(() => {
+    if (!hasTarget || !partnerSelf) return null
+    const pool = partnerSelf.sex === 'F' ? males : partnerSelf.sex === 'M' ? females : []
+    const out = []
+    for (const p of pool) {
+      if (areRelated(partnerSelf, p)) continue
+      let floor = 0, ok = 0, tot = 0, valid = 0
+      for (const s of slots) {
+        // analyseSlot usa min/max dei due genitori: l'ordine madre/padre non
+        // cambia il floor, quindi passo self e partner così come sono
+        const d = analyseSlot((partnerSelf.colors || {})[s], (p.colors || {})[s], target[s])
+        if (!d) continue
+        valid++; floor += d.floor; ok += d.reachableChannels; tot += 3
+      }
+      if (!valid) continue
+      out.push({ partner: p, floor, ok, tot })
+    }
+    out.sort((a, b) => a.floor - b.floor)
+    return out
+  }, [partnerSelf, males, females, slots, target, hasTarget, ancestorsOf])
+
+  // f/m corretti a partire dal pet scelto e dal partner (per piano e analisi)
+  const partnerFM = (self, partner) =>
+    self.sex === 'F' ? { f: self, m: partner } : { f: partner, m: self }
+
   // Righe della Classifica arricchite con lo stato rispetto al piano.
   // busy  = uno dei due pet è già impegnato in una coppia scelta
   // kin   = la coppia condivide founder con una coppia già nel piano
@@ -424,9 +471,47 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
     </div>
   )
 
+  const pillStyle = (active) => ({
+    padding: '4px 12px', borderRadius: 'var(--radius-pill)',
+    border: active ? '2px solid var(--primary)' : '2px solid var(--line)',
+    background: active ? 'var(--primary)' : 'var(--card)',
+    color: active ? '#fff' : 'var(--ink)',
+    fontWeight: active ? 700 : 600, fontSize: 12,
+    cursor: 'pointer', transition: 'all 0.15s',
+  })
+
+  // filtro gruppo: appare solo se nella linea esiste almeno un gruppo.
+  // Selezionato un gruppo, un piccolo toggle sceglie dentro/escludi.
+  const GroupFilter = () => groups.length === 0 ? null : (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+      <span className="obt-text-soft" style={{ fontSize: 12, fontWeight: 700 }}>
+        {t('project.inspector.groupLabel')}
+      </span>
+      {['', ...groups].map(g => (
+        <button key={g || 'all'} onClick={() => setGroupSel(g)} style={pillStyle(g === groupSel)}>
+          {g === '' ? t('project.inspector.groupAll') : g}
+        </button>
+      ))}
+      {groupSel && (
+        <span style={{ display: 'inline-flex', gap: 4, marginLeft: 6 }}>
+          {['within', 'exclude'].map(mode => (
+            <button
+              key={mode}
+              onClick={() => setGroupMode(mode)}
+              style={{ ...pillStyle(mode === groupMode), padding: '3px 10px' }}
+            >
+              {mode === 'within' ? t('project.inspector.groupWithin') : t('project.inspector.groupExclude')}
+            </button>
+          ))}
+        </span>
+      )}
+    </div>
+  )
+
   const viewTabs = [
     { key: 'analyse', label: t('project.inspector.tabAnalyse') },
     { key: 'ranking', label: t('project.inspector.tabRanking') },
+    { key: 'partner', label: t('project.inspector.tabPartner') },
     { key: 'disjoint', label: t('project.inspector.tabDisjoint') },
     { key: 'verify', label: t('project.inspector.tabVerify') },
   ]
@@ -596,16 +681,31 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
         </>
       )}
 
-      {view === 'ranking' && ranking && ranking.rows.length > 0 && (
+      {view === 'ranking' && (
         <>
-      {ranking && ranking.rows.length > 0 && (
         <div className="obt-panel">
           <h3 style={{ marginBottom: 6 }}>{t('project.inspector.rankTitle')}</h3>
           <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 12 }}>
             {t('project.inspector.rankHint')}
           </p>
 
+          {!hasTarget ? (
+            <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
+              {t('project.inspector.noTarget')}
+            </p>
+          ) : (
+          <>
           <GenFilter />
+          <GroupFilter />
+
+          {(!ranking || ranking.rows.length === 0) && (
+            <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>
+              {t('project.inspector.rankEmpty')}
+            </p>
+          )}
+
+          {ranking && ranking.rows.length > 0 && (
+          <>
 
           {/* --- piano di accoppiamento --- */}
           {planRows.length > 0 && (
@@ -755,22 +855,122 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
               </button>
             </div>
           )}
+          </>
+          )}
+          </>
+          )}
         </div>
-      )}
         </>
+      )}
+
+      {view === 'partner' && (
+        <div className="obt-panel">
+          <h3 style={{ marginBottom: 6 }}>{t('project.inspector.partnerTitle')}</h3>
+          <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 14 }}>
+            {t('project.inspector.partnerHint')}
+          </p>
+
+          {!hasTarget ? (
+            <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
+              {t('project.inspector.noTarget')}
+            </p>
+          ) : (
+          <>
+            <div className="obt-field" style={{ maxWidth: 420, marginBottom: 14 }}>
+              <select className="obt-select" value={partnerId} onChange={e => setPartnerId(e.target.value)}>
+                <option value="">{t('project.inspector.partnerChoose')}</option>
+                {[...pets]
+                  .sort((a, b) => (a.generation - b.generation) || String(a.name).localeCompare(String(b.name)))
+                  .map(p => (
+                    <option key={p.id} value={p.id}>G{p.generation} · {p.sex} · {petLabel(p)}</option>
+                  ))}
+              </select>
+            </div>
+
+            {partnerSelf && partnerRows && partnerRows.length === 0 && (
+              <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
+                {t('project.inspector.partnerEmpty')}
+              </p>
+            )}
+
+            {partnerSelf && partnerRows && partnerRows.length > 0 && (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="obt-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>{t('project.inspector.partnerCol')}</th>
+                      <th>{t('project.inspector.floor')}</th>
+                      <th>{t('project.inspector.coverage')}</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partnerRows.map((r, i) => {
+                      const { f, m } = partnerFM(partnerSelf, r.partner)
+                      const chosen = planPairKeys.has(f.id + ':' + m.id)
+                      const busy = !chosen && (usedPetIds.has(f.id) || usedPetIds.has(m.id))
+                      return (
+                        <tr key={r.partner.id} style={{ opacity: busy ? 0.4 : 1, background: chosen ? 'var(--bg)' : undefined }}>
+                          <td className="obt-text-soft">{i + 1}</td>
+                          <td>
+                            {petLabel(r.partner)}
+                            {busy && <i className="ti ti-lock" title={t('project.inspector.rankBusy')} style={{ marginLeft: 5, color: 'var(--muted)' }} />}
+                          </td>
+                          <td><Pill d={r.floor} /></td>
+                          <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.ok}/{r.tot}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            {chosen ? (
+                              <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                                onClick={() => removeFromPlan(f.id, m.id)}>
+                                {t('project.inspector.rankRemove')}
+                              </button>
+                            ) : (
+                              <button className="obt-btn obt-btn--ghost obt-btn--sm"
+                                disabled={busy}
+                                onClick={() => addToPlan({ f, m, floor: r.floor })}>
+                                <i className="ti ti-plus" /> {t('project.inspector.rankAdd')}
+                              </button>
+                            )}
+                            <button className="obt-btn obt-btn--ghost obt-btn--sm" style={{ marginLeft: 6 }}
+                              onClick={() => { setMotherId(f.id); setFatherId(m.id); setView('analyse') }}>
+                              {t('project.inspector.rankOpen')}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+          )}
+        </div>
       )}
 
       {view === 'verify' && <SuggesterTab pets={pets} project={project} isOwner={isOwner} onEditPet={onEditPet} />}
 
       {view === 'disjoint' && (
-        <>
-      {disjointPairs.length > 0 && (
         <div className="obt-panel">
               <h3 style={{ marginBottom: 6 }}>{t('project.inspector.disjointTitle')}</h3>
               <p className="obt-text-soft" style={{ fontSize: 12, marginBottom: 12 }}>
                 {t('project.inspector.disjointHint')}
               </p>
+              {!hasTarget ? (
+                <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>
+                  {t('project.inspector.noTarget')}
+                </p>
+              ) : (
+              <>
               <GenFilter />
+              <GroupFilter />
+              {disjointPairs.length === 0 && (
+                <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>
+                  {t('project.inspector.disjointEmpty')}
+                </p>
+              )}
+              {disjointPairs.length > 0 && (
               <div style={{ overflowX: 'auto' }}>
                 <table className="obt-table">
                   <thead>
@@ -803,9 +1003,10 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
                   </tbody>
                 </table>
               </div>
+              )}
+              </>
+              )}
             </div>
-      )}
-        </>
       )}
     </>
   )

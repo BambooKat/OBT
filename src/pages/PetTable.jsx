@@ -149,12 +149,63 @@ function InlineCodeCell({ pet, onCommit }) {
 }
 
 
+// Cella GRUPPO: picker con i gruppi già esistenti nella linea + voce "nuovo".
+// Il picker evita i typo che con testo libero creerebbero gruppi-fantasma.
+function InlineGroupCell({ pet, groupOptions, onCommit, t }) {
+  const [busy, setBusy] = useState(false)
+  const value = pet.group_tag || ''
+  const handle = async (e) => {
+    const v = e.target.value
+    if (v === '__new__') {
+      const name = window.prompt(t('project.group.newPrompt'))
+      const clean = (name || '').trim()
+      if (!clean) return
+      setBusy(true); await onCommit(pet.id, { group_tag: clean }); setBusy(false)
+      return
+    }
+    if (v === value) return
+    setBusy(true)
+    await onCommit(pet.id, { group_tag: v || null })
+    setBusy(false)
+  }
+  const opts = (!value || groupOptions.includes(value)) ? groupOptions : [value, ...groupOptions]
+  return (
+    <select
+      className="obt-select obt-inline-cell"
+      value={value}
+      disabled={busy}
+      onChange={handle}
+      style={{ padding: '2px 4px', fontSize: 13, minWidth: 96, opacity: busy ? 0.5 : 1 }}
+    >
+      <option value="">{t('project.group.none')}</option>
+      {opts.map(g => <option key={g} value={g}>{g}</option>)}
+      <option value="__new__">{t('project.group.new')}</option>
+    </select>
+  )
+}
+
+
 function PetTable({ list, title, ctx }) {
   const {
     petSort, setPetSort, slots, slotLabel, totalDist, colorDist, project,
-    petMutationIds, targetMutationIds, isOwner, handleEditPet, handleDeletePet, t, distClass,
-    updatePetField,
+    petMutationIds, targetMutationIds, isOwner, handleEditPet, handleDeletePet, handleDeleteMany, t, distClass,
+    updatePetField, groupOptions = [],
   } = ctx
+
+    // --- selezione multipla (mass delete) ---
+    const [selected, setSelected] = useState(() => new Set())
+    // se la lista cambia (reload dopo delete/edit) togli dalla selezione gli id spariti
+    useEffect(() => {
+      setSelected(prev => {
+        if (prev.size === 0) return prev
+        const live = new Set(list.map(p => p.id))
+        const next = new Set()
+        let changed = false
+        for (const id of prev) { if (live.has(id)) next.add(id); else changed = true }
+        return changed ? next : prev
+      })
+    }, [list])
+
     const sort = petSort[title] || { key: null, dir: 1 }
     const applySort = (key) =>
       setPetSort(prev => {
@@ -165,6 +216,7 @@ function PetTable({ list, title, ctx }) {
     const slotKeys = slots
     const sortVal = (pet, key) => {
       if (key === 'gen') return pet.generation ?? 0
+      if (key === 'favorite') return pet.favorite ? 1 : 0
       if (key === 'mut') {
         const ids = petMutationIds[pet.id] || []
         return targetMutationIds.length ? ids.filter(i => targetMutationIds.includes(i)).length : ids.length
@@ -184,6 +236,44 @@ function PetTable({ list, title, ctx }) {
           return 0
         })
       : list
+
+    // --- helper selezione, calcolati sull'ordine mostrato ---
+    const visibleIds = sorted.map(p => p.id)
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selected.has(id))
+    const someSelected = visibleIds.some(id => selected.has(id))
+    const toggleOne = (id) => setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+    const toggleAll = () => setSelected(prev => {
+      const next = new Set(prev)
+      if (allSelected) visibleIds.forEach(id => next.delete(id))
+      else visibleIds.forEach(id => next.add(id))
+      return next
+    })
+    const doDeleteSelected = async () => {
+      const ids = [...selected]
+      await handleDeleteMany(ids)
+      setSelected(new Set())
+    }
+
+    // stella preferito: toggle per l'owner, indicatore statico per chi guarda
+    const StarCell = ({ pet }) => {
+      const on = !!pet.favorite
+      if (!isOwner) {
+        return <span style={{ color: on ? '#f5b301' : 'var(--line)', fontSize: 15 }} title={on ? t('project.table.favOn') : ''}>{on ? '★' : '☆'}</span>
+      }
+      return (
+        <button
+          className="obt-icon-btn"
+          onClick={() => updatePetField(pet.id, { favorite: !on })}
+          title={on ? t('project.table.favOn') : t('project.table.favOff')}
+          style={{ color: on ? '#f5b301' : 'var(--muted)', fontSize: 16, lineHeight: 1 }}
+        >{on ? '★' : '☆'}</button>
+      )
+    }
+
     const Th = ({ k, children, className }) => (
       <th className={className} onClick={() => applySort(k)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }} title={t('project.table.sortHint')}>
         {children}
@@ -198,13 +288,45 @@ function PetTable({ list, title, ctx }) {
         {list.length === 0 ? (
           <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14 }}>{t('common.none')}</p>
         ) : (
+          <>
+            {isOwner && selected.size > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                marginBottom: 12, padding: '8px 12px',
+                border: '2px solid var(--primary)', borderRadius: 'var(--radius)', background: 'var(--bg)',
+              }}>
+                <strong style={{ fontSize: 13 }}>{t('project.mass.selected', { n: selected.size })}</strong>
+                <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                  <button className="obt-btn obt-btn--danger obt-btn--sm" onClick={doDeleteSelected}>
+                    <i className="ti ti-trash" /> {t('project.mass.deleteSelected')}
+                  </button>
+                  <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setSelected(new Set())}>
+                    {t('project.mass.clear')}
+                  </button>
+                </span>
+              </div>
+            )}
           <div style={{ overflowX: 'auto' }}>
             <table className="obt-table">
               <thead>
                 <tr>
+                  {isOwner && (
+                    <th style={{ width: 28 }}>
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        ref={el => { if (el) el.indeterminate = !allSelected && someSelected }}
+                        onChange={toggleAll}
+                        title={t('project.mass.selectAll')}
+                        style={{ width: 15, height: 15, cursor: 'pointer' }}
+                      />
+                    </th>
+                  )}
+                  <Th k="favorite">{t('project.table.fav')}</Th>
                   <Th k="name">{t('project.table.name')}</Th>
                   <Th k="sex">{t('project.table.sex')}</Th>
                   <Th k="code">{t('project.table.code')}</Th>
+                  <Th k="group_tag">{t('project.table.group')}</Th>
                   <Th k="gen">{t('project.table.gen')}</Th>
                   {slots.map(s => <Th key={s} k={s} className="obt-td-swatch">{slotLabel(s)}</Th>)}
                   <Th k="mut">{t('project.table.mut')}{targetMutationIds.length > 0 && ` (${targetMutationIds.length})`}</Th>
@@ -217,10 +339,22 @@ function PetTable({ list, title, ctx }) {
                 {sorted.map(pet => {
                   const d = totalDist(pet)
                   return (
-                    <tr key={pet.id}>
+                    <tr key={pet.id} style={{ background: selected.has(pet.id) ? 'var(--bg)' : undefined }}>
+                      {isOwner && (
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selected.has(pet.id)}
+                            onChange={() => toggleOne(pet.id)}
+                            style={{ width: 15, height: 15, cursor: 'pointer' }}
+                          />
+                        </td>
+                      )}
+                      <td><StarCell pet={pet} /></td>
                       <td><strong>{pet.name}</strong></td>
                       <td>{isOwner ? <InlineSexCell pet={pet} onCommit={updatePetField} /> : pet.sex}</td>
                       <td>{isOwner ? <InlineCodeCell pet={pet} onCommit={updatePetField} /> : (pet.code || '-')}</td>
+                      <td>{isOwner ? <InlineGroupCell pet={pet} groupOptions={groupOptions} onCommit={updatePetField} t={t} /> : (pet.group_tag || '-')}</td>
                       <td>{pet.generation}</td>
                       {slots.map(s => <td key={s} className="obt-td-swatch"><ColorCell hex={(pet.colors || {})[s]} /></td>)}
                       <td><MutCell ids={petMutationIds[pet.id]} targetIds={targetMutationIds} /></td>
@@ -238,6 +372,7 @@ function PetTable({ list, title, ctx }) {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     )
