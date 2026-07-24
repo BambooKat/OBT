@@ -57,7 +57,7 @@ function Layout({ username, onLogout, children }) {
         {/* Card centrale - SOLO questa ha larghezza fissa, non balla più */}
         <div className="obt-shell" style={{ 
           width: 'calc(100% - 48px)',
-          maxWidth: '1200px',
+          maxWidth: '1440px',
           margin: '24px auto 40px',
           // IMPORTANTE: niente display:flex qui, lascia il CSS di theme.css fare il suo lavoro
           // così hero e tabelle non allargano la shell
