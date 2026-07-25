@@ -596,6 +596,8 @@ const en = {
       auto: 'Automatic: generation {gen}',
       custom: 'Custom roster',
       reset: 'Reset to default',
+      selectAll: 'Select all',
+      deselectAll: 'Deselect all',
       saveError: 'Failed to save roster',
     },
     target: {

@@ -638,6 +638,8 @@ const it = {
       auto: 'Automatico: generazione {gen}',
       custom: 'Roster personalizzato',
       reset: 'Ripristina default',
+      selectAll: 'Seleziona tutti',
+      deselectAll: 'Deseleziona tutti',
       saveError: 'Errore nel salvataggio del roster',
     },
     container: 'Progetto',

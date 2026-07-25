@@ -512,6 +512,16 @@ function ProjectPage() {
   const toggleRosterPet = (petId) => {
     setRosterDraft(prev => prev.includes(petId) ? prev.filter(x => x !== petId) : [...prev, petId])
   }
+
+  // Seleziona/deseleziona in blocco tutti i pet di un sesso (agisce solo su quella lista)
+  const toggleRosterAll = (list) => {
+    const ids = list.map(p => p.id)
+    const allIn = ids.length > 0 && ids.every(pid => rosterDraft.includes(pid))
+    setRosterDraft(prev => allIn
+      ? prev.filter(pid => !ids.includes(pid))
+      : [...new Set([...prev, ...ids])]
+    )
+  }
   const saveRoster = async () => {
     setActionError('')
     const next = { ...(project.round_rosters || {}), [String(activeRound)]: rosterDraft }
@@ -871,7 +881,14 @@ function ProjectPage() {
                 <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 16 }}>{t('project.roster.hint')}</p>
                 <div className="obt-row">
                   <div className="obt-field" style={{ minWidth: 220 }}>
-                    <label>♀ {t('project.groups.females')}</label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <label style={{ margin: 0 }}>♀ {t('project.groups.females')}</label>
+                      {females.length > 0 && (
+                        <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => toggleRosterAll(females)}>
+                          {females.every(f => rosterDraft.includes(f.id)) ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
+                        </button>
+                      )}
+                    </div>
                     {females.length === 0 ? <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p> : females.map(f => (
                       <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
                         <input type="checkbox" checked={rosterDraft.includes(f.id)} onChange={() => toggleRosterPet(f.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
@@ -880,7 +897,14 @@ function ProjectPage() {
                     ))}
                   </div>
                   <div className="obt-field" style={{ minWidth: 220 }}>
-                    <label>♂ {t('project.groups.males')}</label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <label style={{ margin: 0 }}>♂ {t('project.groups.males')}</label>
+                      {males.length > 0 && (
+                        <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => toggleRosterAll(males)}>
+                          {males.every(m => rosterDraft.includes(m.id)) ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
+                        </button>
+                      )}
+                    </div>
                     {males.length === 0 ? <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p> : males.map(m => (
                       <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
                         <input type="checkbox" checked={rosterDraft.includes(m.id)} onChange={() => toggleRosterPet(m.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
