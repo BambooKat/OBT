@@ -8,48 +8,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
 
 /* ---------- 1. Variabili globali ---------- */
+/* I colori (bg, card, ink, line, accento, ombre, superfici componenti)
+   NON vivono più qui: li inietta a runtime il motore temi su <html>,
+   combinando una modalità (styles/modes.js) con un accento
+   (styles/accents.js). Vedi styles/theme.js.
+
+   I valori qui sotto sono solo FALLBACK per il primissimo paint /
+   ambienti senza JS: corrispondono al tema di default (light + blu).
+   Per cambiare i colori dell'app NON modificare questi: modifica
+   modes.js / accents.js. */
 :root {
-  /* Sfondo e superfici */
-  --bg: #E4ECF3;
+  /* --- fallback tema light+blu (sovrascritti da theme.js) --- */
+  --bg: #EBF2FA;
   --card: #FFFFFF;
+  --surface: #F2F7FC;
+  --ink: #33373D;
+  --ink-soft: #7C848F;
+  --muted: #7C848F;
+  --line: #DBE7F3;
 
-  /* Testo */
-  --ink: #3C4A5C;
-  --ink-soft: #8296AA;
-
-  /* Colore primario (blu OviPets) */
   --primary: #4A90D9;
   --primary-dark: #3672B0;
+  --primary-hover: #5B9CE0;
   --primary-light: #DCEAF7;
-
-  /* Colore secondario (blu più tenue, per varietà su card/badge) */
   --secondary: #6BA8DE;
   --secondary-dark: #4A82B8;
+  --secondary-hover: #7BB4E4;
   --secondary-light: #E4F0FA;
-
-  /* Colore terziario (per un terzo accento su card/badge) */
   --tertiary: #8FC1E8;
   --tertiary-dark: #4A82B8;
 
-  /* Bordi e linee */
-  --line: #D3E0EB;
-
-  /* Stati semantici (mantenuti verde/giallo/rosso: qui il colore è informazione,
-     es. distanza colore in breeding: buono/medio/scarso) */
   --good-bg: #DFF3E6;   --good-text: #3F8F5C;
   --mid-bg: #FCF3D9;    --mid-text: #A9820F;
   --bad-bg: #FBE2E2;    --bad-text: #C1504F;
 
-  /* Ombre */
-  --shadow: 0 2px 10px rgba(90, 130, 170, 0.08), 0 1px 2px rgba(90, 130, 170, 0.06);
-  --shadow-hover: 0 6px 20px rgba(90, 130, 170, 0.14), 0 2px 4px rgba(90, 130, 170, 0.08);
+  --shadow: 0 2px 10px rgba(55, 65, 85, 0.08), 0 1px 2px rgba(55, 65, 85, 0.06);
+  --shadow-hover: 0 6px 20px rgba(55, 65, 85, 0.14), 0 2px 4px rgba(55, 65, 85, 0.08);
 
-  /* Raggio angoli */
+  /* superfici componenti (tab, tooltip, overlay, hero) */
+  --tab-grad-1: #FFFFFF;
+  --tab-grad-2: #F3F1EC;
+  --tab-grad-2-hover: #EAE7E0;
+  --tooltip-bg: #2E2E2C;
+  --tooltip-ink: #FFFFFF;
+  --overlay: rgba(46, 46, 44, 0.45);
+  --hero-info-bg: rgba(255, 255, 255, 0.55);
+  --input-focus-bg: #FFFFFF;
+
+  /* --- costanti NON tematiche (uguali in ogni tema) --- */
   --radius-lg: 16px;
   --radius-md: 10px;
   --radius-pill: 999px;
-
-  /* Font */
   --font-display: 'Baloo 2', sans-serif;
   --font-body: 'Nunito', sans-serif;
 }
@@ -74,8 +83,8 @@ html {
 body {
   background: var(--bg);
   background-image:
-    radial-gradient(circle at 15% 10%, rgba(74, 144, 217, 0.06) 0%, transparent 45%),
-    radial-gradient(circle at 85% 90%, rgba(107, 168, 222, 0.07) 0%, transparent 45%);
+    radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--primary) 7%, transparent) 0%, transparent 45%),
+    radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--secondary) 8%, transparent) 0%, transparent 45%);
   background-attachment: fixed;
   font-family: var(--font-body);
   color: var(--ink);
@@ -186,7 +195,7 @@ a { color: var(--primary-dark); }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--hero-info-bg);
   border-radius: var(--radius-md);
   padding: 12px 16px;
   font-size: 14px;
@@ -276,7 +285,7 @@ a { color: var(--primary-dark); }
   color: #fff;
   box-shadow: 0 3px 0 var(--primary-dark), var(--shadow);
 }
-.obt-btn--primary:hover:not(:disabled) { background: #5B9CE0; }
+.obt-btn--primary:hover:not(:disabled) { background: var(--primary-hover); }
 .obt-btn--primary:active:not(:disabled) {
   box-shadow: 0 1px 0 var(--primary-dark);
   transform: translateY(2px) scale(0.99);
@@ -287,7 +296,7 @@ a { color: var(--primary-dark); }
   color: #fff;
   box-shadow: 0 3px 0 var(--secondary-dark), var(--shadow);
 }
-.obt-btn--secondary:hover:not(:disabled) { background: #7BB4E4; }
+.obt-btn--secondary:hover:not(:disabled) { background: var(--secondary-hover); }
 .obt-btn--secondary:active:not(:disabled) {
   box-shadow: 0 1px 0 var(--secondary-dark);
   transform: translateY(2px) scale(0.99);
@@ -449,7 +458,7 @@ a { color: var(--primary-dark); }
 .obt-select:focus,
 .obt-textarea:focus {
   border-color: var(--primary);
-  background: #fff;
+  background: var(--input-focus-bg);
 }
 .obt-textarea { resize: vertical; min-height: 70px; }
 
@@ -485,7 +494,7 @@ a { color: var(--primary-dark); }
   white-space: nowrap;
   font-family: var(--font-body);
   text-align: center;
-  background: linear-gradient(180deg, #fff, #F3F7FB);
+  background: linear-gradient(180deg, var(--tab-grad-1), var(--tab-grad-2));
   background-clip: padding-box;
   border: 1px solid var(--line);
   border-bottom: none;
@@ -494,7 +503,7 @@ a { color: var(--primary-dark); }
   position: relative;
   z-index: 1;
 }
-.obt-tab:hover { z-index: 2; background: linear-gradient(180deg, #fff, #EAF2FA); background-clip: padding-box; }
+.obt-tab:hover { z-index: 2; background: linear-gradient(180deg, var(--tab-grad-1), var(--tab-grad-2-hover)); background-clip: padding-box; }
 .obt-tab.obt-tab--active {
   background: linear-gradient(180deg, var(--secondary), var(--primary));
   background-clip: padding-box;
@@ -754,7 +763,7 @@ a { color: var(--primary-dark); }
 .obt-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(60, 74, 92, 0.45);
+  background: var(--overlay);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: flex-start;
@@ -844,7 +853,7 @@ a { color: var(--primary-dark); }
 
 /* Help tooltip (?) accanto alle etichette */
 .obt-help{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;border-radius:50%;background:var(--line);color:var(--ink-soft,#556);font-size:10px;font-weight:800;cursor:help;user-select:none;vertical-align:middle;outline:none}
-.obt-help__bubble{position:absolute;bottom:135%;left:50%;transform:translateX(-50%);background:#243244;color:#fff;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:500;line-height:1.35;width:max-content;max-width:220px;text-align:left;white-space:normal;opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.20)}
+.obt-help__bubble{position:absolute;bottom:135%;left:50%;transform:translateX(-50%);background:var(--tooltip-bg);color:var(--tooltip-ink);padding:7px 10px;border-radius:8px;font-size:11px;font-weight:500;line-height:1.35;width:max-content;max-width:220px;text-align:left;white-space:normal;opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.20)}
 .obt-help:hover .obt-help__bubble,.obt-help:focus .obt-help__bubble{opacity:1}
 
 

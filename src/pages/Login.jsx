@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import { CONTACT_EMAIL } from '../config'
 import LanguageSwitcher from './LanguageSwitcher'
+import ThemeSwitcher from './ThemeSwitcher'
 
 function Login() {
   const { t } = useT()
@@ -78,6 +79,7 @@ function Login() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
           <LanguageSwitcher />
+          <ThemeSwitcher />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
           <img src="/logo_obt.png" alt="OBT logo" style={{ height: '40px', width: 'auto' }} />

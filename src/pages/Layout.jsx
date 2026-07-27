@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { CONTACT_EMAIL } from '../config'
 import { useT } from '../i18n'
 import LanguageSwitcher from './LanguageSwitcher'
+import ThemeSwitcher from './ThemeSwitcher'
 
 function Layout({ username, onLogout, children }) {
   const { t } = useT()
@@ -25,6 +26,7 @@ function Layout({ username, onLogout, children }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
           <LanguageSwitcher />
+          <ThemeSwitcher />
           <Link to="/guide" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
             <i className="ti ti-book" /> {t('layout.guideFaq')}
           </Link>
