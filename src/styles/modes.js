@@ -35,7 +35,7 @@ export const modes = {
     '--tab-grad-2-hover':'color-mix(in srgb, var(--primary) 13%, #FFFFFF)',
     '--tooltip-bg':      'color-mix(in srgb, var(--primary-dark) 55%, #1E2430)',
     '--tooltip-ink':     '#FFFFFF',
-    '--overlay':         'color-mix(in srgb, var(--primary-dark) 45%, rgba(30, 34, 46, 0.5))',
+    '--overlay':         'color-mix(in srgb, var(--primary-dark) 5%, rgba(30, 34, 46, 0.3))',
     '--hero-info-bg':    'rgba(255, 255, 255, 0.55)',
     '--input-focus-bg':  '#FFFFFF',
 

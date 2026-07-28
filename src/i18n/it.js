@@ -555,6 +555,10 @@ const it = {
       legendExact: 'Tempo mancante, calcolato dall\'orario di registrazione della coppia.',
       legendApprox: 'Tempo indicativo: della coppia si conosce solo la data, non l\'ora.',
     },
+    picker: {
+      founders: 'Capostipiti',
+      empty: 'Nessun pet trovato',
+    },
     inspector: {
       tabAnalyse: 'Analisi',
       tabRanking: 'Classifica',

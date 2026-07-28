@@ -932,3 +932,41 @@ a { color: var(--primary-dark); }
   text-align: center;
 }
 .obt-table th.obt-td-swatch { letter-spacing: 0; }
+/* ---- PetPicker: selettore pet scrivibile + raggruppato per generazione ---- */
+.obt-picker { position: relative; width: 100%; }
+.obt-picker-input { width: 100%; }
+.obt-picker-clear {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  border: none; background: transparent; cursor: pointer;
+  font-size: 16px; line-height: 1; color: var(--ink-soft); padding: 2px 4px;
+}
+.obt-picker-clear:hover { color: var(--ink); }
+.obt-picker-list {
+  z-index: 5000; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-hover);
+}
+.obt-picker-group {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 6px 12px; font-size: 11px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; text-align: left;
+  color: var(--primary-dark); background: var(--input-focus-bg);
+  border: none; border-bottom: 1px solid var(--line); cursor: pointer;
+  font-family: inherit;
+}
+.obt-picker-group:hover { filter: brightness(0.97); }
+.obt-picker-caret { font-size: 10px; width: 10px; display: inline-block; }
+.obt-picker-count {
+  margin-left: auto; font-weight: 600; letter-spacing: 0;
+  color: var(--ink-soft); background: var(--card);
+  border-radius: var(--radius-pill); padding: 1px 8px; font-size: 11px;
+}
+.obt-picker-option {
+  padding: 7px 12px; font-size: 13px; cursor: pointer; color: var(--ink);
+}
+.obt-picker-option.is-active { background: var(--input-focus-bg); }
+.obt-picker-option.is-selected { font-weight: 600; color: var(--primary-dark); }
+.obt-picker-empty {
+  padding: 10px 12px; font-size: 13px; color: var(--ink-soft);
+}

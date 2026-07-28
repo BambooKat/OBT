@@ -513,6 +513,10 @@ const en = {
       legendExact: 'Time left, based on when the pairing was logged.',
       legendApprox: 'Rough estimate: only the date of the pairing is known, not the time.',
     },
+    picker: {
+      founders: 'Founders',
+      empty: 'No pet found',
+    },
     inspector: {
       tabAnalyse: 'Analysis',
       tabRanking: 'Ranking',

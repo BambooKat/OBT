@@ -10,6 +10,7 @@ import { useT } from '../i18n'
 import Help from './Help'
 import { slotsOf, hexToRgb, totalDist, petLabel, Pill, downloadCsv, analyseSlot } from './petUtils'
 import SuggesterTab from './SuggesterTab'
+import PetPicker from './PetPicker'
 
 
 const Swatch = ({ hex, size = 16 }) => {
@@ -541,21 +542,11 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
         <div className="obt-row">
           <div className="obt-field">
             <label>{t('project.pairs.mother')}</label>
-            <select className="obt-select" value={motherId} onChange={e => setMotherId(e.target.value)}>
-              <option value="">{t('project.inspector.choose')}</option>
-              {females.map(p => (
-                <option key={p.id} value={p.id}>G{p.generation} · {petLabel(p)}</option>
-              ))}
-            </select>
+            <PetPicker pets={females} value={motherId} onChange={setMotherId} />
           </div>
           <div className="obt-field">
             <label>{t('project.pairs.father')}</label>
-            <select className="obt-select" value={fatherId} onChange={e => setFatherId(e.target.value)}>
-              <option value="">{t('project.inspector.choose')}</option>
-              {males.map(p => (
-                <option key={p.id} value={p.id}>G{p.generation} · {petLabel(p)}</option>
-              ))}
-            </select>
+            <PetPicker pets={males} value={fatherId} onChange={setFatherId} />
           </div>
         </div>
 
@@ -877,14 +868,13 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
           ) : (
           <>
             <div className="obt-field" style={{ maxWidth: 420, marginBottom: 14 }}>
-              <select className="obt-select" value={partnerId} onChange={e => setPartnerId(e.target.value)}>
-                <option value="">{t('project.inspector.partnerChoose')}</option>
-                {[...pets]
-                  .sort((a, b) => (a.generation - b.generation) || String(a.name).localeCompare(String(b.name)))
-                  .map(p => (
-                    <option key={p.id} value={p.id}>G{p.generation} · {p.sex} · {petLabel(p)}</option>
-                  ))}
-              </select>
+              <PetPicker
+                pets={pets}
+                value={partnerId}
+                onChange={setPartnerId}
+                showSex
+                placeholder={t('project.inspector.partnerChoose')}
+              />
             </div>
 
             {partnerSelf && partnerRows && partnerRows.length === 0 && (

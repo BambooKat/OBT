@@ -11,6 +11,7 @@ import { useT } from '../i18n'
 import InspectorTab from './InspectorTab'
 import FavoritesCompare from './FavoritesCompare'
 import { todayISO, normalizeHex, petLabel, downloadCsv, petsToRows } from './petUtils'
+import PetPicker from './PetPicker'
 
 function ProjectPage() {
   const { t, formatDate } = useT()
@@ -1052,17 +1053,21 @@ function ProjectPage() {
             <div className="obt-row">
               <div className="obt-field">
                 <label>{t('project.pet.mother')}</label>
-                <select className="obt-select" value={petForm.mother_id} onChange={e => setPetForm(withDerivedGen({...petForm, mother_id: e.target.value}))}>
-                  <option value="">{t('project.pet.noMother')}</option>
-                  {females.map(f => <option key={f.id} value={f.id}>{petLabel(f)}</option>)}
-                </select>
+                <PetPicker
+                  pets={females}
+                  value={petForm.mother_id}
+                  onChange={id => setPetForm(withDerivedGen({ ...petForm, mother_id: id }))}
+                  placeholder={t('project.pet.noMother')}
+                />
               </div>
               <div className="obt-field">
                 <label>{t('project.pet.father')}</label>
-                <select className="obt-select" value={petForm.father_id} onChange={e => setPetForm(withDerivedGen({...petForm, father_id: e.target.value}))}>
-                  <option value="">{t('project.pet.noFather')}</option>
-                  {males.map(m => <option key={m.id} value={m.id}>{petLabel(m)}</option>)}
-                </select>
+                <PetPicker
+                  pets={males}
+                  value={petForm.father_id}
+                  onChange={id => setPetForm(withDerivedGen({ ...petForm, father_id: id }))}
+                  placeholder={t('project.pet.noFather')}
+                />
               </div>
             </div>
           )}
