@@ -124,6 +124,7 @@ function ProjectPage() {
   })
   const [selectedMutationIds, setSelectedMutationIds] = useState([])
   const [petMutationIds, setPetMutationIds] = useState({})
+  const [petFormTab, setPetFormTab] = useState('info')
 
   // Target
   const [targetForm, setTargetForm] = useState({ colors: {} })
@@ -299,6 +300,7 @@ function ProjectPage() {
       generation: activeTab === 'children' ? (currentChildGen ?? 1) : 0,
       ...prefill,
     }))
+    setPetFormTab('info')
     setShowPetForm(true)
   }
 
@@ -346,6 +348,7 @@ function ProjectPage() {
     const { data: petMuts } = await supabase.from('pet_mutations').select('mutation_id').eq('pet_id', pet.id)
     setSelectedMutationIds((petMuts || []).map(pm => pm.mutation_id))
     setEditingPetId(pet.id)
+    setPetFormTab('info')
     setShowPetForm(true)
   }
 
@@ -1102,6 +1105,26 @@ function ProjectPage() {
       {/* Form pet: fuori dai tab, così è raggiungibile anche dal Laboratorio */}
       <Modal open={showPetForm} onClose={resetPetForm} title={editingPetId ? t('project.pet.editTitle') : (activeTab === 'starters' ? t('project.pet.newStarter') : t('project.pet.newChild'))} size="lg">
         <form onSubmit={handlePetSubmit}>
+          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line)', marginBottom: 16 }}>
+            {[['info', t('project.pet.tabInfo')], ['mutations', t('project.pet.mutations')]].map(([key, lbl]) => {
+              const on = petFormTab === key
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setPetFormTab(key)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '8px 14px', fontSize: 14, fontWeight: on ? 700 : 500,
+                    color: on ? 'var(--primary)' : 'var(--muted)',
+                    borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
+                    marginBottom: -1,
+                  }}
+                >{lbl}</button>
+              )
+            })}
+          </div>
+          <div style={{ display: petFormTab === 'info' ? 'block' : 'none' }}>
           <div className="obt-row">
             <div className="obt-field"><label>{t('project.pet.name')} <Help text={t('project.help.name')} /></label><input className="obt-input" value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
             <div className="obt-field"><label>{t('project.pet.sex')}</label><select className="obt-select" value={petForm.sex} onChange={e => setPetForm({...petForm, sex: e.target.value})}><option value="M">M</option><option value="F">F</option><option value="ND">ND</option></select></div>
@@ -1139,7 +1162,10 @@ function ProjectPage() {
             ))}
           </div>
           <div className="obt-field"><label>{t('project.pet.notes')}</label><input className="obt-input" value={petForm.notes} onChange={e => setPetForm({...petForm, notes: e.target.value})} /></div>
-          <div className="obt-field"><label>{t('project.pet.mutations')}</label><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
+          </div>
+          <div style={{ display: petFormTab === 'mutations' ? 'block' : 'none' }}>
+            <div className="obt-field"><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
+          </div>
           <div className="obt-actions">
             <button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button>
             <button type="button" className="obt-btn obt-btn--ghost" onClick={resetPetForm}>{t('common.cancel')}</button>

@@ -465,6 +465,7 @@ const en = {
       extra2: 'Extra 02',
       notes: 'Notes',
       mutations: 'Mutations',
+      tabInfo: 'Info',
     },
     pairs: {
       add: '+ Register pair',

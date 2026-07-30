@@ -465,6 +465,7 @@ const it = {
       extra2: 'Extra 02',
       notes: 'Note',
       mutations: 'Mutazioni',
+      tabInfo: 'Anagrafica',
     },
     pairs: {
       add: '+ Registra coppia',
