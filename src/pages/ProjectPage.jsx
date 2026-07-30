@@ -1124,6 +1124,7 @@ function ProjectPage() {
               )
             })}
           </div>
+          <div className="obt-modal-body">
           <div style={{ display: petFormTab === 'info' ? 'block' : 'none' }}>
           <div className="obt-row">
             <div className="obt-field"><label>{t('project.pet.name')} <Help text={t('project.help.name')} /></label><input className="obt-input" value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
@@ -1165,6 +1166,7 @@ function ProjectPage() {
           </div>
           <div style={{ display: petFormTab === 'mutations' ? 'block' : 'none' }}>
             <div className="obt-field"><MutationSelector speciesId={project.species_id} selectedIds={selectedMutationIds} onChange={setSelectedMutationIds} /></div>
+          </div>
           </div>
           <div className="obt-actions">
             <button type="submit" className="obt-btn obt-btn--primary">{editingPetId ? t('common.saveChanges') : t('common.add')}</button>

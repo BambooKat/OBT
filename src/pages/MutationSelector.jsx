@@ -94,7 +94,6 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
         onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: 14 }}
       />
-
       {selectedMutations.length > 0 && (
         <div className="obt-selected-strip">
           <div className="obt-hint" style={{ marginBottom: 8 }}>
@@ -115,7 +114,7 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
         </div>
       )}
 
-      <div style={{ maxHeight: 500, overflowY: 'auto', paddingRight: 4 }}>
+      
       {sortedZoneNames.map(zone => (
         <div key={zone} className="obt-zone">
           <div className="obt-zone-head" onClick={() => toggleZone(zone)}>
@@ -141,7 +140,6 @@ function MutationSelector({ speciesId, selectedIds, onChange, readOnly = false }
           )}
         </div>
       ))}
-      </div>
     </div>
   )
 }

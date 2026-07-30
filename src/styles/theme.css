@@ -970,3 +970,9 @@ a { color: var(--primary-dark); }
 .obt-picker-empty {
   padding: 10px 12px; font-size: 13px; color: var(--ink-soft);
 }
+
+.obt-modal-body {
+  height: 600px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
