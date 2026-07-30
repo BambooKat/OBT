@@ -13,8 +13,8 @@ import FavoritesCompare from './FavoritesCompare'
 import { todayISO, normalizeHex, petLabel, downloadCsv, petsToRows } from './petUtils'
 import PetPicker from './PetPicker'
 
-function RosterGenColumn({ label, list, draft, openGens, setOpenGens, onTogglePet, onToggleAll, t }) {
-  // raggruppa per generazione, ordine decrescente (più recente in alto)
+function RosterGenColumn({ label, list, draft, activeGen, setActiveGen, onTogglePet, onToggleAll, t }) {
+  // raggruppa per generazione, ordine decrescente (più recente a sinistra)
   const byGen = {}
   for (const p of list) {
     const g = p.generation ?? 0
@@ -22,10 +22,14 @@ function RosterGenColumn({ label, list, draft, openGens, setOpenGens, onTogglePe
   }
   const gens = Object.keys(byGen).map(Number).sort((a, b) => b - a)
   const allSelected = list.length > 0 && list.every(p => draft.includes(p.id))
+  // generazione mostrata: quella scelta se presente in questa colonna, altrimenti la prima disponibile
+  const shownGen = gens.includes(activeGen) ? activeGen : (gens[0] ?? null)
+  const petsInGen = shownGen != null ? byGen[shownGen] : []
+  const genAllSel = petsInGen.length > 0 && petsInGen.every(p => draft.includes(p.id))
 
   return (
-    <div className="obt-field" style={{ minWidth: 220 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+    <div className="obt-field" style={{ minWidth: 240, flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
         <label style={{ margin: 0 }}>{label}</label>
         {list.length > 0 && (
           <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => onToggleAll(list)}>
@@ -35,44 +39,45 @@ function RosterGenColumn({ label, list, draft, openGens, setOpenGens, onTogglePe
       </div>
       {list.length === 0 ? (
         <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p>
-      ) : gens.map(g => {
-        const petsInGen = byGen[g]
-        const selCount = petsInGen.filter(p => draft.includes(p.id)).length
-        const open = !!openGens[g]
-        return (
-          <div key={g} style={{ borderTop: '1px solid var(--line)', paddingTop: 4, marginTop: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setOpenGens(prev => ({ ...prev, [g]: !prev[g] }))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
-                  cursor: 'pointer', padding: '4px 0', color: 'var(--ink)', fontWeight: 700, fontSize: 13,
-                }}
-              >
-                <i className={`ti ti-chevron-${open ? 'down' : 'right'}`} style={{ fontSize: 14 }} />
-                G{g}
-                <span className="obt-text-soft" style={{ fontSize: 11, fontWeight: 500 }}>
-                  ({selCount}/{petsInGen.length})
-                </span>
-              </button>
-              <button
-                type="button"
-                className="obt-btn obt-btn--ghost obt-btn--sm"
-                onClick={() => onToggleAll(petsInGen)}
-              >
-                {petsInGen.every(p => draft.includes(p.id)) ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
-              </button>
-            </div>
-            {open && petsInGen.map(p => (
-              <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0 4px 20px', cursor: 'pointer', fontWeight: 500 }}>
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line)', marginBottom: 6 }}>
+            {gens.map(g => {
+              const sel = byGen[g].filter(p => draft.includes(p.id)).length
+              const on = g === shownGen
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setActiveGen(g)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '6px 10px', fontSize: 13, fontWeight: on ? 700 : 500,
+                    color: on ? 'var(--primary)' : 'var(--muted)',
+                    borderBottom: on ? '2px solid var(--primary)' : '2px solid transparent',
+                    marginBottom: -1,
+                  }}
+                >
+                  G{g} <span style={{ fontSize: 11, fontWeight: 500 }}>({sel}/{byGen[g].length})</span>
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+            <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => onToggleAll(petsInGen)}>
+              {genAllSel ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
+            </button>
+          </div>
+          <div style={{ height: 500, overflowY: 'auto', paddingRight: 4 }}>
+            {petsInGen.map(p => (
+              <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
                 <input type="checkbox" checked={draft.includes(p.id)} onChange={() => onTogglePet(p.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
                 {petLabel(p)}
               </label>
             ))}
           </div>
-        )
-      })}
+        </>
+      )}
     </div>
   )
 }
@@ -137,7 +142,7 @@ function ProjectPage() {
   const [petSort, setPetSort] = useState({})
   const [showRosterEditor, setShowRosterEditor] = useState(false)
   const [rosterDraft, setRosterDraft] = useState([])
-  const [rosterOpenGens, setRosterOpenGens] = useState({})
+  const [rosterActiveGen, setRosterActiveGen] = useState(0)
 
   // Edit progetto
   const [showEditProject, setShowEditProject] = useState(false)
@@ -573,7 +578,7 @@ function ProjectPage() {
 
   const openRosterEditor = () => {
     setRosterDraft([...activeRoster.females, ...activeRoster.males].map(p => p.id))
-    setRosterOpenGens({ [activeRound - 1]: true })
+    setRosterActiveGen(activeRound - 1)
     setShowRosterEditor(true)
   }
   const toggleRosterPet = (petId) => {
@@ -951,8 +956,8 @@ function ProjectPage() {
                     label={`♀ ${t('project.groups.females')}`}
                     list={females}
                     draft={rosterDraft}
-                    openGens={rosterOpenGens}
-                    setOpenGens={setRosterOpenGens}
+                    activeGen={rosterActiveGen}
+                    setActiveGen={setRosterActiveGen}
                     onTogglePet={toggleRosterPet}
                     onToggleAll={toggleRosterAll}
                     t={t}
@@ -961,8 +966,8 @@ function ProjectPage() {
                     label={`♂ ${t('project.groups.males')}`}
                     list={males}
                     draft={rosterDraft}
-                    openGens={rosterOpenGens}
-                    setOpenGens={setRosterOpenGens}
+                    activeGen={rosterActiveGen}
+                    setActiveGen={setRosterActiveGen}
                     onTogglePet={toggleRosterPet}
                     onToggleAll={toggleRosterAll}
                     t={t}
