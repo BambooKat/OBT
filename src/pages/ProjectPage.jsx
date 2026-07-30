@@ -13,6 +13,70 @@ import FavoritesCompare from './FavoritesCompare'
 import { todayISO, normalizeHex, petLabel, downloadCsv, petsToRows } from './petUtils'
 import PetPicker from './PetPicker'
 
+function RosterGenColumn({ label, list, draft, openGens, setOpenGens, onTogglePet, onToggleAll, t }) {
+  // raggruppa per generazione, ordine decrescente (più recente in alto)
+  const byGen = {}
+  for (const p of list) {
+    const g = p.generation ?? 0
+    ;(byGen[g] = byGen[g] || []).push(p)
+  }
+  const gens = Object.keys(byGen).map(Number).sort((a, b) => b - a)
+  const allSelected = list.length > 0 && list.every(p => draft.includes(p.id))
+
+  return (
+    <div className="obt-field" style={{ minWidth: 220 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <label style={{ margin: 0 }}>{label}</label>
+        {list.length > 0 && (
+          <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => onToggleAll(list)}>
+            {allSelected ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
+          </button>
+        )}
+      </div>
+      {list.length === 0 ? (
+        <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p>
+      ) : gens.map(g => {
+        const petsInGen = byGen[g]
+        const selCount = petsInGen.filter(p => draft.includes(p.id)).length
+        const open = !!openGens[g]
+        return (
+          <div key={g} style={{ borderTop: '1px solid var(--line)', paddingTop: 4, marginTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setOpenGens(prev => ({ ...prev, [g]: !prev[g] }))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
+                  cursor: 'pointer', padding: '4px 0', color: 'var(--ink)', fontWeight: 700, fontSize: 13,
+                }}
+              >
+                <i className={`ti ti-chevron-${open ? 'down' : 'right'}`} style={{ fontSize: 14 }} />
+                G{g}
+                <span className="obt-text-soft" style={{ fontSize: 11, fontWeight: 500 }}>
+                  ({selCount}/{petsInGen.length})
+                </span>
+              </button>
+              <button
+                type="button"
+                className="obt-btn obt-btn--ghost obt-btn--sm"
+                onClick={() => onToggleAll(petsInGen)}
+              >
+                {petsInGen.every(p => draft.includes(p.id)) ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
+              </button>
+            </div>
+            {open && petsInGen.map(p => (
+              <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0 4px 20px', cursor: 'pointer', fontWeight: 500 }}>
+                <input type="checkbox" checked={draft.includes(p.id)} onChange={() => onTogglePet(p.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                {petLabel(p)}
+              </label>
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function ProjectPage() {
   const { t, formatDate } = useT()
   const { id } = useParams()
@@ -73,6 +137,7 @@ function ProjectPage() {
   const [petSort, setPetSort] = useState({})
   const [showRosterEditor, setShowRosterEditor] = useState(false)
   const [rosterDraft, setRosterDraft] = useState([])
+  const [rosterOpenGens, setRosterOpenGens] = useState({})
 
   // Edit progetto
   const [showEditProject, setShowEditProject] = useState(false)
@@ -508,6 +573,7 @@ function ProjectPage() {
 
   const openRosterEditor = () => {
     setRosterDraft([...activeRoster.females, ...activeRoster.males].map(p => p.id))
+    setRosterOpenGens({ [activeRound - 1]: true })
     setShowRosterEditor(true)
   }
   const toggleRosterPet = (petId) => {
@@ -881,38 +947,26 @@ function ProjectPage() {
               <Modal open={showRosterEditor} onClose={() => setShowRosterEditor(false)} title={`${t('project.roster.title')} — ${t('project.pairs.roundLabel')} ${activeRound}`} size="lg">
                 <p className="obt-text-soft" style={{ fontSize: 13, marginBottom: 16 }}>{t('project.roster.hint')}</p>
                 <div className="obt-row">
-                  <div className="obt-field" style={{ minWidth: 220 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <label style={{ margin: 0 }}>♀ {t('project.groups.females')}</label>
-                      {females.length > 0 && (
-                        <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => toggleRosterAll(females)}>
-                          {females.every(f => rosterDraft.includes(f.id)) ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
-                        </button>
-                      )}
-                    </div>
-                    {females.length === 0 ? <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p> : females.map(f => (
-                      <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
-                        <input type="checkbox" checked={rosterDraft.includes(f.id)} onChange={() => toggleRosterPet(f.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                        {petLabel(f)} <span className="obt-text-soft" style={{ fontSize: 11 }}>· G{f.generation}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="obt-field" style={{ minWidth: 220 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <label style={{ margin: 0 }}>♂ {t('project.groups.males')}</label>
-                      {males.length > 0 && (
-                        <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => toggleRosterAll(males)}>
-                          {males.every(m => rosterDraft.includes(m.id)) ? t('project.roster.deselectAll') : t('project.roster.selectAll')}
-                        </button>
-                      )}
-                    </div>
-                    {males.length === 0 ? <p className="obt-text-soft" style={{ fontSize: 13 }}>{t('common.none')}</p> : males.map(m => (
-                      <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontWeight: 500 }}>
-                        <input type="checkbox" checked={rosterDraft.includes(m.id)} onChange={() => toggleRosterPet(m.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                        {petLabel(m)} <span className="obt-text-soft" style={{ fontSize: 11 }}>· G{m.generation}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <RosterGenColumn
+                    label={`♀ ${t('project.groups.females')}`}
+                    list={females}
+                    draft={rosterDraft}
+                    openGens={rosterOpenGens}
+                    setOpenGens={setRosterOpenGens}
+                    onTogglePet={toggleRosterPet}
+                    onToggleAll={toggleRosterAll}
+                    t={t}
+                  />
+                  <RosterGenColumn
+                    label={`♂ ${t('project.groups.males')}`}
+                    list={males}
+                    draft={rosterDraft}
+                    openGens={rosterOpenGens}
+                    setOpenGens={setRosterOpenGens}
+                    onTogglePet={toggleRosterPet}
+                    onToggleAll={toggleRosterAll}
+                    t={t}
+                  />
                 </div>
                 <div className="obt-actions" style={{ marginTop: 8 }}>
                   <button type="button" className="obt-btn obt-btn--primary" onClick={saveRoster}>{t('common.saveChanges')}</button>
