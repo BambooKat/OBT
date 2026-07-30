@@ -160,13 +160,21 @@ function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner, f
             }}>♀ \ ♂</th>
             {males.map(m => (
               <th key={m.id} style={{
-                padding: '6px 10px', fontSize: 16, fontWeight: 700,
-                color: 'var(--ink)', textAlign: 'center', background: 'transparent',
-                whiteSpace: 'nowrap',
+                padding: '6px 4px', textAlign: 'center', background: 'transparent',
+                width: 64, maxWidth: 64,
               }}>
-                {m.code && <span style={{ color: 'var(--primary)', fontWeight: 900 }}>{m.code}</span>}
-                {m.code && ' '}
-                <span style={{ fontFamily: 'monospace', fontSize: 14 }}>{m.name}</span>
+                {m.code && (
+                  <span style={{
+                    display: 'block', color: 'var(--primary)', fontWeight: 900,
+                    fontSize: 15, lineHeight: 1.1,
+                  }}>{m.code}</span>
+                )}
+                <span style={{
+                  display: 'block', fontFamily: 'monospace', fontSize: 10,
+                  fontWeight: 600, color: 'var(--muted)', lineHeight: 1.1,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }} title={m.name}>{m.name}</span>
               </th>
             ))}
           </tr>
@@ -175,13 +183,26 @@ function PairGrid({ round, females, males, pairsInRound, onCellClick, isOwner, f
           {females.map(f => (
             <tr key={f.id}>
               <td style={{
-                padding: '6px 12px', fontSize: 16, fontWeight: 600,
-                whiteSpace: 'nowrap', color: 'var(--ink)',
+                padding: '6px 12px', color: 'var(--ink)',
+                width: 150, maxWidth: 150,
               }}>
-                {f.code && <span style={{ color: 'var(--primary)', fontWeight: 900 }}>{f.code}</span>}
-                {f.code && ' '}
-                <span style={{ fontFamily: 'monospace', fontSize: 14 }}>{f.name}</span>
-                <CooldownBadge info={cooldownFor(f.id, allPairs, cooldownHours)} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ minWidth: 0 }}>
+                    {f.code && (
+                      <span style={{
+                        display: 'block', color: 'var(--primary)', fontWeight: 900,
+                        fontSize: 15, lineHeight: 1.1,
+                      }}>{f.code}</span>
+                    )}
+                    <span style={{
+                      display: 'block', fontFamily: 'monospace', fontSize: 10,
+                      fontWeight: 600, color: 'var(--muted)', lineHeight: 1.1,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      maxWidth: '100%',
+                    }} title={f.name}>{f.name}</span>
+                  </div>
+                  <CooldownBadge info={cooldownFor(f.id, allPairs, cooldownHours)} />
+                </div>
               </td>
               {males.map(m => {
                 const pair = cellMap[`${f.id}:${m.id}`]
