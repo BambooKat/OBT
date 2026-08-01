@@ -263,6 +263,15 @@ const it = {
     dashboardAlt: 'Vai alla dashboard',
     guideFaq: 'Guida / FAQ',
   },
+
+  hours: {
+    title: 'Calcolatore ore',
+    total: 'Ore totali',
+    percent: 'Percentuale %',
+    elapsed: 'Passato',
+    remaining: 'Mancante',
+    hint: 'Inserisci ore totali e %',
+  },
   login: {
     showPassword: 'Mostra password',
     hidePassword: 'Nascondi password',

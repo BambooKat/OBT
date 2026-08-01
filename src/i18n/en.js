@@ -263,6 +263,15 @@ const en = {
     dashboardAlt: 'Go to your dashboard',
     guideFaq: 'Guide / FAQ',
   },
+
+  hours: {
+    title: 'Hours calculator',
+    total: 'Total hours',
+    percent: 'Percentage %',
+    elapsed: 'Elapsed',
+    remaining: 'Remaining',
+    hint: 'Enter total hours and %',
+  },
   login: {
     showPassword: 'Show password',
     hidePassword: 'Hide password',
