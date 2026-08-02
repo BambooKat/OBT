@@ -28,7 +28,6 @@ function Layout({ username, onLogout, children }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
           <LanguageSwitcher />
           <ThemeSwitcher />
-          <HoursCalculator />
           <Link to="/guide" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
             <i className="ti ti-book" /> {t('layout.guideFaq')}
           </Link>
@@ -39,15 +38,16 @@ function Layout({ username, onLogout, children }) {
           </Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
+          <HoursCalculator />
+          {username && (
+            <Link to="/journal" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+              <i className="ti ti-notebook" /> {t('layout.journal')}
+            </Link>
+          )}
           {username && (
             <Link to="/dashboard" className="obt-btn obt-btn--ghost obt-btn--sm"
               title={t('layout.dashboardAlt')} style={{ textDecoration: 'none' }}>
               <i className="ti ti-user" /> {username}
-            </Link>
-          )}
-          {username && (
-            <Link to="/journal" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
-              <i className="ti ti-notebook" /> {t('layout.journal')}
             </Link>
           )}
           {onLogout && (

@@ -265,7 +265,7 @@ const en = {
   },
 
   hours: {
-    title: 'Hours calculator',
+    title: 'Egg Timer',
     total: 'Total hours',
     percent: 'Percentage %',
     elapsed: 'Elapsed',

@@ -62,7 +62,7 @@ function HoursCalculator() {
         title={t('hours.title')}
         className="obt-btn obt-btn--ghost obt-btn--sm"
       >
-        <i className="ti ti-clock" />
+        <i className="ti ti-clock" /> {t('hours.title')}
         <span style={{ fontSize: 10, opacity: .7 }}>{open ? '▴' : '▾'}</span>
       </button>
 
@@ -71,7 +71,7 @@ function HoursCalculator() {
           role="dialog"
           aria-label={t('hours.title')}
           style={{
-            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 200,
+            position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
             padding: 12, width: 240,
             background: 'var(--card)', border: '1px solid var(--line)',
             borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-hover)',
