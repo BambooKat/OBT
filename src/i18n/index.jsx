@@ -6,13 +6,13 @@ import it from './it'
 // PER AGGIUNGERE UNA LINGUA:
 //   1. copia src/i18n/en.js in src/i18n/xx.js e traduci i valori
 //   2. importalo qui sopra
-//   3. aggiungi una riga a LANGUAGES qui sotto
+//   3. aggiungi una riga a LANGUAGES con dict: xx e il locale giusto
 // Fine. Lo switcher nell'header si aggiorna da solo.
 // Le chiavi mancanti ricadono automaticamente sull'inglese.
 // ---------------------------------------------------------------------------
 export const LANGUAGES = {
-  en: { label: 'English',  flag: 'EN' },
-  it: { label: 'Italiano', flag: 'IT' },
+  en: { label: 'English',  flag: 'EN', dict: en, locale: 'en-GB' },
+  it: { label: 'Italiano', flag: 'IT', dict: it, locale: 'it-IT' },
 }
 
 export const DEFAULT_LANG = 'en'
