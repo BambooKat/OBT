@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import { CONTACT_EMAIL } from '../config'
-import LanguageSwitcher from './LanguageSwitcher'
-import ThemeSwitcher from './ThemeSwitcher'
+import HeaderNav from './HeaderNav'
 
 function Login() {
   const { t } = useT()
@@ -77,9 +76,8 @@ function Login() {
         zIndex: 100,
         boxShadow: 'var(--shadow)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-          <LanguageSwitcher />
-          <ThemeSwitcher />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
+          <HeaderNav />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
           <img src="/logo_obt.png" alt="OBT logo" style={{ height: '40px', width: 'auto' }} />

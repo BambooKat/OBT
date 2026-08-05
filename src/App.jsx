@@ -11,6 +11,7 @@ import Privacy from './pages/Privacy'
 import Journal from './pages/Journal'
 import JournalEntry from './pages/JournalEntry'
 import Guide from './pages/Guide'
+import News from './pages/News'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -40,16 +41,26 @@ function App() {
     return <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40vh' }}>Caricamento...</div>
   }
 
-  // NON loggato: Login ha già il suo layout a tutta pagina, non avvolgerlo con Layout
+  // --- NON loggato -------------------------------------------------------
+  // Le pagine informative (Guida, FAQ, Novita, Privacy, Crediti) sono pubbliche
+  // e usano lo STESSO Layout dei loggati, che si adatta (niente pill-account,
+  // mostra Accedi/Registrati). La landing "/" resta Login (ha il suo layout a
+  // tutta pagina). Ogni altra rotta -> Login.
   if (!session) {
     return (
       <Routes>
-        <Route path="*" element={<Login />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/guide" element={<Layout><Guide /></Layout>} />
+        <Route path="/faq" element={<Layout><Guide initialTab="faq" /></Layout>} />
+        <Route path="/news" element={<Layout><News /></Layout>} />
+        <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+        <Route path="/credits" element={<Layout><Credits /></Layout>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )
   }
 
-  // Loggato: Layout contiene header/footer + shell per tutte le pagine interne
+  // --- Loggato -----------------------------------------------------------
   const username = session.user?.user_metadata?.username || session.user?.email || ''
 
   return (
@@ -65,6 +76,7 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/faq" element={<Guide initialTab="faq" />} />
+        <Route path="/news" element={<News />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>

@@ -1,15 +1,15 @@
 import { Link } from 'react-router-dom'
 import { CONTACT_EMAIL } from '../config'
 import { useT } from '../i18n'
-import LanguageSwitcher from './LanguageSwitcher'
-import ThemeSwitcher from './ThemeSwitcher'
 import HoursCalculator from './HoursCalculator'
+import HeaderNav from './HeaderNav'
 
 function Layout({ username, onLogout, children }) {
   const { t } = useT()
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
+
       {/* Header - SEMPRE fuori, full width */}
       <header style={{
         background: 'var(--card)',
@@ -26,45 +26,49 @@ function Layout({ username, onLogout, children }) {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
-          <LanguageSwitcher />
-          <ThemeSwitcher />
-          <Link to="/guide" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
-            <i className="ti ti-book" /> {t('layout.guideFaq')}
-          </Link>
+          <HeaderNav />
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Link to="/dashboard" style={{ display: 'flex' }}>
+          <Link to={username ? '/dashboard' : '/'} style={{ display: 'flex' }}>
             <img src="/logo_obt.png" style={{ height: '40px', width: 'auto' }} alt={t('layout.homeAlt')} />
           </Link>
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
-          <HoursCalculator />
-          {username && (
-            <Link to="/journal" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
-              <i className="ti ti-notebook" /> {t('layout.journal')}
-            </Link>
-          )}
-          {username && (
-            <Link to="/dashboard" className="obt-btn obt-btn--ghost obt-btn--sm"
-              title={t('layout.dashboardAlt')} style={{ textDecoration: 'none' }}>
-              <i className="ti ti-user" /> {username}
-            </Link>
-          )}
-          {onLogout && (
-            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={onLogout}>{t('common.logout')}</button>
+          {username ? (
+            <>
+              <HoursCalculator />
+              <Link to="/journal" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+                <i className="ti ti-notebook" /> {t('layout.journal')}
+              </Link>
+              <Link to="/dashboard" className="obt-btn obt-btn--ghost obt-btn--sm"
+                title={t('layout.dashboardAlt')} style={{ textDecoration: 'none' }}>
+                <i className="ti ti-user" /> {username}
+              </Link>
+              {onLogout && (
+                <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={onLogout}>{t('common.logout')}</button>
+              )}
+            </>
+          ) : (
+            <>
+              <Link to="/" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+                {t('login.signIn')}
+              </Link>
+              <Link to="/" className="obt-btn obt-btn--primary obt-btn--sm" style={{ textDecoration: 'none' }}>
+                {t('login.signUp')}
+              </Link>
+            </>
           )}
         </div>
       </header>
 
       {/* Wrapper centrale che spinge il footer in basso */}
       <div style={{ flex: 1, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-        {/* Card centrale - SOLO questa ha larghezza fissa, non balla più */}
-        <div className="obt-shell" style={{ 
+        <div className="obt-shell" style={{
           width: 'calc(100% - 48px)',
           maxWidth: '1440px',
           margin: '24px auto 40px',
-          // IMPORTANTE: niente display:flex qui, lascia il CSS di theme.css fare il suo lavoro
-          // così hero e tabelle non allargano la shell
         }}>
           {children}
         </div>
