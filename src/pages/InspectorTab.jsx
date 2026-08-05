@@ -123,6 +123,18 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
   const [partnerId, setPartnerId] = useState('')       // vista Partner: pet scelto
   const [plan, setPlan] = useState([])   // [{ fId, mId, floor }] — piano di accoppiamento in costruzione
 
+  // --- Granularità dell'assortimento ------------------------------------
+  // Quando scegli una coppia, cosa consideri "impegnato" e non riproponibile?
+  //   pet       = il singolo animale (universale, default per chi non ha etichette)
+  //   code      = il campo Codice del pet (es. A1A1, A2A2)
+  //   group_tag = il campo Gruppo del pet
+  // keyLen accorcia la chiave ai primi N caratteri. Lo slider va da 1 a
+  // maxKeyLen e l'estremo destro (= maxKeyLen) vale "intera": la scala cresce
+  // nel verso intuitivo, senza un valore speciale che faccia saltare il pollice.
+  const [keyMode, setKeyMode] = useState('pet')  // pet | code | group_tag
+  const [keyLen, setKeyLen] = useState(99)        // >= maxKeyLen = intera
+  const [hideBusy, setHideBusy] = useState(false) // nascondi del tutto le coppie escluse dal piano
+
   const slots = slotsOf(project)
   const slotLabel = (key) => t('project.slot.' + key)
   const target = project?.target_colors || {}
@@ -284,6 +296,48 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
     return set
   }
 
+  // --- CHIAVE DI ASSORTIMENTO -------------------------------------------
+  // keyOf(pet) restituisce l'etichetta con cui un pet "occupa" una risorsa nel
+  // piano. In modalità 'pet' ogni animale è unico (comportamento storico); in
+  // 'code'/'group_tag' più pet collassano sulla stessa chiave, così scegliendone
+  // uno spegni tutti i suoi simili. keyLen>0 tronca ai primi N caratteri.
+  // Fallback all'id quando il campo scelto è vuoto: un pet senza codice resta
+  // sempre distinguibile invece di collassare con tutti gli altri "senza codice".
+  const petKeyMap = useMemo(() => {
+    // keyLen alto → slice restituisce l'intera stringa: nessun caso speciale.
+    const truncate = (s) => String(s).slice(0, keyLen)
+    const m = new Map()
+    for (const p of pets) {
+      let raw
+      if (keyMode === 'code') raw = p.code
+      else if (keyMode === 'group_tag') raw = p.group_tag
+      else raw = null
+      // campo vuoto o modalità 'pet' → chiave = id (unicità per individuo)
+      m.set(p.id, raw ? 'k:' + truncate(raw) : 'id:' + p.id)
+    }
+    return m
+  }, [pets, keyMode, keyLen])
+  const keyOf = (petOrId) => {
+    const id = typeof petOrId === 'string' ? petOrId : petOrId?.id
+    return petKeyMap.get(id) ?? ('id:' + id)
+  }
+
+  // Campi disponibili come chiave: mostro nel menù solo quelli davvero popolati,
+  // così un utente senza codici non vede opzioni morte.
+  const hasCode = useMemo(() => pets.some(p => p.code), [pets])
+  const hasGroupTag = useMemo(() => pets.some(p => p.group_tag), [pets])
+  // lunghezza massima utile per lo slider: la chiave più lunga fra i valori del
+  // campo scelto (oltre non ha effetto)
+  const maxKeyLen = useMemo(() => {
+    if (keyMode === 'pet') return 0
+    let mx = 1
+    for (const p of pets) {
+      const raw = keyMode === 'code' ? p.code : p.group_tag
+      if (raw) mx = Math.max(mx, String(raw).length)
+    }
+    return mx
+  }, [pets, keyMode])
+
   // --- PIANO DI ACCOPPIAMENTO -------------------------------------------
   // Il piano vive in localStorage per progetto: non è un dato di gioco, è una
   // bozza di lavoro, quindi non vale la pena farne una tabella su DB.
@@ -302,12 +356,23 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
     try { localStorage.setItem(planKey, JSON.stringify(plan)) } catch { /* quota piena, pazienza */ }
   }, [plan, planKey])
 
-  // pet già impegnati: un pet in cooldown non può stare in due coppie insieme
+  // pet già impegnati: un pet in cooldown non può stare in due coppie insieme.
+  // Questo vincolo è FISICO e resta sempre per-individuo, a prescindere dalla
+  // granularità scelta per l'assortimento.
   const usedPetIds = useMemo(() => {
     const s = new Set()
     for (const p of plan) { s.add(p.fId); s.add(p.mId) }
     return s
   }, [plan])
+
+  // chiavi già impegnate secondo la granularità scelta: in modalità 'code'/
+  // 'group_tag' basta che UN pet della chiave sia nel piano perché l'intera
+  // chiave risulti occupata (è ciò che spegne "i soliti 5 e 2" di ogni riga).
+  const usedKeys = useMemo(() => {
+    const s = new Set()
+    for (const p of plan) { s.add(keyOf(p.fId)); s.add(keyOf(p.mId)) }
+    return s
+  }, [plan, petKeyMap])
 
   const planPairKeys = useMemo(
     () => new Set(plan.map(p => p.fId + ':' + p.mId)),
@@ -411,10 +476,13 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
           String(r.f.code || '').toLowerCase() === q ||
           String(r.m.code || '').toLowerCase() === q)
       : ranking.rows
-    return rows.map(r => {
+    const mapped = rows.map(r => {
       const chosen = planPairKeys.has(r.f.id + ':' + r.m.id)
-      const busyF = !chosen && usedPetIds.has(r.f.id)
-      const busyM = !chosen && usedPetIds.has(r.m.id)
+      // Un partner è "impegnato" se la sua chiave d'assortimento è già nel piano.
+      // In modalità 'pet' la chiave è l'id → identico al comportamento storico.
+      // In 'code'/'group_tag' l'intero gruppo si spegne quando ne scegli uno.
+      const busyF = !chosen && usedKeys.has(keyOf(r.f.id))
+      const busyM = !chosen && usedKeys.has(keyOf(r.m.id))
       let kinCodes = new Set()
       if (!chosen && !busyF && !busyM && planFounderSets.length) {
         const own = pairFounders(r)
@@ -424,7 +492,19 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
       }
       return { ...r, chosen, busyF, busyM, busy: busyF || busyM, kin: kinCodes.size > 0, kinCodes }
     })
-  }, [ranking, petFilter, planPairKeys, usedPetIds, planFounderSets])
+
+    // Opzione: nascondi del tutto le coppie escluse (ma non quelle già scelte).
+    const filtered = hideBusy ? mapped.filter(r => r.chosen || !r.busy) : mapped
+
+    // Riordino stabile in 3 fasce senza toccare l'ordine per floor dentro
+    // ciascuna: coppie scelte in cima (riferimento), poi le attive, poi le busy
+    // in coda — così lo scroll e il "mostra altre" non sprecano righe su escluse.
+    const rank = (r) => (r.chosen ? 0 : r.busy ? 2 : 1)
+    return filtered
+      .map((r, i) => [r, i])            // indice originale = tie-breaker → ordine per floor preservato
+      .sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1])
+      .map(([r]) => r)
+  }, [ranking, petFilter, planPairKeys, usedPetIds, usedKeys, petKeyMap, planFounderSets, hideBusy])
 
   const exportRanking = () => {
     if (!ranking) return
@@ -508,6 +588,69 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
       )}
     </div>
   )
+
+  // Controllo granularità dell'assortimento: sceglie SU COSA il piano considera
+  // un pet "impegnato". Opzione (a): campo + slider lunghezza sempre visibili.
+  const keyModeOptions = [
+    { key: 'pet', label: t('project.inspector.grainPet') },
+    ...(hasCode ? [{ key: 'code', label: t('project.inspector.grainCode') }] : []),
+    ...(hasGroupTag ? [{ key: 'group_tag', label: t('project.inspector.grainGroup') }] : []),
+  ]
+  const GranularityControl = () => {
+    // Se l'unica opzione è 'pet' (nessun codice né gruppo nella linea) non ha
+    // senso mostrare il controllo: c'è una sola granularità possibile.
+    if (keyModeOptions.length <= 1) return null
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        <span className="obt-text-soft" style={{ fontSize: 12, fontWeight: 700 }}>
+          {t('project.inspector.grainLabel')}
+        </span>
+        {keyModeOptions.map(o => (
+          <button
+            key={o.key}
+            onClick={() => { setKeyMode(o.key); setKeyLen(99) }}
+            style={pillStyle(o.key === keyMode)}
+            title={t('project.inspector.grainHint')}
+          >
+            {o.label}
+          </button>
+        ))}
+        {keyMode !== 'pet' && maxKeyLen > 1 && (() => {
+          // Valore effettivo mostrato sullo slider, sempre dentro [1, maxKeyLen]:
+          // se keyLen è il sentinel "grande", combacia con max = estremo destro.
+          // Clampare qui evita che React riallinei il pollice a ogni render.
+          const shown = Math.min(Math.max(keyLen, 1), maxKeyLen)
+          const isFull = shown >= maxKeyLen
+          return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 6 }}>
+              <span className="obt-text-soft" style={{ fontSize: 12 }}>
+                {t('project.inspector.grainLen')}
+              </span>
+              <input
+                type="range"
+                min={1} max={maxKeyLen} step={1}
+                value={shown}
+                onChange={e => {
+                  const v = parseInt(e.target.value, 10)
+                  // estremo destro = "intera": salvo il sentinel così resta piena
+                  // anche se in futuro compaiono codici più lunghi.
+                  setKeyLen(v >= maxKeyLen ? 99 : v)
+                }}
+                style={{ width: 140 }}
+                title={t('project.inspector.grainLenHint')}
+              />
+              <span style={{
+                fontFamily: 'monospace', fontSize: 12, fontWeight: 700,
+                minWidth: 54, color: 'var(--ink-soft)',
+              }}>
+                {isFull ? t('project.inspector.grainLenFull') : `${shown} ${t('project.inspector.grainLenChars')}`}
+              </span>
+            </span>
+          )
+        })()}
+      </div>
+    )
+  }
 
   const viewTabs = [
     { key: 'analyse', label: t('project.inspector.tabAnalyse') },
@@ -688,6 +831,7 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
           <>
           <GenFilter />
           <GroupFilter />
+          <GranularityControl />
 
           {(!ranking || ranking.rows.length === 0) && (
             <p className="obt-text-soft" style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>
@@ -710,6 +854,7 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
                 </strong>
                 <span className="obt-text-soft" style={{ fontSize: 12 }}>
                   {t('project.inspector.planCount', { n: planRows.length, pets: usedPetIds.size })}
+                  {keyMode !== 'pet' && ` · ${t('project.inspector.planKeys', { keys: usedKeys.size })}`}
                 </span>
                 <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                   <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={exportPlan}>
@@ -761,6 +906,16 @@ export default function InspectorTab({ pets, project, isOwner, onEditPet }) {
             <span className="obt-text-soft" style={{ fontSize: 12, marginLeft: 4 }}>
               {t('project.inspector.rankCount', { shown: visibleRows.length, skipped: ranking.skipped })}
             </span>
+            {(hideBusy || visibleRows.some(r => r.busy)) && (
+              <button
+                onClick={() => setHideBusy(v => !v)}
+                style={{ ...pillStyle(hideBusy), padding: '3px 10px' }}
+                title={t('project.inspector.rankHideBusyHint')}
+              >
+                <i className={`ti ti-${hideBusy ? 'eye-off' : 'eye'}`} style={{ marginRight: 4 }} />
+                {t('project.inspector.rankHideBusy')}
+              </button>
+            )}
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
               <input
                 type="number" min="1" max={ranking.rows.length}
