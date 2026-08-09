@@ -357,21 +357,24 @@ a { color: var(--primary-dark); }
   top: -12px;
   right: 14px;
   background: var(--primary);
-  color: #fff;
+  color: #0C2233;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow);
 }
-.obt-card--secondary .obt-badge { background: var(--secondary); }
-.obt-card--tertiary .obt-badge { background: var(--tertiary); }
+/* Testo leggibile per colore (soluzione A): i badge su colore chiaro
+   (primary, tertiary) usano il "quasi nero" di famiglia #0C2233 dal default
+   qui sopra; il badge su colore scuro (secondary) passa a bianco. */
+.obt-card--secondary .obt-badge { background: var(--secondary); color: #fff; }
+.obt-card--tertiary .obt-badge  { background: var(--tertiary); }
 
 /* --- card del diario per "kind" (note / checklist) --- */
 .obt-card--note      { border-top-color: var(--kind-note); }
 .obt-card--note      .obt-badge { background: var(--kind-note); }
 .obt-card--checklist { border-top-color: var(--kind-checklist); }
-.obt-card--checklist .obt-badge { background: var(--kind-checklist); }
+.obt-card--checklist .obt-badge { background: var(--kind-checklist); color: #fff; }
 
 /* puntina pin, angolo alto-sinistra */
 .obt-card .obt-pin {
@@ -421,7 +424,7 @@ a { color: var(--primary-dark); }
 }
 
 /* chip filtro tipo attivo per kind */
-.obt-typechip--note.is-active      { background: var(--kind-note); border-color: var(--kind-note); color: #fff; }
+.obt-typechip--note.is-active      { background: var(--kind-note); border-color: var(--kind-note); color: #0C2233; }
 .obt-typechip--checklist.is-active { background: var(--kind-checklist); border-color: var(--kind-checklist); color: #fff; }
 
 .obt-card h3 { font-size: 17px; margin-bottom: 6px; }
