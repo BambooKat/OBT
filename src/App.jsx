@@ -57,8 +57,11 @@ function App() {
         <Route path="/news" element={<Layout><News /></Layout>} />
         <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
         <Route path="/credits" element={<Layout><Credits /></Layout>} />
-        {/* checklist linkabili: lettura pubblica anche senza account (vista read-only) */}
+        {/* contenuti linkabili: lettura pubblica anche senza account (viste read-only) */}
         <Route path="/journal/checklist/:checklistId" element={<Layout><ChecklistPage /></Layout>} />
+        <Route path="/journal/:entryId" element={<Layout><JournalEntry /></Layout>} />
+        <Route path="/project/:projectId" element={<Layout><ProjectDashboard /></Layout>} />
+        <Route path="/line/:id" element={<Layout><ProjectPage /></Layout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )

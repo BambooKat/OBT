@@ -5,6 +5,7 @@ import Modal from './Modal'
 import NewLineModal from './NewLineModal'
 import { useT } from '../i18n'
 import { useCardSort, SortControl } from './useCardSort'
+import VisibilityToggle from './VisibilityToggle'
 
 function ProjectDashboard() {
   const { t, formatDate } = useT()
@@ -22,7 +23,7 @@ function ProjectDashboard() {
   const [showManage, setShowManage] = useState(false)
   const [manageChecked, setManageChecked] = useState([])
   const [showEdit, setShowEdit] = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', notes: '', author: '', is_public: false })
+  const [editForm, setEditForm] = useState({ name: '', notes: '', author: '', visibility: 'private' })
   const [copied, setCopied] = useState(false)
 
   const shareUrl = `${window.location.origin}/project/${projectId}`
@@ -32,17 +33,22 @@ function ProjectDashboard() {
   const load = async () => {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { navigate('/'); return }
-    const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
-    if (profile) setUsername(profile.username)
+    // Anon ammesso: la RLS concede la lettura se il progetto è unlisted/public.
+    // Niente redirect a priori; si decide dopo aver tentato la lettura.
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+      if (profile) setUsername(profile.username)
+    }
     const { data: speciesData } = await supabase.from('species').select('*').order('name', { ascending: true })
     setSpecies(speciesData || [])
-    const { data: cont } = await supabase.from('projects').select('*').eq('id', projectId).single()
+    const { data: cont } = await supabase.from('projects').select('*').eq('id', projectId).maybeSingle()
+    // Non leggibile (privato o inesistente): per un anon = schermata not-found,
+    // non un rimbalzo alla home che sembrerebbe un bug.
     if (!cont) { setNotFound(true); setLoading(false); return }
     setContainer(cont)
-    const owner = user.id === cont.owner_id
+    const owner = !!(user && user.id === cont.owner_id)
     setIsOwner(owner)
-    setEditForm({ name: cont.name, notes: cont.notes || '', author: cont.author || '', is_public: cont.is_public === true })
+    setEditForm({ name: cont.name, notes: cont.notes || '', author: cont.author || '', visibility: cont.visibility || 'private' })
     const { data: linesData } = await supabase.from('lines').select('*, species(name)').eq('project_id', projectId).order('created_at', { ascending: false })
     setLines(linesData || [])
     if (owner) {
@@ -71,7 +77,7 @@ function ProjectDashboard() {
 
   const saveEdit = async () => {
     const { error } = await supabase.from('projects').update({
-      name: editForm.name, notes: editForm.notes || null, author: editForm.author || null, is_public: editForm.is_public,
+      name: editForm.name, notes: editForm.notes || null, author: editForm.author || null, visibility: editForm.visibility,
     }).eq('id', projectId)
     if (error) return
     setShowEdit(false)
@@ -79,14 +85,15 @@ function ProjectDashboard() {
   }
 
   const toggleVisibility = async () => {
-    const next = !container.is_public
-    if (!next && !window.confirm(t('projectDash.confirmPrivate'))) return
-    const { error } = await supabase.from('projects').update({ is_public: next }).eq('id', projectId)
+    const isShared = container.visibility === 'unlisted' || container.visibility === 'public'
+    const next = isShared ? 'private' : 'unlisted'
+    if (next === 'private' && !window.confirm(t('projectDash.confirmPrivate'))) return
+    const { error } = await supabase.from('projects').update({ visibility: next }).eq('id', projectId)
     if (!error) load()
   }
 
   const copyLink = async () => {
-    if (!editForm.is_public) return
+    if (editForm.visibility === 'private') return
     try { await navigator.clipboard.writeText(shareUrl) }
     catch { window.prompt(t('projectDash.copyPrompt'), shareUrl); return }
     setCopied(true); setTimeout(() => setCopied(false), 2000)
@@ -121,8 +128,8 @@ function ProjectDashboard() {
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/dashboard')}>&larr; {t('projectDash.back')}</button>
             {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEdit(true)}><i className="ti ti-pencil" /> {t('projectDash.edit')}</button>}
             {isOwner && (
-              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={toggleVisibility} title={container.is_public ? t('projectDash.publicTitle') : t('projectDash.privateTitle')}>
-                {container.is_public ? <><i className="ti ti-lock-open" /> {t('projectDash.public')}</> : <><i className="ti ti-lock" /> {t('projectDash.private')}</>}
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={toggleVisibility} title={container.visibility !== 'private' ? t('projectDash.publicTitle') : t('projectDash.privateTitle')}>
+                {container.visibility !== 'private' ? <><i className="ti ti-link" /> {t('visibility.unlisted')}</> : <><i className="ti ti-lock" /> {t('visibility.private')}</>}
               </button>
             )}
             {!isOwner && (
@@ -192,15 +199,13 @@ function ProjectDashboard() {
               <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></div>
 
               <div style={{ borderTop: '0.5px solid var(--line)', margin: '14px 0', paddingTop: 14 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600 }}>
-                  <input type="checkbox" checked={editForm.is_public} onChange={(e) => setEditForm({ ...editForm, is_public: e.target.checked })} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                  {t('projectDash.shareCheckbox')}
-                </label>
-                <p className="obt-hint" style={{ marginTop: 6 }}>{editForm.is_public ? t('projectDash.shareHintPublic') : t('projectDash.shareHintPrivate')}</p>
-                <div style={{ display: 'flex', gap: 8, marginTop: 10, opacity: editForm.is_public ? 1 : 0.45 }}>
-                  <input className="obt-input" value={shareUrl} readOnly disabled={!editForm.is_public} onFocus={(e) => { if (editForm.is_public) e.target.select() }} style={{ fontFamily: 'monospace', fontSize: 12 }} />
-                  <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={copyLink} disabled={!editForm.is_public} style={{ whiteSpace: 'nowrap' }}>{copied ? t('projectDash.copied') : t('common.copy')}</button>
-                </div>
+                <label style={{ fontWeight: 600, display: 'block', marginBottom: 8 }}>{t('visibility.label')}</label>
+                <VisibilityToggle
+                  value={editForm.visibility}
+                  onChange={(v) => setEditForm({ ...editForm, visibility: v })}
+                  variant="full"
+                  shareUrl={shareUrl}
+                />
               </div>
 
               <div className="obt-actions" style={{ marginTop: 8 }}>

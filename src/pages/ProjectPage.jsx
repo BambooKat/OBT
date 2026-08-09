@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import MutationSelector from './MutationSelector'
 import { effectiveCooldown } from './research'
 import Modal from './Modal'
+import VisibilityToggle from './VisibilityToggle'
 import Help from './Help'
 import PetTable, { ColorCell } from './PetTable'
 import PairGrid, { PairCellModal } from './PairGrid'
@@ -91,6 +92,7 @@ function ProjectPage() {
   const [pets, setPets] = useState([])
   const [pairs, setPairs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
   const [activeTab, setActiveTab] = useState('starters')
   const [isOwner, setIsOwner] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -150,9 +152,8 @@ function ProjectPage() {
   const [speciesList, setSpeciesList] = useState([])
   const [containerList, setContainerList] = useState([])   // progetti-contenitore dell'utente
   const [editProjectForm, setEditProjectForm] = useState({
-    name: '', species_id: '', author: '', collaborators: '', project_notes: '', is_public: false, project_id: ''
+    name: '', species_id: '', author: '', collaborators: '', project_notes: '', visibility: 'private', project_id: ''
   })
-  const [copied, setCopied] = useState(false)
 
   const [pairsPage, setPairsPage] = useState(1)
 
@@ -169,18 +170,22 @@ function ProjectPage() {
     if (firstLoadRef.current) setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { data: projectData } = await supabase.from('lines').select('*, species(name, color_slots, cooldown_hours)').eq('id', id).single()
-    if (!projectData) { navigate('/dashboard'); return }
+    // Anon ammesso: la RLS concede la lettura se la linea è unlisted/public.
+    // maybeSingle(): niente errore se la riga non è leggibile; semplicemente null.
+    const { data: projectData } = await supabase.from('lines').select('*, species(name, color_slots, cooldown_hours)').eq('id', id).maybeSingle()
+    // Non leggibile (privata o inesistente): schermata not-found, non un rimbalzo
+    // che per un anon finirebbe al login e sembrerebbe un bug.
+    if (!projectData) { setNotFound(true); setLoading(false); firstLoadRef.current = false; return }
 
     setProject(projectData)
-    setIsOwner(user && user.id === projectData.owner_id)
+    setIsOwner(!!(user && user.id === projectData.owner_id))
     setEditProjectForm({
       name: projectData.name || '',
       species_id: projectData.species_id || '',
       author: projectData.author || '',
       collaborators: projectData.collaborators || '',
       project_notes: projectData.project_notes || '',
-      is_public: projectData.is_public === true,
+      visibility: projectData.visibility || 'private',
       project_id: projectData.project_id || '',
     })
     setTargetForm({ colors: projectData.target_colors || {} })
@@ -466,7 +471,7 @@ function ProjectPage() {
       author: editProjectForm.author || null,
       collaborators: editProjectForm.collaborators || null,
       project_notes: editProjectForm.project_notes || null,
-      is_public: editProjectForm.is_public,
+      visibility: editProjectForm.visibility,
       project_id: editProjectForm.project_id || null,
     }).eq('id', id)
     if (fail(error, t('project.errors.saveProject'))) return
@@ -477,24 +482,13 @@ function ProjectPage() {
   const shareUrl = `${window.location.origin}/line/${id}`
 
   const handleToggleVisibility = async () => {
-    const next = !project.is_public
-    if (!next && !window.confirm(t('project.confirm.makePrivate'))) return
+    const isShared = project.visibility === 'unlisted' || project.visibility === 'public'
+    const next = isShared ? 'private' : 'unlisted'
+    if (next === 'private' && !window.confirm(t('project.confirm.makePrivate'))) return
     setActionError('')
-    const { error } = await supabase.from('lines').update({ is_public: next }).eq('id', id)
+    const { error } = await supabase.from('lines').update({ visibility: next }).eq('id', id)
     if (fail(error, t('project.errors.toggleVisibility'))) return
     loadAll()
-  }
-
-  const handleCopyLink = async () => {
-    if (!editProjectForm.is_public) return
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-    } catch {
-      window.prompt(t('project.share.copyPrompt'), shareUrl)
-      return
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   const handleDeleteProject = async () => {
@@ -507,6 +501,15 @@ function ProjectPage() {
   }
 
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
+  if (notFound) return (
+    <div className="obt-page">
+      <div className="obt-panel obt-empty">
+        <div className="obt-empty-icon"><i className="ti ti-eye-off" /></div>
+        <h3>{t('project.notFound')}</h3>
+        <button className="obt-btn obt-btn--primary" onClick={() => navigate('/dashboard')}>&larr; {t('project.back')}</button>
+      </div>
+    </div>
+  )
   if (!project) return null
 
   const starters = pets.filter(p => p.generation === 0)
@@ -695,8 +698,8 @@ function ProjectPage() {
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate(project?.project_id ? `/project/${project.project_id}` : '/dashboard')}>&larr; {project?.project_id ? t('project.backToProject') : t('project.back')}</button>
             {isOwner && <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setShowEditProject(true)}><i className="ti ti-pencil" /> {t('project.edit')}</button>}
             {isOwner && (
-              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleToggleVisibility} title={project.is_public ? t('project.publicTitle') : t('project.privateTitle')}>
-                {project.is_public ? <><i className="ti ti-lock-open" /> {t('project.public')}</> : <><i className="ti ti-lock" /> {t('project.private')}</>}
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleToggleVisibility} title={project.visibility !== 'private' ? t('project.publicTitle') : t('project.privateTitle')}>
+                {project.visibility !== 'private' ? <><i className="ti ti-link" /> {t('visibility.unlisted')}</> : <><i className="ti ti-lock" /> {t('visibility.private')}</>}
               </button>
             )}
             {!isOwner && (
@@ -759,17 +762,13 @@ function ProjectPage() {
           </div>
           <div className="obt-field"><label>{t('dashboard.notes')} <span className="obt-optional">{t('common.optional')}</span></label><textarea className="obt-textarea" value={editProjectForm.project_notes} onChange={(e) => setEditProjectForm({ ...editProjectForm, project_notes: e.target.value })} /></div>
           <div className="obt-field" style={{ borderTop: '1px solid var(--line)', paddingTop: 16, marginTop: 8 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <input type="checkbox" checked={editProjectForm.is_public} onChange={(e) => setEditProjectForm({ ...editProjectForm, is_public: e.target.checked })} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-              {t('project.share.checkbox')}
-            </label>
-            <p className="obt-hint" style={{ marginTop: 6 }}>{editProjectForm.is_public ? t('project.share.hintPublic') : t('project.share.hintPrivate')}</p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10, opacity: editProjectForm.is_public ? 1 : 0.45 }}>
-              <input className="obt-input" value={shareUrl} readOnly disabled={!editProjectForm.is_public} onFocus={(e) => { if (editProjectForm.is_public) e.target.select() }} style={{ fontFamily: 'monospace', fontSize: 12 }} />
-              <button type="button" className="obt-btn obt-btn--ghost obt-btn--sm" onClick={handleCopyLink} disabled={!editProjectForm.is_public} style={{ whiteSpace: 'nowrap' }}>
-                {copied ? '✓' : t('common.copy')}
-              </button>
-            </div>
+            <label style={{ fontWeight: 600, display: 'block', marginBottom: 8 }}>{t('visibility.label')}</label>
+            <VisibilityToggle
+              value={editProjectForm.visibility}
+              onChange={(v) => setEditProjectForm({ ...editProjectForm, visibility: v })}
+              variant="full"
+              shareUrl={shareUrl}
+            />
           </div>
           <div className="obt-actions"><button type="submit" className="obt-btn obt-btn--primary">{t('common.saveChanges')}</button><button type="button" className="obt-btn obt-btn--ghost" onClick={() => setShowEditProject(false)}>{t('common.cancel')}</button></div>
         </form>

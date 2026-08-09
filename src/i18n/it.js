@@ -437,6 +437,7 @@ const it = {
   project: {
     back: 'Dashboard',
     backToProject: 'Torna al progetto',
+    notFound: 'Linea non trovata, o non è visibile.',
     edit: 'Modifica linea',
     editTitle: 'Modifica linea',
     public: 'Pubblico',

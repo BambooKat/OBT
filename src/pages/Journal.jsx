@@ -10,6 +10,7 @@ import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import Modal from './Modal'
 import { Markdown, MarkdownToolbar, stripMarkdown } from './markdown'
+import VisibilityToggle from './VisibilityToggle'
 
 // "kuroko, aomine , colori" -> ['kuroko','aomine','colori']
 const parseTags = (raw) =>
@@ -23,7 +24,7 @@ export default function Journal() {
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState({ title: '', body: '', tags: '', is_public: false })
+  const [form, setForm] = useState({ title: '', body: '', tags: '', visibility: 'private' })
   const bodyRef = useRef(null)
 
   const [activeTag, setActiveTag] = useState(null)
@@ -43,13 +44,13 @@ export default function Journal() {
 
   const openNew = () => {
     setEditingId(null)
-    setForm({ title: '', body: '', tags: activeTag || '', is_public: false })
+    setForm({ title: '', body: '', tags: activeTag || '', visibility: 'private' })
     setShowForm(true)
   }
 
   const openEdit = (e) => {
     setEditingId(e.id)
-    setForm({ title: e.title || '', body: e.body || '', tags: (e.tags || []).join(', '), is_public: !!e.is_public })
+    setForm({ title: e.title || '', body: e.body || '', tags: (e.tags || []).join(', '), visibility: e.visibility || 'private' })
     setShowForm(true)
   }
 
@@ -61,7 +62,7 @@ export default function Journal() {
       title: form.title.trim() || null,
       body: form.body.trim(),
       tags: parseTags(form.tags),
-      is_public: !!form.is_public,
+      visibility: form.visibility,
     }
     const { error } = editingId
       ? await supabase.from('journal').update(payload).eq('id', editingId)
@@ -186,7 +187,7 @@ export default function Journal() {
                     {e.title || t('journal.untitled')}
                   </Link>
                 </h3>
-                {e.is_public && <span title={t('journal.public')} style={{ fontSize: 12 }}><i className="ti ti-world" /></span>}
+                {e.visibility !== 'private' && <span title={t('visibility.unlisted')} style={{ fontSize: 12 }}><i className="ti ti-link" /></span>}
                 <span className="obt-text-soft" style={{ fontSize: 12 }}>{formatDate(e.created_at)}</span>
                 <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                   <button className="obt-icon-btn" title={t('common.edit')} onClick={() => openEdit(e)}><i className="ti ti-pencil" /></button>
@@ -247,12 +248,14 @@ export default function Journal() {
             </div>
           )}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, marginBottom: 12 }}>
-          <input type="checkbox" checked={form.is_public}
-            onChange={e => setForm({ ...form, is_public: e.target.checked })}
-            style={{ width: 16, height: 16, cursor: 'pointer' }} />
-          {t('journal.makePublic')}
-        </label>
+        <div className="obt-field">
+          <label>{t('visibility.label')}</label>
+          <VisibilityToggle
+            value={form.visibility}
+            onChange={v => setForm({ ...form, visibility: v })}
+            variant="full"
+          />
+        </div>
 
         <div className="obt-actions">
           <button className="obt-btn obt-btn--primary" onClick={save} disabled={!form.body.trim()}>

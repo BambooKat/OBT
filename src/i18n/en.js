@@ -437,6 +437,7 @@ const en = {
   project: {
     back: 'Dashboard',
     backToProject: 'Back to project',
+    notFound: 'Line not found, or not visible.',
     edit: 'Edit line',
     editTitle: 'Edit line',
     public: 'Public',

@@ -17,7 +17,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
-  const [isPublic, setIsPublic] = useState(false)
+  const [visibility, setVisibility] = useState('private')
   const [showResearch, setShowResearch] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [bioDraft, setBioDraft] = useState('')
@@ -37,11 +37,11 @@ function Dashboard() {
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { navigate('/'); return }
-    const { data: profile } = await supabase.from('profiles').select('username, bio, is_public, ovipets_plan, ovipets_year, favourites').eq('id', user.id).single()
+    const { data: profile } = await supabase.from('profiles').select('username, bio, visibility, ovipets_plan, ovipets_year, favourites').eq('id', user.id).single()
     if (profile) {
       setUsername(profile.username)
       setBio(profile.bio || '')
-      setIsPublic(!!profile.is_public)
+      setVisibility(profile.visibility || 'private')
       setPaid(profile.ovipets_plan || '')
       setSince(profile.ovipets_year || '')
       setFavs(profile.favourites || '')
@@ -109,11 +109,12 @@ function Dashboard() {
 
   const togglePublic = async () => {
     setProfileError('')
-    const next = !isPublic
+    const isShared = visibility === 'unlisted' || visibility === 'public'
+    const next = isShared ? 'private' : 'unlisted'
     const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('profiles').update({ is_public: next }).eq('id', user.id)
+    const { error } = await supabase.from('profiles').update({ visibility: next }).eq('id', user.id)
     if (error) { setProfileError(t('profile.saveError')); return }
-    setIsPublic(next)
+    setVisibility(next)
   }
 
   const deleteAccount = async () => {
@@ -145,7 +146,7 @@ function Dashboard() {
               <i className="ti ti-pencil" /> {t('profile.edit')}
             </button>
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={togglePublic}>
-              {isPublic ? <><i className="ti ti-world" /> {t('profile.public')}</> : <><i className="ti ti-lock" /> {t('profile.private')}</>}
+              {visibility !== 'private' ? <><i className="ti ti-link" /> {t('visibility.unlisted')}</> : <><i className="ti ti-lock" /> {t('visibility.private')}</>}
             </button>
           </div>
 
