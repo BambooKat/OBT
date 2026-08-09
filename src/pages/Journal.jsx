@@ -1,117 +1,150 @@
 // src/pages/Journal.jsx
-// Diario personale: voci datate, testo semplice, taggate.
-// Niente commenti, niente like: sono appunti tuoi e basta.
-// I tag sono testo libero salvato in un array, così non serve una tabella
-// a parte e puoi inventarne di nuovi mentre scrivi.
+// Diario unificato: note (testo) e checklist (collezioni) nella STESSA griglia.
+// Sono tutte "note" in senso lato; il tipo (kind) le distingue con una linguetta
+// colorata + icona. Ordinamento: pinnate in cima, poi per data (desc).
+//
+// Filtri: ricerca testuale, chip tag (frequenza), chip tipo Note/Checklist
+// (mutuamente esclusivi, toggle: riclick azzera). Il pin opera DENTRO il filtro
+// attivo — se filtro "solo note", le checklist pinnate non si vedono.
 
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
-import Modal from './Modal'
-import { Markdown, MarkdownToolbar, stripMarkdown } from './markdown'
-import VisibilityToggle from './VisibilityToggle'
+import { stripMarkdown } from './markdown'
 
-// "kuroko, aomine , colori" -> ['kuroko','aomine','colori']
-const parseTags = (raw) =>
-  (raw || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+const itemDone = (it) =>
+  it.mode === 'pair' ? (it.have_m && it.have_f) : it.have_single
 
 export default function Journal() {
   const { t, formatDate } = useT()
-  const [entries, setEntries] = useState([])
+  const navigate = useNavigate()
+
+  const [notes, setNotes] = useState([])
+  const [checklists, setChecklists] = useState([])
+  const [progress, setProgress] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState({ title: '', body: '', tags: '', visibility: 'private' })
-  const bodyRef = useRef(null)
-
   const [activeTag, setActiveTag] = useState(null)
+  const [activeType, setActiveType] = useState(null)
   const [search, setSearch] = useState('')
 
   useEffect(() => { load() }, [])
 
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data, error } = await supabase.from('journal')
-      .select('*').eq('owner_id', user.id).order('created_at', { ascending: false })
-    if (error) setError(t('journal.loadError'))
-    setEntries(data || [])
+    if (!user) { setLoading(false); return }
+
+    const [{ data: nts, error: e1 }, { data: cls, error: e2 }] = await Promise.all([
+      supabase.from('journal').select('*').eq('owner_id', user.id),
+      supabase.from('journal_checklists').select('*').eq('owner_id', user.id),
+    ])
+    if (e1 || e2) { setError(t('journal.loadError')); setLoading(false); return }
+
+    const ids = (cls || []).map(c => c.id)
+    const prog = {}
+    if (ids.length) {
+      const { data: items } = await supabase
+        .from('journal_checklist_items')
+        .select('checklist_id, mode, have_single, have_m, have_f')
+        .in('checklist_id', ids)
+      ;(items || []).forEach(it => {
+        const p = prog[it.checklist_id] || { done: 0, total: 0 }
+        p.total += 1
+        if (itemDone(it)) p.done += 1
+        prog[it.checklist_id] = p
+      })
+    }
+
+    setNotes(nts || [])
+    setChecklists(cls || [])
+    setProgress(prog)
     setLoading(false)
   }
 
-  const openNew = () => {
-    setEditingId(null)
-    setForm({ title: '', body: '', tags: activeTag || '', visibility: 'private' })
-    setShowForm(true)
-  }
+  const cards = useMemo(() => {
+    const noteCards = notes.map(n => ({
+      kind: 'note', id: n.id,
+      title: n.title || t('journal.untitled'),
+      preview: stripMarkdown(n.body || ''),
+      tags: n.tags || [], pinned: !!n.pinned,
+      visibility: n.visibility || 'private',
+      created_at: n.created_at, to: `/journal/${n.id}`,
+    }))
+    const clCards = checklists.map(c => {
+      const p = progress[c.id] || { done: 0, total: 0 }
+      return {
+        kind: 'checklist', id: c.id, title: c.title,
+        preview: c.description || '',
+        tags: c.tags || [], pinned: !!c.pinned,
+        visibility: c.visibility || 'private',
+        created_at: c.created_at, to: `/journal/checklist/${c.id}`,
+        progress: p,
+      }
+    })
+    return [...noteCards, ...clCards]
+  }, [notes, checklists, progress, t])
 
-  const openEdit = (e) => {
-    setEditingId(e.id)
-    setForm({ title: e.title || '', body: e.body || '', tags: (e.tags || []).join(', '), visibility: e.visibility || 'private' })
-    setShowForm(true)
-  }
-
-  const save = async () => {
-    setError('')
-    if (!form.body.trim()) return
-    const { data: { user } } = await supabase.auth.getUser()
-    const payload = {
-      title: form.title.trim() || null,
-      body: form.body.trim(),
-      tags: parseTags(form.tags),
-      visibility: form.visibility,
-    }
-    const { error } = editingId
-      ? await supabase.from('journal').update(payload).eq('id', editingId)
-      : await supabase.from('journal').insert({ ...payload, owner_id: user.id })
-    if (error) { setError(t('journal.saveError')); return }
-    setShowForm(false)
-    load()
-  }
-
-  const remove = async (id) => {
-    if (!window.confirm(t('journal.deleteConfirm'))) return
-    const { error } = await supabase.from('journal').delete().eq('id', id)
-    if (error) { setError(t('journal.saveError')); return }
-    load()
-  }
-
-  // tutti i tag usati, ordinati per frequenza
   const allTags = useMemo(() => {
     const count = {}
-    entries.forEach(e => (e.tags || []).forEach(tag => { count[tag] = (count[tag] || 0) + 1 }))
+    cards.forEach(c => (c.tags || []).forEach(tag => { count[tag] = (count[tag] || 0) + 1 }))
     return Object.entries(count).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  }, [entries])
+  }, [cards])
+
+  const counts = useMemo(() => ({
+    note: cards.filter(c => c.kind === 'note').length,
+    checklist: cards.filter(c => c.kind === 'checklist').length,
+  }), [cards])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return entries.filter(e => {
-      if (activeTag && !(e.tags || []).includes(activeTag)) return false
+    const out = cards.filter(c => {
+      if (activeType && c.kind !== activeType) return false
+      if (activeTag && !(c.tags || []).includes(activeTag)) return false
       if (!q) return true
-      return (e.title || '').toLowerCase().includes(q)
-        || (e.body || '').toLowerCase().includes(q)
-        || (e.tags || []).some(tag => tag.includes(q))
+      return c.title.toLowerCase().includes(q)
+        || (c.preview || '').toLowerCase().includes(q)
+        || (c.tags || []).some(tag => tag.includes(q))
     })
-  }, [entries, activeTag, search])
+    out.sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
+    return out
+  }, [cards, activeType, activeTag, search])
 
   const TagChip = ({ tag, count, active, onClick }) => (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        background: active ? 'var(--primary)' : 'var(--card)',
-        color: active ? '#fff' : 'var(--ink-soft)',
-        border: '1px solid ' + (active ? 'var(--primary)' : 'var(--line)'),
-        borderRadius: 999, padding: '4px 11px', fontSize: 12, fontWeight: 700,
-        cursor: 'pointer', fontFamily: 'inherit',
-      }}
-    >
+    <button onClick={onClick} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: active ? 'var(--primary)' : 'var(--card)',
+      color: active ? '#fff' : 'var(--ink-soft)',
+      border: '1px solid ' + (active ? 'var(--primary)' : 'var(--line)'),
+      borderRadius: 999, padding: '4px 11px', fontSize: 12, fontWeight: 700,
+      cursor: 'pointer', fontFamily: 'inherit',
+    }}>
       {tag}{count != null && <span style={{ opacity: 0.65 }}>{count}</span>}
     </button>
   )
+
+  const TypeChip = ({ type, icon, label, count }) => {
+    const active = activeType === type
+    return (
+      <button
+        className={`obt-typechip--${type}${active ? ' is-active' : ''}`}
+        onClick={() => setActiveType(active ? null : type)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: 'var(--card)', color: 'var(--ink-soft)',
+          border: '1px solid var(--line)',
+          borderRadius: 999, padding: '5px 13px', fontSize: 12.5, fontWeight: 800,
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}
+      >
+        <i className={`ti ti-${icon}`} /> {label} <span style={{ opacity: 0.7 }}>{count}</span>
+      </button>
+    )
+  }
 
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
 
@@ -120,12 +153,12 @@ export default function Journal() {
       <div className="obt-hero">
         <div className="obt-hero-top">
           <div className="obt-hero-back">
-            <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={openNew}>
-              + {t('journal.new')}
+            <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => navigate('/journal/new')}>
+              <i className="ti ti-notebook" /> {t('journal.newNote')}
             </button>
-            <Link to="/journal/checklist" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
-              <i className="ti ti-checklist" /> {t('checklist.title')}
-            </Link>
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/journal/checklist/new')}>
+              <i className="ti ti-checklist" /> {t('journal.newChecklist')}
+            </button>
           </div>
           <div className="obt-hero-title">
             <h1>{t('journal.title')}</h1>
@@ -133,7 +166,7 @@ export default function Journal() {
           </div>
           <div className="obt-hero-info">
             <div className="obt-hero-info-row">
-              <span className="obt-hero-info-label">{t('journal.entries')}</span> {entries.length}
+              <span className="obt-hero-info-label">{t('journal.entries')}</span> {cards.length}
             </div>
             <div className="obt-hero-info-row">
               <span className="obt-hero-info-label">{t('journal.tags')}</span> {allTags.length}
@@ -143,16 +176,18 @@ export default function Journal() {
       </div>
 
       <div className="obt-page">
-
-        {/* filtri */}
         <div className="obt-panel">
           <input
             className="obt-input"
             placeholder={t('journal.search')}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ marginBottom: allTags.length ? 12 : 0 }}
+            style={{ marginBottom: 12 }}
           />
+          <div style={{ display: 'flex', gap: 6, marginBottom: allTags.length ? 12 : 0, flexWrap: 'wrap' }}>
+            <TypeChip type="note" icon="notebook" label={t('journal.typeNotes')} count={counts.note} />
+            <TypeChip type="checklist" icon="checklist" label={t('journal.typeChecklists')} count={counts.checklist} />
+          </div>
           {allTags.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
               <TagChip tag={t('journal.allTags')} active={!activeTag} onClick={() => setActiveTag(null)} />
@@ -170,100 +205,62 @@ export default function Journal() {
         {filtered.length === 0 ? (
           <div className="obt-panel obt-empty">
             <div className="obt-empty-icon"><i className="ti ti-notebook" /></div>
-            <h3>{entries.length ? t('journal.noMatch') : t('journal.empty')}</h3>
-            {!entries.length && (
-              <>
-                <p>{t('journal.emptyText')}</p>
-                <button className="obt-btn obt-btn--primary" onClick={openNew}>{t('journal.new')}</button>
-              </>
-            )}
+            <h3>{cards.length ? t('journal.noMatch') : t('journal.empty')}</h3>
+            {!cards.length && <p>{t('journal.emptyText')}</p>}
           </div>
         ) : (
-          filtered.map(e => (
-            <div key={e.id} className="obt-panel">
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
-                <h3 style={{ margin: 0 }}>
-                  <Link to={`/journal/${e.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                    {e.title || t('journal.untitled')}
-                  </Link>
-                </h3>
-                {e.visibility !== 'private' && <span title={t('visibility.unlisted')} style={{ fontSize: 12 }}><i className="ti ti-link" /></span>}
-                <span className="obt-text-soft" style={{ fontSize: 12 }}>{formatDate(e.created_at)}</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                  <button className="obt-icon-btn" title={t('common.edit')} onClick={() => openEdit(e)}><i className="ti ti-pencil" /></button>
-                  <button className="obt-icon-btn obt-icon-btn--danger" title={t('common.delete')} onClick={() => remove(e.id)}><i className="ti ti-trash" /></button>
+          <div className="obt-grid">
+            {filtered.map(c => (
+              <Link key={`${c.kind}-${c.id}`} to={c.to}
+                className={`obt-card obt-card--${c.kind}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                <span className="obt-badge">
+                  <i className={`ti ti-${c.kind === 'note' ? 'notebook' : 'checklist'}`} />
                 </span>
-              </div>
-              <p className="obt-journal-preview" style={{ fontSize: 14, lineHeight: 1.6, margin: 0, color: 'var(--ink-soft)' }}>
-                {stripMarkdown(e.body)}
-              </p>
-              <Link to={`/journal/${e.id}`} style={{ display: 'inline-block', marginTop: 8, fontSize: 12, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
-                {t('journal.readMore')} →
-              </Link>
-              {(e.tags || []).length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-                  {e.tags.map(tag => (
-                    <TagChip key={tag} tag={tag} active={activeTag === tag}
-                      onClick={() => setActiveTag(activeTag === tag ? null : tag)} />
-                  ))}
+                {c.pinned && (
+                  <span className="obt-pin is-pinned" title={t('journal.pinned')}>
+                    <i className="ti ti-pin" />
+                  </span>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0 }}>{c.title}</h3>
+                  {c.visibility !== 'private' && (
+                    <i className="ti ti-link" title={t('visibility.unlisted')} style={{ fontSize: 12, color: 'var(--ink-soft)' }} />
+                  )}
                 </div>
-              )}
-            </div>
-          ))
+                <div className="obt-meta" style={{ marginTop: 4 }}>{formatDate(c.created_at)}</div>
+
+                {c.kind === 'note' ? (
+                  c.preview && <p className="obt-card-preview">{c.preview}</p>
+                ) : (
+                  <>
+                    {c.preview && <p className="obt-card-preview">{c.preview}</p>}
+                    <div className="obt-card-progress">
+                      <div style={{ width: `${c.progress.total ? Math.round((c.progress.done / c.progress.total) * 100) : 0}%` }} />
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginTop: 6 }}>
+                      {c.progress.done}/{c.progress.total}
+                      {c.progress.total > 0 && c.progress.done === c.progress.total && <> · <i className="ti ti-circle-check" style={{ color: 'var(--kind-checklist)' }} /></>}
+                    </div>
+                  </>
+                )}
+
+                {(c.tags || []).length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
+                    {c.tags.slice(0, 4).map(tag => (
+                      <span key={tag} style={{
+                        background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999,
+                        padding: '2px 9px', fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)',
+                      }}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </Link>
+            ))}
+          </div>
         )}
       </div>
-
-      <Modal open={showForm} onClose={() => setShowForm(false)}
-        title={editingId ? t('journal.editTitle') : t('journal.newTitle')} size="lg">
-        <div className="obt-field">
-          <label>{t('journal.entryTitle')} <span className="obt-optional">{t('common.optional')}</span></label>
-          <input className="obt-input" value={form.title}
-            onChange={e => setForm({ ...form, title: e.target.value })}
-            placeholder={t('journal.titlePlaceholder')} />
-        </div>
-        <div className="obt-field">
-          <label>{t('journal.body')} *</label>
-          <MarkdownToolbar value={form.body} textareaRef={bodyRef}
-            onChange={v => setForm({ ...form, body: v })} />
-          <textarea ref={bodyRef} className="obt-textarea" rows={10} value={form.body}
-            onChange={e => setForm({ ...form, body: e.target.value })}
-            placeholder={t('journal.bodyPlaceholder')} />
-          <div className="obt-hint">{t('journal.mdHint')}</div>
-        </div>
-        <div className="obt-field">
-          <label>{t('journal.tags')} <span className="obt-optional">{t('common.optional')}</span></label>
-          <input className="obt-input" value={form.tags}
-            onChange={e => setForm({ ...form, tags: e.target.value })}
-            placeholder={t('journal.tagsPlaceholder')} />
-          <div className="obt-hint">{t('journal.tagsHint')}</div>
-          {allTags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-              {allTags.slice(0, 12).map(([tag]) => (
-                <TagChip key={tag} tag={tag} onClick={() => {
-                  const cur = parseTags(form.tags)
-                  if (cur.includes(tag)) return
-                  setForm({ ...form, tags: [...cur, tag].join(', ') })
-                }} />
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="obt-field">
-          <label>{t('visibility.label')}</label>
-          <VisibilityToggle
-            value={form.visibility}
-            onChange={v => setForm({ ...form, visibility: v })}
-            variant="full"
-          />
-        </div>
-
-        <div className="obt-actions">
-          <button className="obt-btn obt-btn--primary" onClick={save} disabled={!form.body.trim()}>
-            {t('common.saveChanges')}
-          </button>
-          <button className="obt-btn obt-btn--ghost" onClick={() => setShowForm(false)}>{t('common.cancel')}</button>
-        </div>
-      </Modal>
     </>
   )
 }
