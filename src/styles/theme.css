@@ -56,17 +56,13 @@
   --input-focus-bg: #FFFFFF;
 
   /* --- colori "kind" per le card del diario ---
-     Derivati dall'accento attivo (seguono la skin), ma spinti verso due poli
-     LONTANI della stessa famiglia per distinguerli davvero:
-       note      -> accento verso il profondo/saturo
-       checklist -> accento verso il chiaro/luminoso
-     Regolabili col peso del mix: peso alto = più fedele all'accento (sottile),
-     peso basso = più contrasto (marcato). Attuale = "medio".
-     Toccare SOLO qui. */
-  --kind-note: color-mix(in srgb, var(--primary) 78%, #1A2E8A);
-  --kind-note-soft: color-mix(in srgb, var(--kind-note) 12%, var(--card));
-  --kind-checklist: color-mix(in srgb, var(--primary) 60%, #22E0C8);
-  --kind-checklist-soft: color-mix(in srgb, var(--kind-checklist) 14%, var(--card));
+     Ora che secondary è un colore DISTINTO dal primary in ogni skin,
+     note e checklist ci si agganciano direttamente: contrasto naturale,
+     zero mix arbitrari, e seguono la skin. Toccare la palette in accents.js. */
+  --kind-note: var(--primary);
+  --kind-note-soft: color-mix(in srgb, var(--primary) 12%, var(--card));
+  --kind-checklist: var(--secondary);
+  --kind-checklist-soft: color-mix(in srgb, var(--secondary) 14%, var(--card));
 
   /* --- costanti NON tematiche (uguali in ogni tema) --- */
   --radius-lg: 16px;

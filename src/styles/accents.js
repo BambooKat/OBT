@@ -23,12 +23,12 @@ export const accents = {
     '--primary-hover':  '#5B9CE0',
     '--primary-light':      '#DCEAF7', // usato in light
     '--primary-light-dark': '#26374A', // usato in dark
-    '--secondary':       '#6BA8DE',
-    '--secondary-dark':  '#4A82B8',
-    '--secondary-hover': '#7BB4E4',
-    '--secondary-light': '#E4F0FA',
-    '--tertiary':        '#8FC1E8',
-    '--tertiary-dark':   '#4A82B8',
+    '--secondary':       '#1744A6',
+    '--secondary-dark':  '#123581',
+    '--secondary-hover': '#335AB1',
+    '--secondary-light': '#DAE1F1',
+    '--tertiary':        '#89E1FF',
+    '--tertiary-dark':   '#63A2B8',
   },
 
   rosa: {
