@@ -27,8 +27,8 @@ export const accents = {
     '--secondary-dark':  '#123581',
     '--secondary-hover': '#335AB1',
     '--secondary-light': '#DAE1F1',
-    '--tertiary':        '#89E1FF',
-    '--tertiary-dark':   '#63A2B8',
+    '--tertiary':        '#006D91',
+    '--tertiary-dark':   '#005571',
   },
 
   rosa: {

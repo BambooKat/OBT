@@ -350,7 +350,7 @@ a { color: var(--primary-dark); }
 }
 .obt-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
 .obt-card--secondary { border-top-color: var(--secondary); }
-.obt-card--tertiary { border-top-color: var(--tertiary-dark); }
+.obt-card--tertiary { border-top-color: var(--tertiary); }
 
 .obt-card .obt-badge {
   position: absolute;
@@ -365,7 +365,7 @@ a { color: var(--primary-dark); }
   box-shadow: var(--shadow);
 }
 .obt-card--secondary .obt-badge { background: var(--secondary); }
-.obt-card--tertiary .obt-badge { background: var(--tertiary-dark); }
+.obt-card--tertiary .obt-badge { background: var(--tertiary); }
 
 /* --- card del diario per "kind" (note / checklist) --- */
 .obt-card--note      { border-top-color: var(--kind-note); }
