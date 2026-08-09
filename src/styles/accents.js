@@ -29,6 +29,10 @@ export const accents = {
     '--secondary-light': '#DAE1F1',
     '--tertiary':        '#89E1FF',
     '--tertiary-dark':   '#5BB0D4',
+    // testo dei badge, tarato per questi 3 colori (bianco su scuro/medio, scuro su chiaro)
+    '--badge-ink-primary':   '#FFFFFF',
+    '--badge-ink-secondary': '#FFFFFF',
+    '--badge-ink-tertiary':  '#0C2233',
   },
 
   rosa: {
