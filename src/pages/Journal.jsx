@@ -122,6 +122,9 @@ export default function Journal() {
             <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={openNew}>
               + {t('journal.new')}
             </button>
+            <Link to="/journal/checklist" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+              <i className="ti ti-checklist" /> {t('checklist.title')}
+            </Link>
           </div>
           <div className="obt-hero-title">
             <h1>{t('journal.title')}</h1>

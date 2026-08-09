@@ -10,6 +10,8 @@ import Credits from './pages/Credits'
 import Privacy from './pages/Privacy'
 import Journal from './pages/Journal'
 import JournalEntry from './pages/JournalEntry'
+import Checklists from './pages/Checklists'
+import ChecklistPage from './pages/ChecklistPage'
 import Guide from './pages/Guide'
 import News from './pages/News'
 
@@ -55,6 +57,8 @@ function App() {
         <Route path="/news" element={<Layout><News /></Layout>} />
         <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
         <Route path="/credits" element={<Layout><Credits /></Layout>} />
+        {/* checklist linkabili: lettura pubblica anche senza account (vista read-only) */}
+        <Route path="/journal/checklist/:checklistId" element={<Layout><ChecklistPage /></Layout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )
@@ -68,6 +72,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/journal" element={<Journal />} />
+        {/* checklist PRIMA della rotta :entryId, sennò "checklist" verrebbe letto come id */}
+        <Route path="/journal/checklist" element={<Checklists />} />
+        <Route path="/journal/checklist/:checklistId" element={<ChecklistPage />} />
         <Route path="/journal/:entryId" element={<JournalEntry />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/project/:projectId" element={<ProjectDashboard />} />
