@@ -1103,5 +1103,7 @@ a { color: var(--primary-dark); }
   gap: 16px;
   align-items: start;
   justify-content: start;
+  margin-bottom: 16px;
 }
+.obt-checklist-grid:last-child { margin-bottom: 0; }
 .obt-checklist-grid > .obt-panel { margin: 0; }
