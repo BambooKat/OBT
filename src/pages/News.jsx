@@ -130,7 +130,13 @@ export default function News() {
     <>
       <div className="obt-hero">
         <div className="obt-hero-top">
-          <div className="obt-hero-back" />
+          <div className="obt-hero-back">
+            {isAdmin && form && (
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={closeForm}>
+                &larr; {t('adminNews.backToNews')}
+              </button>
+            )}
+          </div>
           <div className="obt-hero-title">
             <h1>{t('news.title')}</h1>
             <p className="obt-hero-desc obt-hero-desc--empty">{t('news.hint')}</p>
@@ -151,14 +157,9 @@ export default function News() {
         {/* form crea/modifica (solo admin) */}
         {isAdmin && form && (
           <div className="obt-panel">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={closeForm}>
-                &larr; {t('adminNews.backToNews')}
-              </button>
-              <h2 style={{ margin: 0 }}>
-                {form.mode === 'new' ? t('adminNews.newTitle') : t('adminNews.editingTitle')}
-              </h2>
-            </div>
+            <h2 style={{ marginBottom: 14 }}>
+              {form.mode === 'new' ? t('adminNews.newTitle') : t('adminNews.editingTitle')}
+            </h2>
 
             <div className="obt-row">
               <div className="obt-field">
