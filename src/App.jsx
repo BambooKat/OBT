@@ -12,6 +12,7 @@ import Journal from './pages/Journal'
 import JournalEntry from './pages/JournalEntry'
 import NoteEditor from './pages/NoteEditor'
 import ChecklistPage from './pages/ChecklistPage'
+import ChecklistEditor from './pages/ChecklistEditor'
 import ChecklistNew from './pages/ChecklistNew'
 import Guide from './pages/Guide'
 import News from './pages/News'
@@ -80,6 +81,7 @@ function App() {
             verrebbero letti come id. Ordine per specificità. */}
         <Route path="/journal/new" element={<NoteEditor />} />
         <Route path="/journal/checklist/new" element={<ChecklistNew />} />
+        <Route path="/journal/checklist/:checklistId/edit" element={<ChecklistEditor />} />
         <Route path="/journal/checklist/:checklistId" element={<ChecklistPage />} />
         <Route path="/journal/:entryId/edit" element={<NoteEditor />} />
         <Route path="/journal/:entryId" element={<JournalEntry />} />

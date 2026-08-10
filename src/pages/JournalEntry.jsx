@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import { Markdown } from './markdown'
+import { useConfirm } from './ConfirmDialog'
 
 export default function JournalEntry() {
   const { t, formatDate } = useT()
@@ -17,6 +18,7 @@ export default function JournalEntry() {
   const [isOwner, setIsOwner] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { confirm, dialog } = useConfirm()
 
   useEffect(() => { load() }, [entryId])
 
@@ -29,12 +31,14 @@ export default function JournalEntry() {
     setLoading(false)
   }
 
-  const remove = async () => {
-    if (!window.confirm(t('journal.deleteConfirm'))) return
-    const { error } = await supabase.from('journal').delete().eq('id', entry.id)
-    if (error) { setError(t('journal.saveError')); return }
-    navigate('/journal')
-  }
+  const remove = () => confirm({
+    message: t('journal.deleteConfirm'), danger: true,
+    onConfirm: async () => {
+      const { error } = await supabase.from('journal').delete().eq('id', entry.id)
+      if (error) { setError(t('journal.saveError')); return }
+      navigate('/journal')
+    },
+  })
 
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
   if (!entry) return (
@@ -92,6 +96,7 @@ export default function JournalEntry() {
           <Markdown text={entry.body} />
         </div>
       </div>
+      {dialog}
     </>
   )
 }

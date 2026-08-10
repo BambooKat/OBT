@@ -1,0 +1,371 @@
+// src/pages/ChecklistEditor.jsx
+// Editor checklist a DUE COLONNE (/journal/checklist/:id/edit).
+//   Sinistra (~75%): inserimento continuo (voce + modalità persistente +
+//     select gruppo, Invio aggiunge e mantiene il focus) + lista voci con edit/del.
+//   Destra (~25%): gerarchia gruppi (drag&drop per riordinare) + "+gruppo" +
+//     toggle posizione sciolti (in cima / in fondo), salvato per-checklist.
+// Scrittura immediata. Solo owner: se non lo sei, rimando alla lettura.
+
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
+import { useT } from '../i18n'
+import Modal from './Modal'
+import VisibilityToggle from './VisibilityToggle'
+import { useConfirm } from './ConfirmDialog'
+import { useDragOrder } from './useDragOrder'
+
+const parseTags = (raw) =>
+  (raw || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+
+export default function ChecklistEditor() {
+  const { t } = useT()
+  const { checklistId } = useParams()
+  const navigate = useNavigate()
+  const { confirm, dialog } = useConfirm()
+
+  const [list, setList] = useState(null)
+  const [groups, setGroups] = useState([])
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [notAllowed, setNotAllowed] = useState(false)
+  const [error, setError] = useState('')
+
+  // riga di inserimento continuo
+  const [draft, setDraft] = useState('')
+  const [quickMode, setQuickMode] = useState('single')  // persistente
+  const [targetGroup, setTargetGroup] = useState('')     // '' = sciolto
+  const inputRef = useRef(null)
+
+  // editor voce esistente
+  const [itemForm, setItemForm] = useState(null)
+  // editor dati checklist
+  const [showMeta, setShowMeta] = useState(false)
+  const [metaForm, setMetaForm] = useState({ title: '', description: '', tags: '', visibility: 'private' })
+  // nuovo gruppo inline
+  const [newGroup, setNewGroup] = useState('')
+
+  const shareUrl = `${window.location.origin}/journal/checklist/${checklistId}`
+
+  useEffect(() => { load() }, [checklistId])
+
+  const load = async () => {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: cl } = await supabase
+      .from('journal_checklists').select('*').eq('id', checklistId).maybeSingle()
+    if (!cl || !user || cl.owner_id !== user.id) { setNotAllowed(true); setLoading(false); return }
+    const [{ data: grs }, { data: its }] = await Promise.all([
+      supabase.from('journal_checklist_groups').select('*')
+        .eq('checklist_id', checklistId).order('position', { ascending: true }),
+      supabase.from('journal_checklist_items').select('*')
+        .eq('checklist_id', checklistId).order('position', { ascending: true }),
+    ])
+    setList(cl); setGroups(grs || []); setItems(its || [])
+    setLoading(false)
+  }
+
+  const groupDrag = useDragOrder({ items: groups, table: 'journal_checklist_groups', onReorder: setGroups })
+
+  // ---- inserimento continuo ----------------------------------------------
+  const addDraft = async () => {
+    const clean = draft.trim()
+    if (!clean) return
+    const { data, error } = await supabase.from('journal_checklist_items').insert({
+      checklist_id: list.id,
+      group_id: targetGroup || null,
+      label: clean,
+      mode: quickMode,
+      position: items.length,
+    }).select('*').single()
+    if (error) { setError(t('checklist.saveError')); return }
+    setItems(prev => [...prev, data])
+    setDraft('')
+    inputRef.current?.focus()   // il focus resta sulla riga
+  }
+
+  // ---- voce esistente ----------------------------------------------------
+  const saveItem = async () => {
+    if (!itemForm.label.trim()) return
+    const { error } = await supabase.from('journal_checklist_items').update({
+      group_id: itemForm.group_id || null,
+      label: itemForm.label.trim(),
+      mode: itemForm.mode,
+      notes: itemForm.notes.trim() || null,
+    }).eq('id', itemForm.id)
+    if (error) { setError(t('checklist.saveError')); return }
+    setItemForm(null); load()
+  }
+  const removeItem = (id) => confirm({
+    message: t('checklist.deleteItemConfirm'), danger: true,
+    onConfirm: async () => {
+      const { error } = await supabase.from('journal_checklist_items').delete().eq('id', id)
+      if (error) { setError(t('checklist.saveError')); return }
+      setItems(prev => prev.filter(it => it.id !== id))
+    },
+  })
+
+  // ---- gruppi ------------------------------------------------------------
+  const addGroup = async () => {
+    const clean = newGroup.trim()
+    if (!clean) return
+    const { data, error } = await supabase.from('journal_checklist_groups').insert({
+      checklist_id: list.id, title: clean, position: groups.length,
+    }).select('*').single()
+    if (error) { setError(t('checklist.saveError')); return }
+    setGroups(prev => [...prev, data])
+    setNewGroup('')
+  }
+  const renameGroup = async (g) => {
+    const name = window.prompt(t('checklist.groupNamePrompt'), g.title)
+    if (name == null) return
+    const clean = name.trim(); if (!clean) return
+    const { error } = await supabase.from('journal_checklist_groups').update({ title: clean }).eq('id', g.id)
+    if (error) { setError(t('checklist.saveError')); return }
+    setGroups(prev => prev.map(x => x.id === g.id ? { ...x, title: clean } : x))
+  }
+  const removeGroup = (g) => confirm({
+    message: t('checklist.deleteGroupConfirm'), danger: true,
+    onConfirm: async () => {
+      const { error } = await supabase.from('journal_checklist_groups').delete().eq('id', g.id)
+      if (error) { setError(t('checklist.saveError')); return }
+      load()  // gli item del gruppo diventano sciolti (group_id -> null via ON DELETE SET NULL)
+    },
+  })
+
+  // ---- posizione sciolti (per-checklist) ---------------------------------
+  const setLoosePos = async (pos) => {
+    setList(prev => ({ ...prev, loose_position: pos }))
+    await supabase.from('journal_checklists').update({ loose_position: pos }).eq('id', list.id)
+  }
+
+  // ---- meta checklist ----------------------------------------------------
+  const openMeta = () => {
+    setMetaForm({
+      title: list.title || '', description: list.description || '',
+      tags: (list.tags || []).join(', '), visibility: list.visibility || 'private',
+    })
+    setShowMeta(true)
+  }
+  const saveMeta = async () => {
+    if (!metaForm.title.trim()) return
+    const { error } = await supabase.from('journal_checklists').update({
+      title: metaForm.title.trim(),
+      description: metaForm.description.trim() || null,
+      tags: parseTags(metaForm.tags),
+      visibility: metaForm.visibility,
+    }).eq('id', list.id)
+    if (error) { setError(t('checklist.saveError')); return }
+    setShowMeta(false); load()
+  }
+
+  const groupName = (gid) => groups.find(g => g.id === gid)?.title || t('checklist.noGroupSection')
+
+  if (loading) return <div className="obt-loading">{t('common.loading')}</div>
+  if (notAllowed) return (
+    <div className="obt-page">
+      <div className="obt-panel obt-empty">
+        <div className="obt-empty-icon"><i className="ti ti-checklist" /></div>
+        <h3>{t('checklist.notFound')}</h3>
+        <button className="obt-btn obt-btn--primary" onClick={() => navigate('/journal')}>&larr; {t('checklist.back')}</button>
+      </div>
+    </div>
+  )
+
+  const loosePos = list.loose_position || 'top'
+
+  return (
+    <>
+      <div className="obt-hero">
+        <div className="obt-hero-top">
+          <div className="obt-hero-back">
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate(`/journal/checklist/${checklistId}`)}>
+              <i className="ti ti-check" /> {t('checklist.toReading')}
+            </button>
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={openMeta}>
+              <i className="ti ti-settings" /> {t('common.edit')}
+            </button>
+          </div>
+          <div className="obt-hero-title">
+            <h1>{list.title}</h1>
+            <p className="obt-hero-desc obt-hero-desc--empty">{t('checklist.editorTitle')}</p>
+          </div>
+          <div className="obt-hero-info">
+            <div className="obt-hero-info-row">
+              <span className="obt-hero-info-label">{t('checklist.itemCount')}</span> {items.length}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="obt-page">
+        {error && <div className="obt-alert obt-alert--error">{error}</div>}
+
+        <div className="obt-editor-cols">
+          {/* ---- SINISTRA: inserimento + voci ---- */}
+          <div className="obt-editor-main">
+            <div className="obt-panel">
+              <div className="obt-quickrow">
+                <div className="obt-quickrow-mode">
+                  <button type="button" onClick={() => setQuickMode('single')} title={t('checklist.modeSingle')} className={quickMode === 'single' ? 'is-active' : ''}>●</button>
+                  <button type="button" onClick={() => setQuickMode('pair')} title={t('checklist.modePair')} className={quickMode === 'pair' ? 'is-active' : ''}>♀♂</button>
+                </div>
+                <select className="obt-input obt-quickrow-group" value={targetGroup} onChange={e => setTargetGroup(e.target.value)}>
+                  <option value="">{t('checklist.noGroupSection')}</option>
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}
+                </select>
+                <input ref={inputRef} className="obt-input" value={draft}
+                  onChange={e => setDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDraft() } }}
+                  placeholder={t('checklist.quickAddPlaceholder')} autoFocus
+                  style={{ flex: 1 }} />
+                <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={addDraft} disabled={!draft.trim()}>
+                  <i className="ti ti-plus" />
+                </button>
+              </div>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="obt-panel obt-empty">
+                <p>{t('checklist.emptyEditor')}</p>
+              </div>
+            ) : (
+              <div className="obt-panel">
+                {items.map(it => (
+                  <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '0.5px solid var(--line)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
+                      {it.mode === 'pair' ? '♀♂' : '●'}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{it.label}</span>
+                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 8 }}>{groupName(it.group_id)}</span>
+                      {it.notes && <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{it.notes}</div>}
+                    </div>
+                    <button className="obt-icon-btn" title={t('common.edit')}
+                      onClick={() => setItemForm({ id: it.id, group_id: it.group_id || '', label: it.label, mode: it.mode, notes: it.notes || '' })}>
+                      <i className="ti ti-pencil" />
+                    </button>
+                    <button className="obt-icon-btn obt-icon-btn--danger" title={t('common.delete')} onClick={() => removeItem(it.id)}>
+                      <i className="ti ti-trash" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ---- DESTRA: gerarchia gruppi ---- */}
+          <div className="obt-editor-side">
+            <div className="obt-panel">
+              <h3 style={{ margin: '0 0 10px', fontSize: 15 }}>{t('checklist.groupsHierarchy')}</h3>
+
+              {/* toggle posizione sciolti */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>{t('checklist.loosePos')}</div>
+                <div style={{ display: 'inline-flex', borderRadius: 999, overflow: 'hidden', border: '1px solid var(--line)' }}>
+                  <button type="button" onClick={() => setLoosePos('top')} style={segStyle(loosePos === 'top')}>{t('checklist.loosePosTop')}</button>
+                  <button type="button" onClick={() => setLoosePos('bottom')} style={segStyle(loosePos === 'bottom')}>{t('checklist.loosePosBottom')}</button>
+                </div>
+              </div>
+
+              {/* elenco gruppi trascinabili */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {groups.map(g => {
+                  const count = items.filter(it => it.group_id === g.id).length
+                  return (
+                    <div key={g.id} {...groupDrag.dragProps(g)}
+                      style={{ ...groupDrag.dragProps(g).style, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 9px', borderRadius: 8, background: 'var(--card)', border: '1px solid var(--line)' }}>
+                      <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14 }} />
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{g.title}</span>
+                      <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{count}</span>
+                      <button className="obt-icon-btn" title={t('common.edit')} onClick={() => renameGroup(g)}><i className="ti ti-pencil" /></button>
+                      <button className="obt-icon-btn obt-icon-btn--danger" title={t('common.delete')} onClick={() => removeGroup(g)}><i className="ti ti-trash" /></button>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* aggiungi gruppo */}
+              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                <input className="obt-input" value={newGroup}
+                  onChange={e => setNewGroup(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGroup() } }}
+                  placeholder={t('checklist.groupTitlePlaceholder')} style={{ flex: 1 }} />
+                <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={addGroup} disabled={!newGroup.trim()}>
+                  <i className="ti ti-plus" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---- MODAL voce esistente ---- */}
+      <Modal open={!!itemForm} onClose={() => setItemForm(null)} title={t('checklist.editItem')} size="md">
+        {itemForm && (
+          <>
+            <div className="obt-field">
+              <label>{t('checklist.itemLabel')} *</label>
+              <input className="obt-input" value={itemForm.label} onChange={e => setItemForm({ ...itemForm, label: e.target.value })} />
+            </div>
+            <div className="obt-field">
+              <label>{t('checklist.itemMode')}</label>
+              <div style={{ display: 'inline-flex', borderRadius: 999, overflow: 'hidden', border: '1px solid var(--line)' }}>
+                <button type="button" onClick={() => setItemForm({ ...itemForm, mode: 'single' })} style={segStyle(itemForm.mode === 'single')}>{t('checklist.modeSingle')}</button>
+                <button type="button" onClick={() => setItemForm({ ...itemForm, mode: 'pair' })} style={segStyle(itemForm.mode === 'pair')}>{t('checklist.modePair')}</button>
+              </div>
+            </div>
+            <div className="obt-field">
+              <label>{t('checklist.itemGroup')}</label>
+              <select className="obt-input" value={itemForm.group_id || ''} onChange={e => setItemForm({ ...itemForm, group_id: e.target.value })}>
+                <option value="">{t('checklist.noGroupSection')}</option>
+                {groups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}
+              </select>
+            </div>
+            <div className="obt-field">
+              <label>{t('checklist.itemNotes')} <span className="obt-optional">{t('common.optional')}</span></label>
+              <input className="obt-input" value={itemForm.notes} onChange={e => setItemForm({ ...itemForm, notes: e.target.value })} placeholder={t('checklist.itemNotesPlaceholder')} />
+            </div>
+            <div className="obt-actions">
+              <button className="obt-btn obt-btn--primary" onClick={saveItem} disabled={!itemForm.label.trim()}>{t('common.saveChanges')}</button>
+              <button className="obt-btn obt-btn--ghost" onClick={() => setItemForm(null)}>{t('common.cancel')}</button>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* ---- MODAL meta ---- */}
+      <Modal open={showMeta} onClose={() => setShowMeta(false)} title={t('checklist.editTitle')} size="md">
+        <div className="obt-field">
+          <label>{t('checklist.name')} *</label>
+          <input className="obt-input" value={metaForm.title} onChange={e => setMetaForm({ ...metaForm, title: e.target.value })} />
+        </div>
+        <div className="obt-field">
+          <label>{t('checklist.description')} <span className="obt-optional">{t('common.optional')}</span></label>
+          <textarea className="obt-textarea" rows={3} value={metaForm.description} onChange={e => setMetaForm({ ...metaForm, description: e.target.value })} />
+        </div>
+        <div className="obt-field">
+          <label>{t('journal.tags')} <span className="obt-optional">{t('common.optional')}</span></label>
+          <input className="obt-input" value={metaForm.tags} onChange={e => setMetaForm({ ...metaForm, tags: e.target.value })} placeholder={t('journal.tagsPlaceholder')} />
+        </div>
+        <div className="obt-field">
+          <label>{t('visibility.label')}</label>
+          <VisibilityToggle value={metaForm.visibility} onChange={v => setMetaForm({ ...metaForm, visibility: v })} variant="full" shareUrl={shareUrl} />
+        </div>
+        <div className="obt-actions">
+          <button className="obt-btn obt-btn--primary" onClick={saveMeta} disabled={!metaForm.title.trim()}>{t('common.saveChanges')}</button>
+          <button className="obt-btn obt-btn--ghost" onClick={() => setShowMeta(false)}>{t('common.cancel')}</button>
+        </div>
+      </Modal>
+
+      {dialog}
+    </>
+  )
+}
+
+const segStyle = (active) => ({
+  padding: '6px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+  cursor: 'pointer', border: 'none',
+  background: active ? 'var(--primary)' : 'var(--card)',
+  color: active ? '#fff' : 'var(--ink-soft)',
+})

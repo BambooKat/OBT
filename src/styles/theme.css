@@ -1056,3 +1056,42 @@ a { color: var(--primary-dark); }
   overflow-y: auto;
   padding-right: 4px;
 }
+/* ---------- Editor checklist a due colonne ---------- */
+.obt-editor-cols {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .obt-editor-cols { grid-template-columns: 1fr; }
+}
+.obt-editor-side .obt-panel { position: sticky; top: 16px; }
+
+/* riga di inserimento continuo */
+.obt-quickrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.obt-quickrow-group { width: auto; min-width: 130px; flex-shrink: 0; }
+.obt-quickrow-mode {
+  display: inline-flex;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.obt-quickrow-mode button {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  min-width: 34px;
+  background: var(--card);
+  color: var(--ink-soft);
+}
+.obt-quickrow-mode button.is-active { background: var(--primary); color: #fff; }

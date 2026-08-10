@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import { stripMarkdown } from './markdown'
+import { useConfirm } from './ConfirmDialog'
 
 const itemDone = (it) =>
   it.mode === 'pair' ? (it.have_m && it.have_f) : it.have_single
@@ -19,6 +20,7 @@ const itemDone = (it) =>
 export default function Journal() {
   const { t, formatDate } = useT()
   const navigate = useNavigate()
+  const { confirm, dialog } = useConfirm()
 
   const [notes, setNotes] = useState([])
   const [checklists, setChecklists] = useState([])
@@ -119,15 +121,19 @@ export default function Journal() {
     e.preventDefault(); e.stopPropagation()
     navigate(c.kind === 'note' ? `/journal/${c.id}/edit` : `/journal/checklist/${c.id}`)
   }
-  // delete diretto dalla card, con conferma; instrada sulla tabella giusta
-  const goDelete = async (e, c) => {
+  // delete diretto dalla card, con conferma OBT centrata; instrada sulla tabella
+  const goDelete = (e, c) => {
     e.preventDefault(); e.stopPropagation()
-    if (!window.confirm(t('journal.deleteConfirm'))) return
-    const table = c.kind === 'note' ? 'journal' : 'journal_checklists'
-    const { error } = await supabase.from(table).delete().eq('id', c.id)
-    if (error) { setError(t('journal.saveError')); return }
-    if (c.kind === 'note') setNotes(prev => prev.filter(n => n.id !== c.id))
-    else setChecklists(prev => prev.filter(cl => cl.id !== c.id))
+    confirm({
+      message: t('journal.deleteConfirm'), danger: true,
+      onConfirm: async () => {
+        const table = c.kind === 'note' ? 'journal' : 'journal_checklists'
+        const { error } = await supabase.from(table).delete().eq('id', c.id)
+        if (error) { setError(t('journal.saveError')); return }
+        if (c.kind === 'note') setNotes(prev => prev.filter(n => n.id !== c.id))
+        else setChecklists(prev => prev.filter(cl => cl.id !== c.id))
+      },
+    })
   }
 
   const TagChip = ({ tag, count, active, onClick }) => (
@@ -287,6 +293,7 @@ export default function Journal() {
           </div>
         )}
       </div>
+      {dialog}
     </>
   )
 }
