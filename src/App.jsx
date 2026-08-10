@@ -10,8 +10,9 @@ import Credits from './pages/Credits'
 import Privacy from './pages/Privacy'
 import Journal from './pages/Journal'
 import JournalEntry from './pages/JournalEntry'
-import Checklists from './pages/Checklists'
+import NoteEditor from './pages/NoteEditor'
 import ChecklistPage from './pages/ChecklistPage'
+import ChecklistNew from './pages/ChecklistNew'
 import Guide from './pages/Guide'
 import News from './pages/News'
 
@@ -75,9 +76,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/journal" element={<Journal />} />
-        {/* checklist PRIMA della rotta :entryId, sennò "checklist" verrebbe letto come id */}
-        <Route path="/journal/checklist" element={<Checklists />} />
+        {/* /new e /checklist/new PRIMA delle rotte :id, sennò "new"/"checklist"
+            verrebbero letti come id. Ordine per specificità. */}
+        <Route path="/journal/new" element={<NoteEditor />} />
+        <Route path="/journal/checklist/new" element={<ChecklistNew />} />
         <Route path="/journal/checklist/:checklistId" element={<ChecklistPage />} />
+        <Route path="/journal/:entryId/edit" element={<NoteEditor />} />
         <Route path="/journal/:entryId" element={<JournalEntry />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/project/:projectId" element={<ProjectDashboard />} />

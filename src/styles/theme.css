@@ -370,9 +370,9 @@ a { color: var(--primary-dark); }
 .obt-card--tertiary .obt-badge  { background: var(--tertiary); color: var(--badge-ink-tertiary, #fff); }
 
 /* --- card del diario per "kind" (note / checklist) --- */
-.obt-card--note      { border-top-color: var(--kind-note); }
+.obt-card--note      { border-top-color: var(--kind-note); padding-bottom: 40px; }
 .obt-card--note      .obt-badge { background: var(--kind-note); color: var(--badge-ink-primary, #fff); }
-.obt-card--checklist { border-top-color: var(--kind-checklist); }
+.obt-card--checklist { border-top-color: var(--kind-checklist); padding-bottom: 40px; }
 .obt-card--checklist .obt-badge { background: var(--kind-checklist); color: var(--badge-ink-secondary, #fff); }
 
 /* puntina pin, angolo alto-sinistra */
@@ -421,6 +421,18 @@ a { color: var(--primary-dark); }
   border-radius: var(--radius-pill);
   transition: width .2s ease;
 }
+
+/* scorciatoie edit/delete sulla card diario: discrete, si accendono con la card */
+.obt-card-actions {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  gap: 2px;
+  opacity: 0.5;
+  transition: opacity .12s;
+}
+.obt-card:hover .obt-card-actions { opacity: 1; }
 
 /* chip filtro tipo attivo per kind */
 .obt-typechip--note.is-active      { background: var(--kind-note); border-color: var(--kind-note); color: var(--badge-ink-primary, #fff); }

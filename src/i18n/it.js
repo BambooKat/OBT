@@ -67,6 +67,8 @@ const it = {
     itemNotes: 'Note',
     itemNotesPlaceholder: 'Es. manca la femmina',
     haveShort: '✓',
+    quickAdd: 'Aggiungi voce e premi Invio…',
+    untitledNew: 'Checklist senza titolo',
     newGroup: 'Nuovo gruppo',
     editGroup: 'Modifica gruppo',
     groupTitle: 'Titolo del gruppo',

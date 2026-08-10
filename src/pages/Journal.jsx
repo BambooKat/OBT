@@ -114,6 +114,22 @@ export default function Journal() {
     return out
   }, [cards, activeType, activeTag, search])
 
+  // edit: scorciatoia dalla card all'editor a pagina intera (non apre la lettura)
+  const goEdit = (e, c) => {
+    e.preventDefault(); e.stopPropagation()
+    navigate(c.kind === 'note' ? `/journal/${c.id}/edit` : `/journal/checklist/${c.id}`)
+  }
+  // delete diretto dalla card, con conferma; instrada sulla tabella giusta
+  const goDelete = async (e, c) => {
+    e.preventDefault(); e.stopPropagation()
+    if (!window.confirm(t('journal.deleteConfirm'))) return
+    const table = c.kind === 'note' ? 'journal' : 'journal_checklists'
+    const { error } = await supabase.from(table).delete().eq('id', c.id)
+    if (error) { setError(t('journal.saveError')); return }
+    if (c.kind === 'note') setNotes(prev => prev.filter(n => n.id !== c.id))
+    else setChecklists(prev => prev.filter(cl => cl.id !== c.id))
+  }
+
   const TagChip = ({ tag, count, active, onClick }) => (
     <button onClick={onClick} style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -222,6 +238,16 @@ export default function Journal() {
                     <i className="ti ti-pin" />
                   </span>
                 )}
+
+                {/* scorciatoie owner: edit -> editor pagina intera, delete diretto */}
+                <span className="obt-card-actions" onClick={e => e.preventDefault()}>
+                  <button className="obt-icon-btn" title={t('common.edit')} onClick={e => goEdit(e, c)}>
+                    <i className="ti ti-pencil" />
+                  </button>
+                  <button className="obt-icon-btn obt-icon-btn--danger" title={t('common.delete')} onClick={e => goDelete(e, c)}>
+                    <i className="ti ti-trash" />
+                  </button>
+                </span>
 
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                   <h3 style={{ margin: 0 }}>{c.title}</h3>

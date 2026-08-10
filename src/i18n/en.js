@@ -67,6 +67,8 @@ const en = {
     itemNotes: 'Notes',
     itemNotesPlaceholder: 'E.g. missing the female',
     haveShort: '✓',
+    quickAdd: 'Add item and press Enter…',
+    untitledNew: 'Untitled checklist',
     newGroup: 'New group',
     editGroup: 'Edit group',
     groupTitle: 'Group title',
