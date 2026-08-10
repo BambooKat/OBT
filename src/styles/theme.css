@@ -1099,7 +1099,7 @@ a { color: var(--primary-dark); }
 /* ---------- Griglia gruppi nella lettura checklist ---------- */
 .obt-checklist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 480px));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 480px));
   gap: 16px;
   align-items: start;
   justify-content: start;
