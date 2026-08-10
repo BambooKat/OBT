@@ -44,6 +44,9 @@ const en = {
     full: 'Showcase full (max 24).',
     saveError: 'Could not save.',
     deleteConfirm: 'Remove this pet from the showcase?',
+    fav: 'Mark favourite',
+    unfav: 'Remove favourite',
+    favMark: 'Favourite',
   },
   checklist: {
     title: 'Checklists',

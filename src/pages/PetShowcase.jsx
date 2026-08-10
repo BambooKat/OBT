@@ -75,6 +75,22 @@ export default function PetShowcase({ ownerId, editable = false }) {
     },
   })
 
+  const toggleFav = async (p) => {
+    const next = !p.is_favourite
+    setPets(prev => prev.map(x => x.id === p.id ? { ...x, is_favourite: next } : x))
+    const { error } = await supabase.from('profile_pets')
+      .update({ is_favourite: next }).eq('id', p.id)
+    if (error) { setError(t('showcase.saveError')); load() }
+  }
+
+  // preferiti sempre in cima, ordinati tra loro secondo il sort attivo:
+  // partizione stabile della lista già ordinata da useCardSort
+  const ordered = (() => {
+    const favs = [], rest = []
+    for (const p of sort.sorted) (p.is_favourite ? favs : rest).push(p)
+    return [...favs, ...rest]
+  })()
+
   if (loading) return null
   if (!editable && pets.length === 0) return null // sul profilo pubblico, se vuota non mostrare nulla
 
@@ -114,14 +130,26 @@ export default function PetShowcase({ ownerId, editable = false }) {
       )}
 
       <div className="obt-showcase-grid">
-        {sort.sorted.map(p => (
-          <div key={p.id} className="obt-showcase-card" {...(editable ? sort.dragProps(p) : {})}>
+        {ordered.map(p => (
+          <div key={p.id} className={`obt-showcase-card${p.is_favourite ? ' is-fav' : ''}`} {...(editable ? sort.dragProps(p) : {})}>
             <a href={petLinkUrl(p.pet_id, p.pet_url)} target="_blank" rel="noopener noreferrer"
               className="obt-showcase-imgwrap" title={p.label || undefined}>
               <img src={petImageUrl(p.pet_id)} alt={p.label || 'pet'} loading="lazy"
                 onError={e => { e.currentTarget.style.opacity = 0.25 }} />
               {p.label && <span className="obt-showcase-label">{p.label}</span>}
             </a>
+            {/* stella: cliccabile in dashboard, solo indicatore sul profilo pubblico */}
+            {editable ? (
+              <button className={`obt-showcase-star${p.is_favourite ? ' is-on' : ''}`}
+                title={t(p.is_favourite ? 'showcase.unfav' : 'showcase.fav')}
+                onClick={() => toggleFav(p)}>
+                <i className={p.is_favourite ? 'ti ti-star-filled' : 'ti ti-star'} />
+              </button>
+            ) : p.is_favourite && (
+              <span className="obt-showcase-star is-on is-readonly" title={t('showcase.favMark')}>
+                <i className="ti ti-star-filled" />
+              </span>
+            )}
             {editable && (
               <button className="obt-showcase-del" title={t('common.delete')}
                 onClick={() => removePet(p)}>

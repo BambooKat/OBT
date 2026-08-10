@@ -44,6 +44,9 @@ const it = {
     full: 'Vetrina piena (max 24).',
     saveError: 'Non riesco a salvare.',
     deleteConfirm: 'Togliere questo pet dalla vetrina?',
+    fav: 'Segna preferito',
+    unfav: 'Togli preferito',
+    favMark: 'Preferito',
   },
   checklist: {
     title: 'Checklist',
