@@ -35,6 +35,16 @@ const en = {
     lines: 'Lines',
     empty: 'This profile has no public content yet.',
   },
+  showcase: {
+    title: 'Pet showcase',
+    refPlaceholder: 'OviPets pet ID or link',
+    refHint: 'Paste the pet ID, or the "Share" link (app or site).',
+    labelPlaceholder: 'Name (optional)',
+    invalidRef: 'That is not a valid pet ID. Paste the ID or an OviPets link.',
+    full: 'Showcase full (max 24).',
+    saveError: 'Could not save.',
+    deleteConfirm: 'Remove this pet from the showcase?',
+  },
   checklist: {
     title: 'Checklists',
     subtitle: 'Lists to track what you have and what you still need.',

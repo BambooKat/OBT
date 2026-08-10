@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import { SpeciesIcon } from './research'
+import PetShowcase from './PetShowcase'
 
 export default function PublicProfile() {
   const { t } = useT()
@@ -170,6 +171,8 @@ export default function PublicProfile() {
             <h3>{t('publicProfile.empty')}</h3>
           </div>
         )}
+
+        <PetShowcase ownerId={profile.id} editable={false} />
       </div>
     </>
   )

@@ -35,6 +35,16 @@ const it = {
     lines: 'Linee',
     empty: 'Questo profilo non ha ancora contenuti pubblici.',
   },
+  showcase: {
+    title: 'Vetrina pet',
+    refPlaceholder: 'ID o link del pet OviPets',
+    refHint: 'Incolla l\'ID del pet, o il link "Condividi" (app o sito).',
+    labelPlaceholder: 'Nome (opzionale)',
+    invalidRef: 'Non riconosco un ID pet valido. Incolla l\'ID o un link OviPets.',
+    full: 'Vetrina piena (max 24).',
+    saveError: 'Non riesco a salvare.',
+    deleteConfirm: 'Togliere questo pet dalla vetrina?',
+  },
   checklist: {
     title: 'Checklist',
     subtitle: 'Liste per tenere traccia di cosa hai e cosa ti manca.',

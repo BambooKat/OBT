@@ -1132,3 +1132,70 @@ a { color: var(--primary-dark); }
 
 /* sciolti = primary */
 .obt-group-band--loose { background: var(--primary); color: var(--badge-ink-primary, #fff); }
+
+/* ---------- Vetrina pet (PetShowcase) ---------- */
+.obt-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+.obt-showcase-card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #fff;              /* la cornice giustifica lo sfondo bianco del pet */
+  aspect-ratio: 1 / 1;
+}
+.obt-showcase-imgwrap {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.obt-showcase-imgwrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+/* etichetta nome: sale dal bordo inferiore all'hover */
+.obt-showcase-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: color-mix(in srgb, var(--primary) 82%, transparent);
+  transform: translateY(100%);
+  transition: transform .16s ease;
+  pointer-events: none;
+}
+.obt-showcase-card:hover .obt-showcase-label { transform: translateY(0); }
+
+/* elimina (solo editable) */
+.obt-showcase-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  background: color-mix(in srgb, var(--bad-text, #c0392b) 90%, transparent);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.obt-showcase-card:hover .obt-showcase-del { opacity: 1; }

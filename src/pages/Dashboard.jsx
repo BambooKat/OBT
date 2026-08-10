@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import Modal from './Modal'
 import VisibilityToggle from './VisibilityToggle'
+import PetShowcase from './PetShowcase'
 import NewLineModal from './NewLineModal'
 import { useT } from '../i18n'
 import { useCardSort, SortControl } from './useCardSort'
@@ -17,6 +18,7 @@ function Dashboard() {
   const [species, setSpecies] = useState([])
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
+  const [userId, setUserId] = useState(null)
   const [bio, setBio] = useState('')
   const [visibility, setVisibility] = useState('private')
   const [showResearch, setShowResearch] = useState(false)
@@ -37,6 +39,7 @@ function Dashboard() {
 
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (user) setUserId(user.id)
     if (!user) { navigate('/'); return }
     const { data: profile } = await supabase.from('profiles').select('username, bio, visibility, ovipets_plan, ovipets_year, favourites').eq('id', user.id).single()
     if (profile) {
@@ -320,6 +323,8 @@ function Dashboard() {
             )}
           </>
         )}
+
+        {userId && <PetShowcase ownerId={userId} editable={true} />}
       </div>
     </>
   )
