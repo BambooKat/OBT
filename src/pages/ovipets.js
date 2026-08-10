@@ -13,8 +13,11 @@ export function extractPetId(raw) {
   const s = String(raw).trim()
   // ID nudo (solo cifre)
   if (/^\d+$/.test(s)) return s
+  // link immagine (pulsante "Condividi → Image"): /img/pet/NUMERO
+  let m = s.match(/app\.ovipets\.com\/img\/pet\/(\d+)/i)
+  if (m) return m[1]
   // link app: /pet/NUMERO
-  let m = s.match(/app\.ovipets\.com\/pet\/(\d+)/i)
+  m = s.match(/app\.ovipets\.com\/pet\/(\d+)/i)
   if (m) return m[1]
   // link web: ...pet=NUMERO
   m = s.match(/[?&#]pet=(\d+)/i)
