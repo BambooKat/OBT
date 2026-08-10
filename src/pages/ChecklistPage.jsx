@@ -79,7 +79,7 @@ export default function ChecklistPage() {
   const StateBox = ({ checked, label, onClick }) => (
     <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
       style={{
-        width: 42, height: 42, borderRadius: 10, fontSize: 17, fontWeight: 800,
+        width: 38, height: 38, borderRadius: 8, fontSize: 15, fontWeight: 800,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
         border: '1px solid ' + (checked ? 'var(--primary)' : 'var(--line)'),
