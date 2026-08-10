@@ -1109,29 +1109,26 @@ a { color: var(--primary-dark); }
 .obt-checklist-grid > .obt-panel { margin: 0; }
 
 /* ---------- Bande colorate dei gruppi (lettura checklist) ---------- */
-.obt-group-panel { }
+/* La banda "sfonda" il padding del panel con margini negativi laterali e in
+   alto, così tocca i bordi sinistro/destro e il top della card; sotto resta
+   lo spazio bianco del panel. overflow hidden per gli angoli arrotondati. */
+.obt-group-panel { overflow: hidden; }
 
 .obt-group-band {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin: -28px -30px 16px;
 }
-.obt-group-band h3 { color: var(--ink); }
-.obt-group-band-count {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
+.obt-group-band h3 { color: inherit; margin: 0; }
+.obt-group-band-count { font-size: 12px; font-weight: 700; color: inherit; opacity: 0.9; }
 
-/* rotazione a 4, tenue: una velatura di colore su fondo card.
-   Testo scuro normale — le bande sono chiare, restano leggibili senza inverti. */
-.obt-group-band--v0 { background: color-mix(in srgb, var(--secondary) 18%, var(--card)); }
-.obt-group-band--v1 { background: color-mix(in srgb, var(--tertiary) 22%, var(--card)); }
-.obt-group-band--v2 { background: color-mix(in srgb, var(--secondary-dark) 16%, var(--card)); }
-.obt-group-band--v3 { background: color-mix(in srgb, var(--secondary-light) 45%, var(--card)); }
+/* scacchiera a 2 colori pieni: secondary (scuro) / tertiary (chiaro) */
+.obt-group-band--v0,
+.obt-group-band--v2 { background: var(--secondary); color: var(--badge-ink-secondary, #fff); }
+.obt-group-band--v1,
+.obt-group-band--v3 { background: var(--tertiary); color: var(--badge-ink-tertiary, #0C2233); }
 
-/* sciolti = velatura primary */
-.obt-group-band--loose { background: color-mix(in srgb, var(--primary) 16%, var(--card)); }
+/* sciolti = primary */
+.obt-group-band--loose { background: var(--primary); color: var(--badge-ink-primary, #fff); }
