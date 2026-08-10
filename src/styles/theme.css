@@ -1107,3 +1107,30 @@ a { color: var(--primary-dark); }
 }
 .obt-checklist-grid:last-child { margin-bottom: 0; }
 .obt-checklist-grid > .obt-panel { margin: 0; }
+
+/* ---------- Bande colorate dei gruppi (lettura checklist) ---------- */
+.obt-group-panel { padding: 0; overflow: hidden; }
+
+.obt-group-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.obt-group-band h3 { color: inherit; }
+.obt-group-band-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* rotazione a 4: scuro / chiaro / scuro / chiaro (saturi)
+   testo bianco sugli scuri, "nero" di famiglia sui chiari */
+.obt-group-band--v0 { background: var(--secondary);       color: #fff; }
+.obt-group-band--v1 { background: var(--tertiary);        color: #0C2233; }
+.obt-group-band--v2 { background: var(--secondary-dark);  color: #fff; }
+.obt-group-band--v3 { background: var(--secondary-light); color: #0C2233; }
+
+/* sciolti = primary fisso (sezione "default") */
+.obt-group-band--loose { background: var(--primary); color: var(--badge-ink-primary, #fff); }

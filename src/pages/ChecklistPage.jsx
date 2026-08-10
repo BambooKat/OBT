@@ -79,7 +79,7 @@ export default function ChecklistPage() {
   const StateBox = ({ checked, label, onClick }) => (
     <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
       style={{
-        width: 30, height: 30, borderRadius: 10, fontSize: 17, fontWeight: 800,
+        width: 42, height: 42, borderRadius: 10, fontSize: 17, fontWeight: 800,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
         border: '1px solid ' + (checked ? 'var(--primary)' : 'var(--line)'),
@@ -114,19 +114,21 @@ export default function ChecklistPage() {
     )
   }
 
-  const GroupBlock = ({ g }) => {
+  const GroupBlock = ({ g, bandIndex }) => {
     const gs = groupStats(g.id)
     const gi = items.filter(it => it.group_id === g.id)
     if (gi.length === 0) return null
     return (
-      <div className="obt-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+      <div className="obt-panel obt-group-panel">
+        <div className={`obt-group-band obt-group-band--v${bandIndex % 4}`}>
           <h3 style={{ margin: 0, fontSize: 16 }}>{g.title}</h3>
-          <span style={{ fontSize: 12, fontWeight: 700, color: gs.complete ? 'var(--primary)' : 'var(--ink-soft)' }}>
+          <span className="obt-group-band-count">
             {gs.done}/{gs.total}{gs.complete && <> · <i className="ti ti-circle-check" /></>}
           </span>
         </div>
-        {gi.map(it => <ItemRow key={it.id} it={it} />)}
+        <div style={{ padding: '10px 4px 0' }}>
+          {gi.map(it => <ItemRow key={it.id} it={it} />)}
+        </div>
       </div>
     )
   }
@@ -135,11 +137,15 @@ export default function ChecklistPage() {
     const loose = items.filter(it => it.group_id === null)
     if (loose.length === 0) return null
     return (
-      <div className="obt-panel">
+      <div className="obt-panel obt-group-panel">
         {groups.length > 0 && (
-          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>{t('checklist.noGroupSection')}</h3>
+          <div className="obt-group-band obt-group-band--loose">
+            <h3 style={{ margin: 0, fontSize: 16 }}>{t('checklist.noGroupSection')}</h3>
+          </div>
         )}
-        {loose.map(it => <ItemRow key={it.id} it={it} />)}
+        <div style={{ padding: groups.length > 0 ? '10px 4px 0' : '0' }}>
+          {loose.map(it => <ItemRow key={it.id} it={it} />)}
+        </div>
       </div>
     )
   }
@@ -222,7 +228,7 @@ export default function ChecklistPage() {
               <div className="obt-checklist-grid"><LooseBlock /></div>
             )}
             <div className="obt-checklist-grid">
-              {groups.map(g => <GroupBlock key={g.id} g={g} />)}
+              {groups.map((g, i) => <GroupBlock key={g.id} g={g} bandIndex={i} />)}
             </div>
             {loosePos === 'bottom' && (
               <div className="obt-checklist-grid"><LooseBlock /></div>
