@@ -126,9 +126,7 @@ export default function ChecklistPage() {
             {gs.done}/{gs.total}{gs.complete && <> · <i className="ti ti-circle-check" /></>}
           </span>
         </div>
-        <div style={{ padding: '10px 4px 0' }}>
-          {gi.map(it => <ItemRow key={it.id} it={it} />)}
-        </div>
+        {gi.map(it => <ItemRow key={it.id} it={it} />)}
       </div>
     )
   }
@@ -143,9 +141,7 @@ export default function ChecklistPage() {
             <h3 style={{ margin: 0, fontSize: 16 }}>{t('checklist.noGroupSection')}</h3>
           </div>
         )}
-        <div style={{ padding: groups.length > 0 ? '10px 4px 0' : '0' }}>
-          {loose.map(it => <ItemRow key={it.id} it={it} />)}
-        </div>
+        {loose.map(it => <ItemRow key={it.id} it={it} />)}
       </div>
     )
   }
