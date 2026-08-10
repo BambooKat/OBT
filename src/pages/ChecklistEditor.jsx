@@ -44,6 +44,7 @@ export default function ChecklistEditor() {
   const [metaForm, setMetaForm] = useState({ title: '', description: '', tags: '', visibility: 'private' })
   // nuovo gruppo inline
   const [newGroup, setNewGroup] = useState('')
+  const [renameForm, setRenameForm] = useState(null)
 
   const shareUrl = `${window.location.origin}/journal/checklist/${checklistId}`
 
@@ -116,13 +117,14 @@ export default function ChecklistEditor() {
     setGroups(prev => [...prev, data])
     setNewGroup('')
   }
-  const renameGroup = async (g) => {
-    const name = window.prompt(t('checklist.groupNamePrompt'), g.title)
-    if (name == null) return
-    const clean = name.trim(); if (!clean) return
-    const { error } = await supabase.from('journal_checklist_groups').update({ title: clean }).eq('id', g.id)
+  const renameGroup = (g) => setRenameForm({ id: g.id, title: g.title })
+  const saveRename = async () => {
+    const clean = (renameForm.title || '').trim()
+    if (!clean) return
+    const { error } = await supabase.from('journal_checklist_groups').update({ title: clean }).eq('id', renameForm.id)
     if (error) { setError(t('checklist.saveError')); return }
-    setGroups(prev => prev.map(x => x.id === g.id ? { ...x, title: clean } : x))
+    setGroups(prev => prev.map(x => x.id === renameForm.id ? { ...x, title: clean } : x))
+    setRenameForm(null)
   }
   const removeGroup = (g) => confirm({
     message: t('checklist.deleteGroupConfirm'), danger: true,
@@ -356,6 +358,24 @@ export default function ChecklistEditor() {
           <button className="obt-btn obt-btn--primary" onClick={saveMeta} disabled={!metaForm.title.trim()}>{t('common.saveChanges')}</button>
           <button className="obt-btn obt-btn--ghost" onClick={() => setShowMeta(false)}>{t('common.cancel')}</button>
         </div>
+      </Modal>
+
+      {/* ---- MODAL rinomina gruppo ---- */}
+      <Modal open={!!renameForm} onClose={() => setRenameForm(null)} title={t('checklist.editGroup')} size="sm">
+        {renameForm && (
+          <>
+            <div className="obt-field">
+              <label>{t('checklist.groupTitle')} *</label>
+              <input className="obt-input" value={renameForm.title} autoFocus
+                onChange={e => setRenameForm({ ...renameForm, title: e.target.value })}
+                onKeyDown={e => { if (e.key === 'Enter' && renameForm.title.trim()) saveRename() }} />
+            </div>
+            <div className="obt-actions">
+              <button className="obt-btn obt-btn--primary" onClick={saveRename} disabled={!renameForm.title.trim()}>{t('common.saveChanges')}</button>
+              <button className="obt-btn obt-btn--ghost" onClick={() => setRenameForm(null)}>{t('common.cancel')}</button>
+            </div>
+          </>
+        )}
       </Modal>
 
       {dialog}

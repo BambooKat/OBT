@@ -26,6 +26,15 @@ const en = {
     copied: 'Copied',
     copyPrompt: 'Copy the link:',
   },
+  publicProfile: {
+    notFound: 'Profile not found, or not public.',
+    home: 'Back to home',
+    plan: 'Account',
+    since: 'Since',
+    projects: 'Projects',
+    lines: 'Lines',
+    empty: 'This profile has no public content yet.',
+  },
   checklist: {
     title: 'Checklists',
     subtitle: 'Lists to track what you have and what you still need.',

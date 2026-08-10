@@ -26,6 +26,15 @@ const it = {
     copied: 'Copiato',
     copyPrompt: 'Copia il link:',
   },
+  publicProfile: {
+    notFound: 'Profilo non trovato, o non pubblico.',
+    home: 'Torna alla home',
+    plan: 'Account',
+    since: 'Dal',
+    projects: 'Progetti',
+    lines: 'Linee',
+    empty: 'Questo profilo non ha ancora contenuti pubblici.',
+  },
   checklist: {
     title: 'Checklist',
     subtitle: 'Liste per tenere traccia di cosa hai e cosa ti manca.',

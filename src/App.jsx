@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import PublicProfile from './pages/PublicProfile'
 import ProjectDashboard from './pages/ProjectDashboard'
 import ProjectPage from './pages/ProjectPage'
 import Layout from './pages/Layout'
@@ -64,6 +65,7 @@ function App() {
         <Route path="/journal/:entryId" element={<Layout><JournalEntry /></Layout>} />
         <Route path="/project/:projectId" element={<Layout><ProjectDashboard /></Layout>} />
         <Route path="/line/:id" element={<Layout><ProjectPage /></Layout>} />
+        <Route path="/u/:username" element={<Layout><PublicProfile /></Layout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )
@@ -86,6 +88,7 @@ function App() {
         <Route path="/journal/:entryId/edit" element={<NoteEditor />} />
         <Route path="/journal/:entryId" element={<JournalEntry />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/u/:username" element={<PublicProfile />} />
         <Route path="/project/:projectId" element={<ProjectDashboard />} />
         <Route path="/line/:id" element={<ProjectPage />} />
         <Route path="/credits" element={<Credits />} />

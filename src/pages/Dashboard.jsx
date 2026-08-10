@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import Modal from './Modal'
+import VisibilityToggle from './VisibilityToggle'
 import NewLineModal from './NewLineModal'
 import { useT } from '../i18n'
 import { useCardSort, SortControl } from './useCardSort'
@@ -107,6 +108,13 @@ function Dashboard() {
     setShowEditProfile(false)
   }
 
+  const setProfileVisibility = async (next) => {
+    setProfileError('')
+    setVisibility(next)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('profiles').update({ visibility: next }).eq('id', user.id)
+    if (error) { setProfileError(t('profile.saveError')) }
+  }
   const togglePublic = async () => {
     setProfileError('')
     const isShared = visibility === 'unlisted' || visibility === 'public'
@@ -229,6 +237,16 @@ function Dashboard() {
         </div>
         {/* campo "Preferite" rimosso dall'UI: i dati restano gestiti (profiles.favourites),
             basta reinserire un input legato a draft.favs per riattivarlo */}
+
+        <div className="obt-field" style={{ borderTop: '0.5px solid var(--line)', paddingTop: 14 }}>
+          <label>{t('visibility.label')}</label>
+          <VisibilityToggle
+            value={visibility}
+            onChange={setProfileVisibility}
+            variant="full"
+            shareUrl={`${window.location.origin}/u/${username}`}
+          />
+        </div>
 
         <div className="obt-actions">
           <button className="obt-btn obt-btn--primary" onClick={saveProfile}>{t('common.saveChanges')}</button>
