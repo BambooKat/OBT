@@ -6,7 +6,7 @@
 //     toggle posizione sciolti (in cima / in fondo), salvato per-checklist.
 // Scrittura immediata. Solo owner: se non lo sei, rimando alla lettura.
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
@@ -67,6 +67,14 @@ export default function ChecklistEditor() {
   }
 
   const groupDrag = useDragOrder({ items: groups, table: 'journal_checklist_groups', onReorder: setGroups })
+
+  // Riordino voci: onReorder aggiorna il sottoinsieme del gruppo dentro lo stato globale.
+  const reorderItemsInGroup = (reordered) => {
+    setItems(prev => {
+      const byId = new Map(reordered.map(it => [it.id, it]))
+      return prev.map(it => byId.get(it.id) || it)
+    })
+  }
 
   // ---- inserimento continuo ----------------------------------------------
   const addDraft = async () => {
@@ -161,8 +169,6 @@ export default function ChecklistEditor() {
     setShowMeta(false); load()
   }
 
-  const groupName = (gid) => groups.find(g => g.id === gid)?.title || t('checklist.noGroupSection')
-
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
   if (notAllowed) return (
     <div className="obt-page">
@@ -232,27 +238,23 @@ export default function ChecklistEditor() {
                 <p>{t('checklist.emptyEditor')}</p>
               </div>
             ) : (
-              <div className="obt-panel">
-                {items.map(it => (
-                  <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '0.5px solid var(--line)' }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
-                      {it.mode === 'pair' ? '♀♂' : '●'}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600 }}>{it.label}</span>
-                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 8 }}>{groupName(it.group_id)}</span>
-                      {it.notes && <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{it.notes}</div>}
-                    </div>
-                    <button className="obt-icon-btn" title={t('common.edit')}
-                      onClick={() => setItemForm({ id: it.id, group_id: it.group_id || '', label: it.label, mode: it.mode, notes: it.notes || '' })}>
-                      <i className="ti ti-pencil" />
-                    </button>
-                    <button className="obt-icon-btn obt-icon-btn--danger" title={t('common.delete')} onClick={() => removeItem(it.id)}>
-                      <i className="ti ti-trash" />
-                    </button>
-                  </div>
+              <>
+                {(list.loose_position || 'top') === 'top' && (
+                  <ItemGroup t={t} title={t('checklist.noGroupSection')}
+                    groupItems={items.filter(it => it.group_id === null)}
+                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem} />
+                )}
+                {groups.map(g => (
+                  <ItemGroup key={g.id} t={t} title={g.title}
+                    groupItems={items.filter(it => it.group_id === g.id)}
+                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem} />
                 ))}
-              </div>
+                {(list.loose_position || 'top') === 'bottom' && (
+                  <ItemGroup t={t} title={t('checklist.noGroupSection')}
+                    groupItems={items.filter(it => it.group_id === null)}
+                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem} />
+                )}
+              </>
             )}
           </div>
 
@@ -389,3 +391,38 @@ const segStyle = (active) => ({
   background: active ? 'var(--primary)' : 'var(--card)',
   color: active ? '#fff' : 'var(--ink-soft)',
 })
+
+// Sezione voci di un singolo gruppo (o degli sciolti), con drag&drop interno.
+// Ogni ItemGroup monta la propria useDragOrder sul proprio sottoinsieme, così
+// il riordino resta confinato al gruppo e le position scritte sono coerenti.
+function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete }) {
+  const drag = useDragOrder({ items: groupItems, table: 'journal_checklist_items', onReorder })
+  if (groupItems.length === 0) return null
+  return (
+    <div className="obt-panel">
+      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, textTransform: 'uppercase', color: 'var(--ink-soft)', marginBottom: 6 }}>
+        {title} <span style={{ fontWeight: 600 }}>· {groupItems.length}</span>
+      </div>
+      {groupItems.map(it => (
+        <div key={it.id} {...drag.dragProps(it)}
+          style={{ ...drag.dragProps(it).style, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '0.5px solid var(--line)' }}>
+          <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14, flexShrink: 0 }} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
+            {it.mode === 'pair' ? '♀♂' : '●'}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{it.label}</span>
+            {it.notes && <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{it.notes}</div>}
+          </div>
+          <button className="obt-icon-btn" title={t('common.edit')}
+            onClick={() => onEdit({ id: it.id, group_id: it.group_id || '', label: it.label, mode: it.mode, notes: it.notes || '' })}>
+            <i className="ti ti-pencil" />
+          </button>
+          <button className="obt-icon-btn obt-icon-btn--danger" title={t('common.delete')} onClick={() => onDelete(it.id)}>
+            <i className="ti ti-trash" />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
