@@ -181,10 +181,30 @@ export default function Journal() {
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/journal/checklist/new')}>
               <i className="ti ti-checklist" /> {t('journal.newChecklist')}
             </button>
+            <div style={{ position: 'relative', marginTop: 4 }}>
+              <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)', fontSize: 15, pointerEvents: 'none' }} />
+              <input
+                className="obt-input"
+                placeholder={t('journal.search')}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ paddingLeft: 32, fontSize: 13 }}
+              />
+            </div>
           </div>
           <div className="obt-hero-title">
             <h1>{t('journal.title')}</h1>
             <p className="obt-hero-desc obt-hero-desc--empty">{t('journal.subtitle')}</p>
+            {allTags.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 'auto', paddingTop: 16 }}>
+                <TagChip tag={t('journal.allTags')} active={!activeTag} onClick={() => setActiveTag(null)} />
+                {allTags.map(([tag, count]) => (
+                  <TagChip key={tag} tag={tag} count={count}
+                    active={activeTag === tag}
+                    onClick={() => setActiveTag(activeTag === tag ? null : tag)} />
+                ))}
+              </div>
+            )}
           </div>
           <div className="obt-hero-info">
             <div className="obt-hero-info-row">
@@ -193,35 +213,15 @@ export default function Journal() {
             <div className="obt-hero-info-row">
               <span className="obt-hero-info-label">{t('journal.tags')}</span> {allTags.length}
             </div>
+            <div style={{ borderTop: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)', marginTop: 4, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <TypeChip type="note" icon="notebook" label={t('journal.typeNotes')} count={counts.note} />
+              <TypeChip type="checklist" icon="checklist" label={t('journal.typeChecklists')} count={counts.checklist} />
+            </div>
           </div>
         </div>
       </div>
 
       <div className="obt-page">
-        <div className="obt-panel">
-          <input
-            className="obt-input"
-            placeholder={t('journal.search')}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ marginBottom: 12 }}
-          />
-          <div style={{ display: 'flex', gap: 6, marginBottom: allTags.length ? 12 : 0, flexWrap: 'wrap' }}>
-            <TypeChip type="note" icon="notebook" label={t('journal.typeNotes')} count={counts.note} />
-            <TypeChip type="checklist" icon="checklist" label={t('journal.typeChecklists')} count={counts.checklist} />
-          </div>
-          {allTags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-              <TagChip tag={t('journal.allTags')} active={!activeTag} onClick={() => setActiveTag(null)} />
-              {allTags.map(([tag, count]) => (
-                <TagChip key={tag} tag={tag} count={count}
-                  active={activeTag === tag}
-                  onClick={() => setActiveTag(activeTag === tag ? null : tag)} />
-              ))}
-            </div>
-          )}
-        </div>
-
         {error && <div className="obt-alert obt-alert--error">{error}</div>}
 
         {filtered.length === 0 ? (
