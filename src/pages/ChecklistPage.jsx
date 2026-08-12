@@ -245,7 +245,7 @@ export default function ChecklistPage() {
               <p className="obt-hero-desc" style={{ marginTop: 4 }}>{list.description}</p>
             )}
             {(list.tags || []).length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 'auto', paddingTop: 16 }}>
                 {list.tags.map(tag => (
                   <span key={tag} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>{tag}</span>
                 ))}
