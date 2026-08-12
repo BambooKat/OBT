@@ -92,7 +92,7 @@ const en = {
     emptyText: 'Create lists for collections, egg rounds, prizes to send… whatever you need.',
     open: 'Open',
     progress: 'Progress',
-    back: 'Back to checklists',
+    back: 'Back to Journal',
     notFound: 'Checklist not found, or not linkable.',
     loadError: 'Could not load the checklists.',
     saveError: 'Could not save.',
