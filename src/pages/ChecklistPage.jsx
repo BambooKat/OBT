@@ -241,15 +241,18 @@ export default function ChecklistPage() {
           </div>
           <div className="obt-hero-title">
             <h1>{list.title}</h1>
-            <p className="obt-hero-desc obt-hero-desc--empty">
-              {formatDate(list.created_at)}
-              {list.visibility !== 'private' && <> · <i className="ti ti-link" /> {t('visibility.unlisted')}</>}
-            </p>
+            {list.description && (
+              <p className="obt-hero-desc" style={{ marginTop: 4 }}>{list.description}</p>
+            )}
           </div>
           <div className="obt-hero-info">
             <div className="obt-hero-info-row">
               <span className="obt-hero-info-label">{t('checklist.progress')}</span> {stats.done}/{stats.total}
               {stats.complete && <> <i className="ti ti-circle-check" style={{ color: 'var(--primary)' }} /></>}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
+              {formatDate(list.created_at)}
+              {list.visibility !== 'private' && <> · <i className="ti ti-link" /> {t('visibility.unlisted')}</>}
             </div>
           </div>
         </div>
@@ -258,11 +261,6 @@ export default function ChecklistPage() {
       <div className="obt-page">
         {error && <div className="obt-alert obt-alert--error">{error}</div>}
 
-        {list.description && (
-          <div className="obt-panel">
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--ink-soft)' }}>{list.description}</p>
-          </div>
-        )}
         {(list.tags || []).length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 4px' }}>
             {list.tags.map(tag => (
