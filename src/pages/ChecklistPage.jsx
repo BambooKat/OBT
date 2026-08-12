@@ -29,10 +29,6 @@ export default function ChecklistPage() {
   // Gruppi aperti/chiusi (accordion): stato per-checklist, persistito in localStorage.
   // Chiave: id gruppo -> bool. Assente/false = chiuso.
   const [openGroups, setOpenGroups] = useState({})
-  // Vista compatta: preferenza globale (vale per tutte le checklist).
-  const [compact, setCompact] = useState(() => {
-    try { return localStorage.getItem('obt-checklist-compact') === '1' } catch { return false }
-  })
 
   useEffect(() => { load() }, [checklistId])
 
@@ -56,13 +52,6 @@ export default function ChecklistPage() {
     persistOpenGroups(next)
   }
   const collapseAll = () => persistOpenGroups({})
-  const toggleCompact = () => {
-    setCompact(prev => {
-      const next = !prev
-      try { localStorage.setItem('obt-checklist-compact', next ? '1' : '0') } catch {}
-      return next
-    })
-  }
 
   const load = async () => {
     setLoading(true)
@@ -129,43 +118,43 @@ export default function ChecklistPage() {
     },
   })
 
-  const StateBox = ({ checked, label, onClick }) => {
-    const size = compact ? 30 : 42
-    return (
-      <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
-        style={{
-          width: size, height: size, borderRadius: compact ? 8 : 10, fontSize: compact ? 13 : 17, fontWeight: 800,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
-          border: '1px solid ' + (checked ? 'var(--primary)' : 'var(--line)'),
-          background: checked ? 'var(--primary)' : 'var(--card)',
-          color: checked ? '#fff' : 'var(--ink-soft)', transition: 'all .12s',
-        }}>
-        {checked ? <i className="ti ti-check" /> : label}
-      </button>
-    )
-  }
+  const StateBox = ({ checked, label, onClick, done }) => (
+    <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
+      style={{
+        width: 30, height: 30, borderRadius: 8, fontSize: 13, fontWeight: 800,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
+        border: '1px solid ' + (checked ? (done ? 'var(--good-text)' : 'var(--primary)') : 'var(--line)'),
+        background: checked ? (done ? 'var(--good-text)' : 'var(--primary)') : 'var(--card)',
+        color: checked ? '#fff' : 'var(--ink-soft)', transition: 'all .12s',
+      }}>
+      {checked ? <i className="ti ti-check" /> : label}
+    </button>
+  )
 
   const ItemRow = ({ it }) => {
     const done = itemDone(it)
     return (
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: compact ? 8 : 10, padding: compact ? '4px 0' : '8px 0', borderBottom: '0.5px solid var(--line)' }}>
-        <div style={{ display: 'flex', gap: compact ? 4 : 6, paddingTop: 1, flexShrink: 0 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
+        borderBottom: '0.5px solid var(--line)',
+        background: done ? 'var(--good-bg)' : 'transparent',
+        borderRadius: done ? 6 : 0,
+        transition: 'background .15s',
+      }}>
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
           {it.mode === 'single' ? (
-            <StateBox checked={it.have_single} label={t('checklist.haveShort')} onClick={isOwner ? () => toggleSingle(it) : null} />
+            <StateBox checked={it.have_single} label={t('checklist.haveShort')} onClick={isOwner ? () => toggleSingle(it) : null} done={done} />
           ) : (
             <>
-              <StateBox checked={it.have_f} label="♀" onClick={isOwner ? () => toggleF(it) : null} />
-              <StateBox checked={it.have_m} label="♂" onClick={isOwner ? () => toggleM(it) : null} />
+              <StateBox checked={it.have_f} label="♀" onClick={isOwner ? () => toggleF(it) : null} done={done} />
+              <StateBox checked={it.have_m} label="♂" onClick={isOwner ? () => toggleM(it) : null} done={done} />
             </>
           )}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: compact ? 14 : 16, fontWeight: 600, textDecoration: done ? 'line-through' : 'none', color: done ? 'var(--ink-soft)' : 'var(--ink)' }}>
-            {it.label}
-          </span>
-          {it.notes && !compact && <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{it.notes}</div>}
-        </div>
+        <span style={{ fontSize: 14, fontWeight: 600, color: done ? 'var(--good-text)' : 'var(--ink)' }}>
+          {it.label}
+        </span>
       </div>
     )
   }
@@ -300,9 +289,6 @@ export default function ChecklistPage() {
               </button>
               <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={collapseAll}>
                 <i className="ti ti-chevrons-up" /> {t('checklist.collapseAll')}
-              </button>
-              <button className={`obt-btn obt-btn--ghost obt-btn--sm${compact ? ' is-active' : ''}`} onClick={toggleCompact}>
-                <i className="ti ti-list" /> {t('checklist.compactView')}
               </button>
             </div>
             {loosePos === 'top' && (
