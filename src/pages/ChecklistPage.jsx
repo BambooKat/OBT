@@ -26,7 +26,43 @@ export default function ChecklistPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Gruppi aperti/chiusi (accordion): stato per-checklist, persistito in localStorage.
+  // Chiave: id gruppo -> bool. Assente/false = chiuso.
+  const [openGroups, setOpenGroups] = useState({})
+  // Vista compatta: preferenza globale (vale per tutte le checklist).
+  const [compact, setCompact] = useState(() => {
+    try { return localStorage.getItem('obt-checklist-compact') === '1' } catch { return false }
+  })
+
   useEffect(() => { load() }, [checklistId])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`obt-checklist-open-${checklistId}`)
+      setOpenGroups(raw ? JSON.parse(raw) : {})
+    } catch { setOpenGroups({}) }
+  }, [checklistId])
+
+  const persistOpenGroups = (next) => {
+    setOpenGroups(next)
+    try { localStorage.setItem(`obt-checklist-open-${checklistId}`, JSON.stringify(next)) } catch {}
+  }
+  const toggleGroup = (groupId) => {
+    persistOpenGroups({ ...openGroups, [groupId]: !openGroups[groupId] })
+  }
+  const expandAll = () => {
+    const next = { __loose__: true }
+    groups.forEach(g => { next[g.id] = true })
+    persistOpenGroups(next)
+  }
+  const collapseAll = () => persistOpenGroups({})
+  const toggleCompact = () => {
+    setCompact(prev => {
+      const next = !prev
+      try { localStorage.setItem('obt-checklist-compact', next ? '1' : '0') } catch {}
+      return next
+    })
+  }
 
   const load = async () => {
     setLoading(true)
@@ -93,25 +129,28 @@ export default function ChecklistPage() {
     },
   })
 
-  const StateBox = ({ checked, label, onClick }) => (
-    <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
-      style={{
-        width: 42, height: 42, borderRadius: 10, fontSize: 17, fontWeight: 800,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
-        border: '1px solid ' + (checked ? 'var(--primary)' : 'var(--line)'),
-        background: checked ? 'var(--primary)' : 'var(--card)',
-        color: checked ? '#fff' : 'var(--ink-soft)', transition: 'all .12s',
-      }}>
-      {checked ? <i className="ti ti-check" /> : label}
-    </button>
-  )
+  const StateBox = ({ checked, label, onClick }) => {
+    const size = compact ? 30 : 42
+    return (
+      <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
+        style={{
+          width: size, height: size, borderRadius: compact ? 8 : 10, fontSize: compact ? 13 : 17, fontWeight: 800,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
+          border: '1px solid ' + (checked ? 'var(--primary)' : 'var(--line)'),
+          background: checked ? 'var(--primary)' : 'var(--card)',
+          color: checked ? '#fff' : 'var(--ink-soft)', transition: 'all .12s',
+        }}>
+        {checked ? <i className="ti ti-check" /> : label}
+      </button>
+    )
+  }
 
   const ItemRow = ({ it }) => {
     const done = itemDone(it)
     return (
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: '0.5px solid var(--line)' }}>
-        <div style={{ display: 'flex', gap: 6, paddingTop: 1, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: compact ? 8 : 10, padding: compact ? '4px 0' : '8px 0', borderBottom: '0.5px solid var(--line)' }}>
+        <div style={{ display: 'flex', gap: compact ? 4 : 6, paddingTop: 1, flexShrink: 0 }}>
           {it.mode === 'single' ? (
             <StateBox checked={it.have_single} label={t('checklist.haveShort')} onClick={isOwner ? () => toggleSingle(it) : null} />
           ) : (
@@ -122,28 +161,40 @@ export default function ChecklistPage() {
           )}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 16, fontWeight: 600, textDecoration: done ? 'line-through' : 'none', color: done ? 'var(--ink-soft)' : 'var(--ink)' }}>
+          <span style={{ fontSize: compact ? 14 : 16, fontWeight: 600, textDecoration: done ? 'line-through' : 'none', color: done ? 'var(--ink-soft)' : 'var(--ink)' }}>
             {it.label}
           </span>
-          {it.notes && <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{it.notes}</div>}
+          {it.notes && !compact && <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{it.notes}</div>}
         </div>
       </div>
     )
   }
 
+  const GroupBand = ({ children, className, onClick }) => (
+    onClick ? (
+      <button type="button" className={`obt-group-band obt-group-band--toggle ${className}`} onClick={onClick}>
+        {children}
+      </button>
+    ) : (
+      <div className={`obt-group-band ${className}`}>{children}</div>
+    )
+  )
+
   const GroupBlock = ({ g, bandIndex }) => {
     const gs = groupStats(g.id)
     const gi = sortItems(items.filter(it => it.group_id === g.id), g.sort_mode || 'custom')
     if (gi.length === 0) return null
+    const isOpen = !!openGroups[g.id]
     return (
       <div className="obt-panel obt-group-panel">
-        <div className={`obt-group-band obt-group-band--v${bandIndex % 4}`}>
+        <GroupBand className={`obt-group-band--v${bandIndex % 4}`} onClick={() => toggleGroup(g.id)}>
+          <i className={`ti ti-chevron-right obt-group-chevron${isOpen ? ' is-open' : ''}`} />
           <h3 style={{ margin: 0, fontSize: 16 }}>{g.title}</h3>
           <span className="obt-group-band-count">
             {gs.done}/{gs.total}{gs.complete && <> · <i className="ti ti-circle-check" /></>}
           </span>
-        </div>
-        {gi.map(it => <ItemRow key={it.id} it={it} />)}
+        </GroupBand>
+        {isOpen && gi.map(it => <ItemRow key={it.id} it={it} />)}
       </div>
     )
   }
@@ -151,14 +202,20 @@ export default function ChecklistPage() {
   const LooseBlock = () => {
     const loose = sortItems(items.filter(it => it.group_id === null), list.loose_sort_mode || 'custom')
     if (loose.length === 0) return null
+    const hasBand = groups.length > 0
+    const isOpen = hasBand ? !!openGroups['__loose__'] : true
     return (
       <div className="obt-panel obt-group-panel">
-        {groups.length > 0 && (
-          <div className="obt-group-band obt-group-band--loose">
+        {hasBand && (
+          <GroupBand className="obt-group-band--loose" onClick={() => toggleGroup('__loose__')}>
+            <i className={`ti ti-chevron-right obt-group-chevron${isOpen ? ' is-open' : ''}`} />
             <h3 style={{ margin: 0, fontSize: 16 }}>{t('checklist.noGroupSection')}</h3>
-          </div>
+            <span className="obt-group-band-count">
+              {loose.filter(itemDone).length}/{loose.length}
+            </span>
+          </GroupBand>
         )}
-        {loose.map(it => <ItemRow key={it.id} it={it} />)}
+        {isOpen && loose.map(it => <ItemRow key={it.id} it={it} />)}
       </div>
     )
   }
@@ -237,6 +294,17 @@ export default function ChecklistPage() {
           </div>
         ) : (
           <>
+            <div className="obt-checklist-toolbar">
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={expandAll}>
+                <i className="ti ti-chevrons-down" /> {t('checklist.expandAll')}
+              </button>
+              <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={collapseAll}>
+                <i className="ti ti-chevrons-up" /> {t('checklist.collapseAll')}
+              </button>
+              <button className={`obt-btn obt-btn--ghost obt-btn--sm${compact ? ' is-active' : ''}`} onClick={toggleCompact}>
+                <i className="ti ti-list" /> {t('checklist.compactView')}
+              </button>
+            </div>
             {loosePos === 'top' && (
               <div className="obt-checklist-grid"><LooseBlock /></div>
             )}

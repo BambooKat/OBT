@@ -318,6 +318,8 @@ a { color: var(--primary-dark); }
   box-shadow: none;
 }
 .obt-btn--ghost:hover:not(:disabled) { border-color: var(--primary); color: var(--primary-dark); }
+.obt-btn--ghost.is-active { border-color: var(--primary); background: var(--primary); color: #fff; }
+.obt-btn--ghost.is-active:hover:not(:disabled) { color: #fff; }
 
 .obt-btn--danger {
   background: var(--bad-bg);
@@ -1096,6 +1098,14 @@ a { color: var(--primary-dark); }
 }
 .obt-quickrow-mode button.is-active { background: var(--primary); color: #fff; }
 
+/* ---------- Toolbar espandi/comprimi/compatta (lettura checklist) ---------- */
+.obt-checklist-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
 /* ---------- Griglia gruppi nella lettura checklist ---------- */
 .obt-checklist-grid {
   display: grid;
@@ -1122,7 +1132,18 @@ a { color: var(--primary-dark); }
   margin: 0 -30px 14px;
 }
 .obt-group-band h3 { color: inherit; margin: 0; }
-.obt-group-band-count { font-size: 12px; font-weight: 700; color: inherit; opacity: 0.9; }
+.obt-group-band-count { font-size: 12px; font-weight: 700; color: inherit; opacity: 0.9; margin-left: auto; flex-shrink: 0; }
+
+/* variante cliccabile (accordion): reset stile bottone, mantiene i colori della banda */
+.obt-group-band--toggle {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.obt-group-chevron { flex-shrink: 0; transition: transform .15s ease; opacity: 0.85; }
+.obt-group-chevron.is-open { transform: rotate(90deg); }
 
 /* scacchiera a 2 colori pieni: secondary (scuro) / tertiary (chiaro) */
 .obt-group-band--v0,
