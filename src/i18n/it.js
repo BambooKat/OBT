@@ -133,6 +133,8 @@ const it = {
     noGroupSection: 'Senza gruppo',
     expandAll: 'Espandi tutti',
     collapseAll: 'Comprimi tutti',
+    date: 'Data',
+    status: 'Stato',
     addGroupInline: '+ Gruppo',
     groupNamePrompt: 'Nome del gruppo',
     emptyEditor: 'Aggiungi il primo gruppo o scrivi una voce sciolta.',

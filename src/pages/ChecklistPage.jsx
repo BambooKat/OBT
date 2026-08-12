@@ -244,15 +244,30 @@ export default function ChecklistPage() {
             {list.description && (
               <p className="obt-hero-desc" style={{ marginTop: 4 }}>{list.description}</p>
             )}
+            {(list.tags || []).length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                {list.tags.map(tag => (
+                  <span key={tag} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="obt-hero-info">
             <div className="obt-hero-info-row">
-              <span className="obt-hero-info-label">{t('checklist.progress')}</span> {stats.done}/{stats.total}
-              {stats.complete && <> <i className="ti ti-circle-check" style={{ color: 'var(--primary)' }} /></>}
+              <span className="obt-hero-info-label">{t('checklist.progress')}</span>
+              <span>{stats.done}/{stats.total}{stats.complete && <> <i className="ti ti-circle-check" style={{ color: 'var(--primary)' }} /></>}</span>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
-              {formatDate(list.created_at)}
-              {list.visibility !== 'private' && <> · <i className="ti ti-link" /> {t('visibility.unlisted')}</>}
+            <div className="obt-hero-info-row">
+              <span className="obt-hero-info-label">{t('checklist.date')}</span>
+              <span>{formatDate(list.created_at)}</span>
+            </div>
+            <div className="obt-hero-info-row">
+              <span className="obt-hero-info-label">{t('checklist.status')}</span>
+              <span>
+                {list.visibility === 'private'
+                  ? <><i className="ti ti-lock" /> {t('visibility.private')}</>
+                  : <><i className="ti ti-link" /> {t('visibility.unlisted')}</>}
+              </span>
             </div>
           </div>
         </div>
@@ -260,14 +275,6 @@ export default function ChecklistPage() {
 
       <div className="obt-page">
         {error && <div className="obt-alert obt-alert--error">{error}</div>}
-
-        {(list.tags || []).length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 4px' }}>
-            {list.tags.map(tag => (
-              <span key={tag} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>{tag}</span>
-            ))}
-          </div>
-        )}
 
         {items.length === 0 ? (
           <div className="obt-panel obt-empty">

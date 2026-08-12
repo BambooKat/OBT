@@ -133,6 +133,8 @@ const en = {
     noGroupSection: 'No group',
     expandAll: 'Expand all',
     collapseAll: 'Collapse all',
+    date: 'Date',
+    status: 'Status',
     addGroupInline: '+ Group',
     groupNamePrompt: 'Group name',
     emptyEditor: 'Add the first group or type a loose item.',
