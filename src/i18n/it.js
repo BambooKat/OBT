@@ -140,6 +140,13 @@ const it = {
     groupTitle: 'Titolo del gruppo',
     groupTitlePlaceholder: 'Es. Catus',
     deleteGroupConfirm: 'Eliminare il gruppo? Gli item resteranno, ma diventeranno sciolti.',
+    selectedCount: 'selezionati',
+    bulkMoveTo: 'Sposta in…',
+    bulkSetSingle: 'Imposta ●',
+    bulkSetPair: 'Imposta ♀♂',
+    bulkDelete: 'Elimina',
+    bulkClear: 'Deseleziona',
+    bulkDeleteConfirm: 'Eliminare le voci selezionate?',
   },
   guide: {
     title: 'Guida & Glossario',

@@ -1223,3 +1223,20 @@ a { color: var(--primary-dark); }
 .obt-showcase-card:hover .obt-showcase-star { opacity: 1; }
 .obt-showcase-star.is-on { opacity: 1; color: var(--primary); }
 .obt-showcase-star.is-readonly { cursor: default; background: color-mix(in srgb, var(--card) 70%, transparent); }
+
+/* ---- Barra azioni bulk selezione checklist ---- */
+.obt-bulkbar{
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  z-index: 900; display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 14px;
+  background: var(--surface, var(--panel));
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  max-width: calc(100vw - 32px); flex-wrap: wrap;
+}
+.obt-bulkbar-count{ font-size: 13px; color: var(--ink); white-space: nowrap; }
+.obt-bulkbar-count strong{ color: var(--primary); }
+.obt-bulkbar-sep{ width: 1px; align-self: stretch; background: var(--line); }
+.obt-bulkbar .obt-input--sm{
+  padding: 7px 10px; font-size: 13px; height: auto; min-width: 120px;
+}

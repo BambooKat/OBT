@@ -39,6 +39,8 @@ export default function ChecklistEditor() {
 
   // editor voce esistente
   const [itemForm, setItemForm] = useState(null)
+  // selezione multipla (Set di id)
+  const [selected, setSelected] = useState(() => new Set())
   // editor dati checklist
   const [showMeta, setShowMeta] = useState(false)
   const [metaForm, setMetaForm] = useState({ title: '', description: '', tags: '', visibility: 'private' })
@@ -115,6 +117,56 @@ export default function ChecklistEditor() {
       const { error } = await supabase.from('journal_checklist_items').delete().eq('id', id)
       if (error) { setError(t('checklist.saveError')); return }
       setItems(prev => prev.filter(it => it.id !== id))
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
+    },
+  })
+
+  // ---- selezione multipla + azioni bulk ----------------------------------
+  const toggleSelect = (id) => setSelected(prev => {
+    const n = new Set(prev)
+    n.has(id) ? n.delete(id) : n.add(id)
+    return n
+  })
+  const clearSelection = () => setSelected(new Set())
+  const selectedIds = () => [...selected]
+
+  // Sposta le voci selezionate in un gruppo ('' = sciolto). Le accodo in fondo
+  // al gruppo di destinazione, ricalcolando le position per quel gruppo.
+  const bulkMove = async (groupId) => {
+    const ids = selectedIds()
+    if (!ids.length) return
+    const gid = groupId || null
+    const destCount = items.filter(it => (it.group_id || null) === gid && !selected.has(it.id)).length
+    let pos = destCount
+    const posById = new Map()
+    for (const id of ids) posById.set(id, pos++)
+    const results = await Promise.all(ids.map(id =>
+      supabase.from('journal_checklist_items')
+        .update({ group_id: gid, position: posById.get(id) }).eq('id', id)))
+    if (results.some(r => r.error)) { setError(t('checklist.saveError')); return }
+    setItems(prev => prev.map(it =>
+      selected.has(it.id) ? { ...it, group_id: gid, position: posById.get(it.id) } : it))
+    clearSelection()
+  }
+
+  const bulkSetMode = async (mode) => {
+    const ids = selectedIds()
+    if (!ids.length) return
+    const { error } = await supabase.from('journal_checklist_items')
+      .update({ mode }).in('id', ids)
+    if (error) { setError(t('checklist.saveError')); return }
+    setItems(prev => prev.map(it => selected.has(it.id) ? { ...it, mode } : it))
+    clearSelection()
+  }
+
+  const bulkDelete = () => confirm({
+    message: t('checklist.bulkDeleteConfirm'), danger: true,
+    onConfirm: async () => {
+      const ids = selectedIds()
+      const { error } = await supabase.from('journal_checklist_items').delete().in('id', ids)
+      if (error) { setError(t('checklist.saveError')); return }
+      setItems(prev => prev.filter(it => !selected.has(it.id)))
+      clearSelection()
     },
   })
 
@@ -246,17 +298,20 @@ export default function ChecklistEditor() {
                 {(list.loose_position || 'top') === 'top' && (
                   <ItemGroup t={t} title={t('checklist.noGroupSection')}
                     groupItems={items.filter(it => it.group_id === null)}
-                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem} />
+                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem}
+                    selected={selected} onToggleSelect={toggleSelect} />
                 )}
                 {groups.map(g => (
                   <ItemGroup key={g.id} t={t} title={g.title}
                     groupItems={items.filter(it => it.group_id === g.id)}
-                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem} />
+                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem}
+                    selected={selected} onToggleSelect={toggleSelect} />
                 ))}
                 {(list.loose_position || 'top') === 'bottom' && (
                   <ItemGroup t={t} title={t('checklist.noGroupSection')}
                     groupItems={items.filter(it => it.group_id === null)}
-                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem} />
+                    onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem}
+                    selected={selected} onToggleSelect={toggleSelect} />
                 )}
               </>
             )}
@@ -384,6 +439,32 @@ export default function ChecklistEditor() {
         )}
       </Modal>
 
+      {selected.size > 0 && (
+        <div className="obt-bulkbar">
+          <span className="obt-bulkbar-count">
+            <strong>{selected.size}</strong> {t('checklist.selectedCount')}
+          </span>
+          <div className="obt-bulkbar-sep" />
+          <select className="obt-input obt-input--sm" value=""
+            onChange={e => { bulkMove(e.target.value); e.target.value = '' }}>
+            <option value="" disabled>{t('checklist.bulkMoveTo')}</option>
+            <option value="">{t('checklist.noGroupSection')}</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}
+          </select>
+          <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => bulkSetMode('single')}>
+            {t('checklist.bulkSetSingle')}
+          </button>
+          <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => bulkSetMode('pair')}>
+            {t('checklist.bulkSetPair')}
+          </button>
+          <button className="obt-btn obt-btn--danger obt-btn--sm" onClick={bulkDelete}>
+            <i className="ti ti-trash" /> {t('checklist.bulkDelete')}
+          </button>
+          <button className="obt-icon-btn" title={t('checklist.bulkClear')} onClick={clearSelection}>
+            <i className="ti ti-x" />
+          </button>
+        </div>
+      )}
       {dialog}
     </>
   )
@@ -399,7 +480,7 @@ const segStyle = (active) => ({
 // Sezione voci di un singolo gruppo (o degli sciolti), con drag&drop interno.
 // Ogni ItemGroup monta la propria useDragOrder sul proprio sottoinsieme, così
 // il riordino resta confinato al gruppo e le position scritte sono coerenti.
-function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete }) {
+function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete, selected, onToggleSelect }) {
   const drag = useDragOrder({ items: groupItems, table: 'journal_checklist_items', onReorder })
   if (groupItems.length === 0) return null
   return (
@@ -407,9 +488,17 @@ function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete }) {
       <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, textTransform: 'uppercase', color: 'var(--ink-soft)', marginBottom: 6 }}>
         {title} <span style={{ fontWeight: 600 }}>· {groupItems.length}</span>
       </div>
-      {groupItems.map(it => (
-        <div key={it.id} {...drag.dragProps(it)}
-          style={{ ...drag.dragProps(it).style, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '0.5px solid var(--line)' }}>
+      {groupItems.map(it => {
+        const isSel = selected?.has(it.id)
+        const dp = drag.dragProps(it)
+        return (
+        <div key={it.id} {...dp}
+          style={{ ...dp.style, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '0.5px solid var(--line)',
+            background: isSel ? 'color-mix(in srgb, var(--primary) 12%, transparent)' : undefined }}>
+          <input type="checkbox" checked={!!isSel} draggable={false}
+            onClick={e => e.stopPropagation()}
+            onChange={() => onToggleSelect?.(it.id)}
+            style={{ flexShrink: 0, cursor: 'pointer', accentColor: 'var(--primary)' }} />
           <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14, flexShrink: 0 }} />
           <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
             {it.mode === 'pair' ? '♀♂' : '●'}
@@ -426,7 +515,7 @@ function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete }) {
             <i className="ti ti-trash" />
           </button>
         </div>
-      ))}
+      )})}
     </div>
   )
 }

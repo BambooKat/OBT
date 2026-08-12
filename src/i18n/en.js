@@ -140,6 +140,13 @@ const en = {
     groupTitle: 'Group title',
     groupTitlePlaceholder: 'E.g. Catus',
     deleteGroupConfirm: 'Delete the group? Items stay, but become loose.',
+    selectedCount: 'selected',
+    bulkMoveTo: 'Move to…',
+    bulkSetSingle: 'Set ●',
+    bulkSetPair: 'Set ♀♂',
+    bulkDelete: 'Delete',
+    bulkClear: 'Clear selection',
+    bulkDeleteConfirm: 'Delete the selected items?',
   },
   guide: {
     title: 'Guide & Glossary',
