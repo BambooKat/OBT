@@ -69,7 +69,7 @@ export default function Journal() {
     const noteCards = notes.map(n => ({
       kind: 'note', id: n.id,
       title: n.title || t('journal.untitled'),
-      preview: stripMarkdown(n.body || ''),
+      preview: n.description || stripMarkdown(n.body || ''),
       tags: n.tags || [], pinned: !!n.pinned,
       visibility: n.visibility || 'private',
       created_at: n.created_at, to: `/journal/${n.id}`,

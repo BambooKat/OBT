@@ -368,6 +368,9 @@ const it = {
     untitled: 'Senza titolo',
     entryTitle: 'Titolo',
     titlePlaceholder: 'Es. Round 2 di Aomine',
+    description: 'Riepilogo',
+    descriptionPlaceholder: 'Breve descrizione mostrata nell\'anteprima della card…',
+    descriptionHint: 'Opzionale. Mostrata al posto del testo nella lista del diario.',
     body: 'Testo',
     bodyPlaceholder: 'Scrivi qui…',
     tagsPlaceholder: 'kuroko, colori, strategia',
@@ -386,6 +389,8 @@ const it = {
     privateHint: 'Solo tu puoi leggere questa voce.',
     copyPrompt: 'Copia il link:',
     mdHint: 'Formattazione: **grassetto**, *corsivo*, ~~barrato~~, # titolo, - elenco, > citazione.',
+    date: 'Data',
+    status: 'Stato',
   },
   sort: {
     label: 'Ordina:',

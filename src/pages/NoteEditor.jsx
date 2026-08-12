@@ -21,7 +21,7 @@ export default function NoteEditor() {
   const navigate = useNavigate()
   const isNew = !entryId
 
-  const [form, setForm] = useState({ title: '', body: '', tags: '', visibility: 'private' })
+  const [form, setForm] = useState({ title: '', description: '', body: '', tags: '', visibility: 'private' })
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -39,6 +39,7 @@ export default function NoteEditor() {
       if (!data || !user || data.owner_id !== user.id) { setNotFound(true); setLoading(false); return }
       setForm({
         title: data.title || '',
+        description: data.description || '',
         body: data.body || '',
         tags: (data.tags || []).join(', '),
         visibility: data.visibility || 'private',
@@ -54,6 +55,7 @@ export default function NoteEditor() {
     const { data: { user } } = await supabase.auth.getUser()
     const payload = {
       title: form.title.trim() || null,
+      description: form.description.trim() || null,
       body: form.body.trim(),
       tags: parseTags(form.tags),
       visibility: form.visibility,
@@ -106,6 +108,14 @@ export default function NoteEditor() {
             <input className="obt-input" value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })}
               placeholder={t('journal.titlePlaceholder')} />
+          </div>
+
+          <div className="obt-field">
+            <label>{t('journal.description')} <span className="obt-optional">{t('common.optional')}</span></label>
+            <input className="obt-input" value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              placeholder={t('journal.descriptionPlaceholder')} />
+            <div className="obt-hint">{t('journal.descriptionHint')}</div>
           </div>
 
           <div className="obt-field">

@@ -353,6 +353,9 @@ const en = {
     untitled: 'Untitled',
     entryTitle: 'Title',
     titlePlaceholder: 'e.g. Aomine round 2',
+    description: 'Summary',
+    descriptionPlaceholder: 'Short description shown in the card preview…',
+    descriptionHint: 'Optional. Shown instead of the body text in the journal list.',
     body: 'Text',
     bodyPlaceholder: 'Write here…',
     tagsPlaceholder: 'kuroko, colours, strategy',
@@ -371,6 +374,8 @@ const en = {
     privateHint: 'Only you can read this entry.',
     copyPrompt: 'Copy the link:',
     mdHint: 'Formatting: **bold**, *italic*, ~~strikethrough~~, # heading, - list, > quote.',
+    date: 'Date',
+    status: 'Status',
   },
   credits: {
     title: 'Credits',

@@ -70,14 +70,11 @@ export default function JournalEntry() {
           </div>
           <div className="obt-hero-title">
             <h1>{entry.title || t('journal.untitled')}</h1>
-            <p className="obt-hero-desc obt-hero-desc--empty">
-              {formatDate(entry.created_at)}
-              {entry.visibility !== 'private' && <> · <i className="ti ti-link" /> {t('visibility.unlisted')}</>}
-            </p>
-          </div>
-          <div className="obt-hero-info">
+            {entry.description && (
+              <p className="obt-hero-desc" style={{ marginTop: 4 }}>{entry.description}</p>
+            )}
             {(entry.tags || []).length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 'auto', paddingTop: 16 }}>
                 {entry.tags.map(tag => (
                   <span key={tag} style={{
                     background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999,
@@ -86,6 +83,20 @@ export default function JournalEntry() {
                 ))}
               </div>
             )}
+          </div>
+          <div className="obt-hero-info">
+            <div className="obt-hero-info-row">
+              <span className="obt-hero-info-label">{t('journal.date')}</span>
+              <span>{formatDate(entry.created_at)}</span>
+            </div>
+            <div className="obt-hero-info-row">
+              <span className="obt-hero-info-label">{t('journal.status')}</span>
+              <span>
+                {entry.visibility === 'private'
+                  ? <><i className="ti ti-lock" /> {t('visibility.private')}</>
+                  : <><i className="ti ti-link" /> {t('visibility.unlisted')}</>}
+              </span>
+            </div>
           </div>
         </div>
       </div>
