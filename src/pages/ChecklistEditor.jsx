@@ -492,20 +492,25 @@ function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete, selected
         const isSel = selected?.has(it.id)
         const dp = drag.dragProps(it)
         return (
-        <div key={it.id} {...dp}
-          style={{ ...dp.style, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '0.5px solid var(--line)',
+        <div key={it.id}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '0.5px solid var(--line)',
             background: isSel ? 'color-mix(in srgb, var(--primary) 12%, transparent)' : undefined }}>
-          <input type="checkbox" checked={!!isSel} draggable={false}
-            onClick={e => e.stopPropagation()}
-            onChange={() => onToggleSelect?.(it.id)}
-            style={{ flexShrink: 0, cursor: 'pointer', accentColor: 'var(--primary)' }} />
-          <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14, flexShrink: 0 }} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
-            {it.mode === 'pair' ? '♀♂' : '●'}
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>{it.label}</span>
-            {it.notes && <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{it.notes}</div>}
+          <label style={{ display: 'flex', alignItems: 'center', padding: '2px 4px', flexShrink: 0, cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!isSel} draggable={false}
+              onChange={() => onToggleSelect?.(it.id)}
+              style={{ cursor: 'pointer', accentColor: 'var(--primary)', width: 16, height: 16 }} />
+          </label>
+          {/* Solo da qui in poi la riga è trascinabile: il grip e il contenuto. */}
+          <div {...dp}
+            style={{ ...dp.style, display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+            <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14, flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
+              {it.mode === 'pair' ? '♀♂' : '●'}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>{it.label}</span>
+              {it.notes && <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{it.notes}</div>}
+            </div>
           </div>
           <button className="obt-icon-btn" title={t('common.edit')}
             onClick={() => onEdit({ id: it.id, group_id: it.group_id || '', label: it.label, mode: it.mode, notes: it.notes || '' })}>
