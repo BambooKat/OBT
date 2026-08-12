@@ -71,8 +71,12 @@ export default function ChecklistEditor() {
   // Riordino voci: onReorder aggiorna il sottoinsieme del gruppo dentro lo stato globale.
   const reorderItemsInGroup = (reordered) => {
     setItems(prev => {
-      const byId = new Map(reordered.map(it => [it.id, it]))
-      return prev.map(it => byId.get(it.id) || it)
+      // reordered = sottoinsieme di UN gruppo, nel nuovo ordine (con position aggiornata).
+      // Ricostruiamo l'array globale rispettando quel nuovo ordine, così il .filter()
+      // nel render riflette immediatamente lo spostamento (riordino ottimistico).
+      const movedIds = new Set(reordered.map(it => it.id))
+      const queue = [...reordered]
+      return prev.map(it => (movedIds.has(it.id) ? queue.shift() : it))
     })
   }
 
