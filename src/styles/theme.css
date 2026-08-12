@@ -1240,3 +1240,14 @@ a { color: var(--primary-dark); }
 .obt-bulkbar .obt-input--sm{
   padding: 7px 10px; font-size: 13px; height: auto; min-width: 120px;
 }
+
+/* ---- Selettore modalità ordinamento per sezione checklist ---- */
+.obt-sortseg{ display: inline-flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.obt-sortseg button{
+  border: 0; background: transparent; color: var(--ink-soft);
+  padding: 4px 8px; font-size: 13px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; border-left: 1px solid var(--line);
+}
+.obt-sortseg button:first-child{ border-left: 0; }
+.obt-sortseg button:hover{ background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.obt-sortseg button.is-active{ background: var(--primary); color: var(--on-primary, #fff); }

@@ -147,6 +147,9 @@ const it = {
     bulkDelete: 'Elimina',
     bulkClear: 'Deseleziona',
     bulkDeleteConfirm: 'Eliminare le voci selezionate?',
+    sortCustom: 'Personalizzato (trascina)',
+    sortAlpha: 'Alfabetico',
+    sortInsert: 'Per inserimento',
   },
   guide: {
     title: 'Guida & Glossario',

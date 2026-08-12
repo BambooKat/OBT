@@ -147,6 +147,9 @@ const en = {
     bulkDelete: 'Delete',
     bulkClear: 'Clear selection',
     bulkDeleteConfirm: 'Delete the selected items?',
+    sortCustom: 'Custom (drag)',
+    sortAlpha: 'Alphabetical',
+    sortInsert: 'By creation',
   },
   guide: {
     title: 'Guide & Glossary',

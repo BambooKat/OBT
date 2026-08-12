@@ -205,6 +205,57 @@ export default function ChecklistEditor() {
     await supabase.from('journal_checklists').update({ loose_position: pos }).eq('id', list.id)
   }
 
+  // ---- ordinamento per-sezione -------------------------------------------
+  // Applica una modalità a un sottoinsieme di item. 'custom' = per position;
+  // 'alpha' = per label; 'insert' = per created_at (fallback su position).
+  const sortItems = (arr, mode) => {
+    const copy = [...arr]
+    if (mode === 'alpha') {
+      copy.sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
+    } else if (mode === 'insert') {
+      copy.sort((a, b) => {
+        const ta = a.created_at || '', tb = b.created_at || ''
+        if (ta !== tb) return ta < tb ? -1 : 1
+        return (a.position ?? 0) - (b.position ?? 0)
+      })
+    } else {
+      copy.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    }
+    return copy
+  }
+
+  // Quando si passa VERSO custom, congela l'ordine visibile scrivendo le position,
+  // così il drag riparte da dove si vedeva e non "salta".
+  const persistOrderAsCustom = async (subset) => {
+    const results = await Promise.all(subset.map((it, i) =>
+      supabase.from('journal_checklist_items').update({ position: i }).eq('id', it.id)))
+    if (results.some(r => r.error)) { setError(t('checklist.saveError')); return }
+    setItems(prev => {
+      const posById = new Map(subset.map((it, i) => [it.id, i]))
+      return prev.map(it => posById.has(it.id) ? { ...it, position: posById.get(it.id) } : it)
+    })
+  }
+
+  const setGroupSortMode = async (group, mode) => {
+    if (mode === 'custom') {
+      const visible = sortItems(items.filter(it => it.group_id === group.id), group.sort_mode || 'custom')
+      await persistOrderAsCustom(visible)
+    }
+    setGroups(prev => prev.map(g => g.id === group.id ? { ...g, sort_mode: mode } : g))
+    const { error } = await supabase.from('journal_checklist_groups').update({ sort_mode: mode }).eq('id', group.id)
+    if (error) setError(t('checklist.saveError'))
+  }
+
+  const setLooseSortMode = async (mode) => {
+    if (mode === 'custom') {
+      const visible = sortItems(items.filter(it => it.group_id === null), list.loose_sort_mode || 'custom')
+      await persistOrderAsCustom(visible)
+    }
+    setList(prev => ({ ...prev, loose_sort_mode: mode }))
+    const { error } = await supabase.from('journal_checklists').update({ loose_sort_mode: mode }).eq('id', list.id)
+    if (error) setError(t('checklist.saveError'))
+  }
+
   // ---- meta checklist ----------------------------------------------------
   const openMeta = () => {
     setMetaForm({
@@ -297,19 +348,22 @@ export default function ChecklistEditor() {
               <>
                 {(list.loose_position || 'top') === 'top' && (
                   <ItemGroup t={t} title={t('checklist.noGroupSection')}
-                    groupItems={items.filter(it => it.group_id === null)}
+                    groupItems={sortItems(items.filter(it => it.group_id === null), list.loose_sort_mode || 'custom')}
+                    sortMode={list.loose_sort_mode || 'custom'} onSortMode={setLooseSortMode}
                     onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem}
                     selected={selected} onToggleSelect={toggleSelect} />
                 )}
                 {groups.map(g => (
                   <ItemGroup key={g.id} t={t} title={g.title}
-                    groupItems={items.filter(it => it.group_id === g.id)}
+                    groupItems={sortItems(items.filter(it => it.group_id === g.id), g.sort_mode || 'custom')}
+                    sortMode={g.sort_mode || 'custom'} onSortMode={(m) => setGroupSortMode(g, m)}
                     onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem}
                     selected={selected} onToggleSelect={toggleSelect} />
                 ))}
                 {(list.loose_position || 'top') === 'bottom' && (
                   <ItemGroup t={t} title={t('checklist.noGroupSection')}
-                    groupItems={items.filter(it => it.group_id === null)}
+                    groupItems={sortItems(items.filter(it => it.group_id === null), list.loose_sort_mode || 'custom')}
+                    sortMode={list.loose_sort_mode || 'custom'} onSortMode={setLooseSortMode}
                     onReorder={reorderItemsInGroup} onEdit={setItemForm} onDelete={removeItem}
                     selected={selected} onToggleSelect={toggleSelect} />
                 )}
@@ -480,13 +534,29 @@ const segStyle = (active) => ({
 // Sezione voci di un singolo gruppo (o degli sciolti), con drag&drop interno.
 // Ogni ItemGroup monta la propria useDragOrder sul proprio sottoinsieme, così
 // il riordino resta confinato al gruppo e le position scritte sono coerenti.
-function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete, selected, onToggleSelect }) {
-  const drag = useDragOrder({ items: groupItems, table: 'journal_checklist_items', onReorder })
+function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete, selected, onToggleSelect, sortMode = 'custom', onSortMode }) {
+  const isCustom = sortMode === 'custom'
+  const drag = useDragOrder({ items: groupItems, table: 'journal_checklist_items', onReorder, enabled: isCustom })
   if (groupItems.length === 0) return null
   return (
     <div className="obt-panel">
-      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, textTransform: 'uppercase', color: 'var(--ink-soft)', marginBottom: 6 }}>
-        {title} <span style={{ fontWeight: 600 }}>· {groupItems.length}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, textTransform: 'uppercase', color: 'var(--ink-soft)', flex: 1, minWidth: 0 }}>
+          {title} <span style={{ fontWeight: 600 }}>· {groupItems.length}</span>
+        </div>
+        {onSortMode && (
+          <div className="obt-sortseg">
+            <button type="button" onClick={() => onSortMode('custom')} className={isCustom ? 'is-active' : ''} title={t('checklist.sortCustom')}>
+              <i className="ti ti-arrows-sort" />
+            </button>
+            <button type="button" onClick={() => onSortMode('alpha')} className={sortMode === 'alpha' ? 'is-active' : ''} title={t('checklist.sortAlpha')}>
+              <i className="ti ti-sort-a-z" />
+            </button>
+            <button type="button" onClick={() => onSortMode('insert')} className={sortMode === 'insert' ? 'is-active' : ''} title={t('checklist.sortInsert')}>
+              <i className="ti ti-clock" />
+            </button>
+          </div>
+        )}
       </div>
       {groupItems.map(it => {
         const isSel = selected?.has(it.id)
@@ -503,7 +573,7 @@ function ItemGroup({ t, title, groupItems, onReorder, onEdit, onDelete, selected
           {/* Solo da qui in poi la riga è trascinabile: il grip e il contenuto. */}
           <div {...dp}
             style={{ ...dp.style, display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-            <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14, flexShrink: 0 }} />
+            {isCustom && <i className="ti ti-grip-vertical" style={{ color: 'var(--ink-soft)', fontSize: 14, flexShrink: 0 }} />}
             <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26 }}>
               {it.mode === 'pair' ? '♀♂' : '●'}
             </span>

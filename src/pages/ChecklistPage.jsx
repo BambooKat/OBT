@@ -57,6 +57,23 @@ export default function ChecklistPage() {
     return { total: gi.length, done, complete: gi.length > 0 && done === gi.length }
   }
 
+  // Stesso ordinamento per-sezione dell'editor (custom/alpha/insert).
+  const sortItems = (arr, mode) => {
+    const copy = [...arr]
+    if (mode === 'alpha') {
+      copy.sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
+    } else if (mode === 'insert') {
+      copy.sort((a, b) => {
+        const ta = a.created_at || '', tb = b.created_at || ''
+        if (ta !== tb) return ta < tb ? -1 : 1
+        return (a.position ?? 0) - (b.position ?? 0)
+      })
+    } else {
+      copy.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    }
+    return copy
+  }
+
   const patchItem = async (item, patch) => {
     setItems(prev => prev.map(it => it.id === item.id ? { ...it, ...patch } : it))
     const { error } = await supabase
@@ -116,7 +133,7 @@ export default function ChecklistPage() {
 
   const GroupBlock = ({ g, bandIndex }) => {
     const gs = groupStats(g.id)
-    const gi = items.filter(it => it.group_id === g.id)
+    const gi = sortItems(items.filter(it => it.group_id === g.id), g.sort_mode || 'custom')
     if (gi.length === 0) return null
     return (
       <div className="obt-panel obt-group-panel">
@@ -132,7 +149,7 @@ export default function ChecklistPage() {
   }
 
   const LooseBlock = () => {
-    const loose = items.filter(it => it.group_id === null)
+    const loose = sortItems(items.filter(it => it.group_id === null), list.loose_sort_mode || 'custom')
     if (loose.length === 0) return null
     return (
       <div className="obt-panel obt-group-panel">
