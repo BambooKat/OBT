@@ -1,8 +1,7 @@
 // src/pages/ChecklistPage.jsx
 // Vista in sola LETTURA di una checklist: lista pulita, spuntabile.
-// Si USA qui (segni cosa hai, vedi il progresso). La costruzione (gruppi/voci)
-// sta nell'editor a due colonne su /journal/checklist/:id/edit.
-// Viste anon/non-owner: spunte disabilitate, nessun controllo di modifica.
+// Componenti di rendering definiti FUORI dal componente principale
+// per evitare rimount ad ogni setItems (che causava scroll-to-top).
 
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -10,9 +9,120 @@ import { supabase } from '../supabaseClient'
 import { useT } from '../i18n'
 import { useConfirm } from './ConfirmDialog'
 
+// ---------- helpers puri ----------
 const itemDone = (it) =>
   it.mode === 'pair' ? (it.have_m && it.have_f) : it.have_single
 
+const sortItems = (arr, mode) => {
+  if (mode === 'alpha') return [...arr].sort((a, b) => (a.label || '').localeCompare(b.label || ''))
+  if (mode === 'creation') return [...arr].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  return [...arr].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+}
+
+// ---------- componenti stateless (fuori dal componente principale) ----------
+function StateBox({ checked, label, onClick, done }) {
+  return (
+    <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
+      style={{
+        width: 30, height: 30, borderRadius: 8, fontSize: 13, fontWeight: 800,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
+        border: '1px solid ' + (checked ? (done ? 'var(--good-text)' : 'var(--primary)') : 'var(--line)'),
+        background: checked ? (done ? 'var(--good-text)' : 'var(--primary)') : 'var(--card)',
+        color: checked ? '#fff' : 'var(--ink-soft)', transition: 'all .12s',
+      }}>
+      {checked ? <i className="ti ti-check" /> : label}
+    </button>
+  )
+}
+
+function ItemRow({ it, isOwner, haveShortLabel, onToggleSingle, onToggleF, onToggleM }) {
+  const done = itemDone(it)
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
+      borderBottom: '0.5px solid var(--line)',
+      background: done ? 'var(--good-bg)' : 'transparent',
+      borderRadius: done ? 6 : 0,
+      transition: 'background .15s',
+    }}>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        {it.mode === 'single' ? (
+          <StateBox checked={it.have_single} label={haveShortLabel}
+            onClick={isOwner ? () => onToggleSingle(it) : null} done={done} />
+        ) : (
+          <>
+            <StateBox checked={it.have_f} label="♀"
+              onClick={isOwner ? () => onToggleF(it) : null} done={done} />
+            <StateBox checked={it.have_m} label="♂"
+              onClick={isOwner ? () => onToggleM(it) : null} done={done} />
+          </>
+        )}
+      </div>
+      <span style={{ fontSize: 14, fontWeight: 600, color: done ? 'var(--good-text)' : 'var(--ink)' }}>
+        {it.label}
+      </span>
+    </div>
+  )
+}
+
+function GroupBand({ children, className, onClick }) {
+  return onClick ? (
+    <button type="button" className={`obt-group-band obt-group-band--toggle ${className}`} onClick={onClick}>
+      {children}
+    </button>
+  ) : (
+    <div className={`obt-group-band ${className}`}>{children}</div>
+  )
+}
+
+function GroupBlock({ g, bandIndex, items, isOwner, openGroups, onToggleGroup, haveShortLabel, onToggleSingle, onToggleF, onToggleM }) {
+  const gi = sortItems(items.filter(it => it.group_id === g.id), g.sort_mode || 'custom')
+  if (gi.length === 0) return null
+  const done = gi.filter(itemDone).length
+  const isOpen = !!openGroups[g.id]
+  return (
+    <div className="obt-panel obt-group-panel">
+      <GroupBand className={`obt-group-band--v${bandIndex % 4}`} onClick={() => onToggleGroup(g.id)}>
+        <i className={`ti ti-chevron-right obt-group-chevron${isOpen ? ' is-open' : ''}`} />
+        <h3 style={{ margin: 0, fontSize: 16 }}>{g.title}</h3>
+        <span className="obt-group-band-count">
+          {done}/{gi.length}{done === gi.length && <> · <i className="ti ti-circle-check" /></>}
+        </span>
+      </GroupBand>
+      {isOpen && gi.map(it => (
+        <ItemRow key={it.id} it={it} isOwner={isOwner}
+          haveShortLabel={haveShortLabel}
+          onToggleSingle={onToggleSingle} onToggleF={onToggleF} onToggleM={onToggleM} />
+      ))}
+    </div>
+  )
+}
+
+function LooseBlock({ items, looseSortMode, hasBand, isOwner, openGroups, onToggleGroup, noGroupLabel, haveShortLabel, onToggleSingle, onToggleF, onToggleM }) {
+  const loose = sortItems(items.filter(it => it.group_id === null), looseSortMode || 'custom')
+  if (loose.length === 0) return null
+  const isOpen = hasBand ? !!openGroups['__loose__'] : true
+  const done = loose.filter(itemDone).length
+  return (
+    <div className="obt-panel obt-group-panel">
+      {hasBand && (
+        <GroupBand className="obt-group-band--loose" onClick={() => onToggleGroup('__loose__')}>
+          <i className={`ti ti-chevron-right obt-group-chevron${isOpen ? ' is-open' : ''}`} />
+          <h3 style={{ margin: 0, fontSize: 16 }}>{noGroupLabel}</h3>
+          <span className="obt-group-band-count">{done}/{loose.length}</span>
+        </GroupBand>
+      )}
+      {isOpen && loose.map(it => (
+        <ItemRow key={it.id} it={it} isOwner={isOwner}
+          haveShortLabel={haveShortLabel}
+          onToggleSingle={onToggleSingle} onToggleF={onToggleF} onToggleM={onToggleM} />
+      ))}
+    </div>
+  )
+}
+
+// ---------- componente principale ----------
 export default function ChecklistPage() {
   const { t, formatDate } = useT()
   const { checklistId } = useParams()
@@ -26,8 +136,6 @@ export default function ChecklistPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Gruppi aperti/chiusi (accordion): stato per-checklist, persistito in localStorage.
-  // Chiave: id gruppo -> bool. Assente/false = chiuso.
   const [openGroups, setOpenGroups] = useState({})
 
   useEffect(() => { load() }, [checklistId])
@@ -56,16 +164,15 @@ export default function ChecklistPage() {
   const load = async () => {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    const { data: cl } = await supabase
-      .from('journal_checklists').select('*').eq('id', checklistId).maybeSingle()
-    if (!cl) { setList(null); setLoading(false); return }
-    const owner = !!(user && cl.owner_id === user.id)
-    const [{ data: grs }, { data: its }] = await Promise.all([
-      supabase.from('journal_checklist_groups').select('*')
-        .eq('checklist_id', checklistId).order('position', { ascending: true }),
-      supabase.from('journal_checklist_items').select('*')
-        .eq('checklist_id', checklistId).order('position', { ascending: true }),
-    ])
+    const { data: cl, error: e1 } = await supabase
+      .from('journal_checklists').select('*').eq('id', checklistId).single()
+    if (e1 || !cl) { setLoading(false); return }
+    if (cl.visibility === 'private' && cl.owner_id !== user?.id) { setLoading(false); return }
+    const { data: grs } = await supabase
+      .from('journal_checklist_groups').select('*').eq('checklist_id', checklistId).order('sort_order')
+    const { data: its } = await supabase
+      .from('journal_checklist_items').select('*').eq('checklist_id', checklistId).order('sort_order')
+    const owner = cl.owner_id === user?.id
     setList(cl); setGroups(grs || []); setItems(its || []); setIsOwner(owner)
     setLoading(false)
   }
@@ -75,29 +182,6 @@ export default function ChecklistPage() {
     const done = items.filter(itemDone).length
     return { total, done, complete: total > 0 && done === total }
   }, [items])
-
-  const groupStats = (groupId) => {
-    const gi = items.filter(it => it.group_id === groupId)
-    const done = gi.filter(itemDone).length
-    return { total: gi.length, done, complete: gi.length > 0 && done === gi.length }
-  }
-
-  // Stesso ordinamento per-sezione dell'editor (custom/alpha/insert).
-  const sortItems = (arr, mode) => {
-    const copy = [...arr]
-    if (mode === 'alpha') {
-      copy.sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
-    } else if (mode === 'insert') {
-      copy.sort((a, b) => {
-        const ta = a.created_at || '', tb = b.created_at || ''
-        if (ta !== tb) return ta < tb ? -1 : 1
-        return (a.position ?? 0) - (b.position ?? 0)
-      })
-    } else {
-      copy.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-    }
-    return copy
-  }
 
   const patchItem = async (item, patch) => {
     setItems(prev => prev.map(it => it.id === item.id ? { ...it, ...patch } : it))
@@ -113,101 +197,10 @@ export default function ChecklistPage() {
     message: t('checklist.deleteConfirm'), danger: true,
     onConfirm: async () => {
       const { error } = await supabase.from('journal_checklists').delete().eq('id', list.id)
-      if (error) { setError(t('checklist.saveError')); return }
+      if (error) { setError(t('checklist.deleteError')); return }
       navigate('/journal')
-    },
+    }
   })
-
-  const StateBox = ({ checked, label, onClick, done }) => (
-    <button type="button" onClick={onClick || undefined} disabled={!onClick} title={label}
-      style={{
-        width: 30, height: 30, borderRadius: 8, fontSize: 13, fontWeight: 800,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit',
-        border: '1px solid ' + (checked ? (done ? 'var(--good-text)' : 'var(--primary)') : 'var(--line)'),
-        background: checked ? (done ? 'var(--good-text)' : 'var(--primary)') : 'var(--card)',
-        color: checked ? '#fff' : 'var(--ink-soft)', transition: 'all .12s',
-      }}>
-      {checked ? <i className="ti ti-check" /> : label}
-    </button>
-  )
-
-  const ItemRow = ({ it }) => {
-    const done = itemDone(it)
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
-        borderBottom: '0.5px solid var(--line)',
-        background: done ? 'var(--good-bg)' : 'transparent',
-        borderRadius: done ? 6 : 0,
-        transition: 'background .15s',
-      }}>
-        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-          {it.mode === 'single' ? (
-            <StateBox checked={it.have_single} label={t('checklist.haveShort')} onClick={isOwner ? () => toggleSingle(it) : null} done={done} />
-          ) : (
-            <>
-              <StateBox checked={it.have_f} label="♀" onClick={isOwner ? () => toggleF(it) : null} done={done} />
-              <StateBox checked={it.have_m} label="♂" onClick={isOwner ? () => toggleM(it) : null} done={done} />
-            </>
-          )}
-        </div>
-        <span style={{ fontSize: 14, fontWeight: 600, color: done ? 'var(--good-text)' : 'var(--ink)' }}>
-          {it.label}
-        </span>
-      </div>
-    )
-  }
-
-  const GroupBand = ({ children, className, onClick }) => (
-    onClick ? (
-      <button type="button" className={`obt-group-band obt-group-band--toggle ${className}`} onClick={onClick}>
-        {children}
-      </button>
-    ) : (
-      <div className={`obt-group-band ${className}`}>{children}</div>
-    )
-  )
-
-  const GroupBlock = ({ g, bandIndex }) => {
-    const gs = groupStats(g.id)
-    const gi = sortItems(items.filter(it => it.group_id === g.id), g.sort_mode || 'custom')
-    if (gi.length === 0) return null
-    const isOpen = !!openGroups[g.id]
-    return (
-      <div className="obt-panel obt-group-panel">
-        <GroupBand className={`obt-group-band--v${bandIndex % 4}`} onClick={() => toggleGroup(g.id)}>
-          <i className={`ti ti-chevron-right obt-group-chevron${isOpen ? ' is-open' : ''}`} />
-          <h3 style={{ margin: 0, fontSize: 16 }}>{g.title}</h3>
-          <span className="obt-group-band-count">
-            {gs.done}/{gs.total}{gs.complete && <> · <i className="ti ti-circle-check" /></>}
-          </span>
-        </GroupBand>
-        {isOpen && gi.map(it => <ItemRow key={it.id} it={it} />)}
-      </div>
-    )
-  }
-
-  const LooseBlock = () => {
-    const loose = sortItems(items.filter(it => it.group_id === null), list.loose_sort_mode || 'custom')
-    if (loose.length === 0) return null
-    const hasBand = groups.length > 0
-    const isOpen = hasBand ? !!openGroups['__loose__'] : true
-    return (
-      <div className="obt-panel obt-group-panel">
-        {hasBand && (
-          <GroupBand className="obt-group-band--loose" onClick={() => toggleGroup('__loose__')}>
-            <i className={`ti ti-chevron-right obt-group-chevron${isOpen ? ' is-open' : ''}`} />
-            <h3 style={{ margin: 0, fontSize: 16 }}>{t('checklist.noGroupSection')}</h3>
-            <span className="obt-group-band-count">
-              {loose.filter(itemDone).length}/{loose.length}
-            </span>
-          </GroupBand>
-        )}
-        {isOpen && loose.map(it => <ItemRow key={it.id} it={it} />)}
-      </div>
-    )
-  }
 
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
   if (!list) return (
@@ -221,6 +214,7 @@ export default function ChecklistPage() {
   )
 
   const loosePos = list.loose_position || 'top'
+  const rowProps = { isOwner, haveShortLabel: t('checklist.haveShort'), onToggleSingle: toggleSingle, onToggleF: toggleF, onToggleM: toggleM }
 
   return (
     <>
@@ -297,13 +291,27 @@ export default function ChecklistPage() {
               </button>
             </div>
             {loosePos === 'top' && (
-              <div className="obt-checklist-grid"><LooseBlock /></div>
+              <div className="obt-checklist-grid">
+                <LooseBlock items={items} looseSortMode={list.loose_sort_mode}
+                  hasBand={groups.length > 0} openGroups={openGroups}
+                  onToggleGroup={toggleGroup} noGroupLabel={t('checklist.noGroupSection')}
+                  {...rowProps} />
+              </div>
             )}
             <div className="obt-checklist-grid">
-              {groups.map((g, i) => <GroupBlock key={g.id} g={g} bandIndex={i} />)}
+              {groups.map((g, i) => (
+                <GroupBlock key={g.id} g={g} bandIndex={i} items={items}
+                  openGroups={openGroups} onToggleGroup={toggleGroup}
+                  {...rowProps} />
+              ))}
             </div>
             {loosePos === 'bottom' && (
-              <div className="obt-checklist-grid"><LooseBlock /></div>
+              <div className="obt-checklist-grid">
+                <LooseBlock items={items} looseSortMode={list.loose_sort_mode}
+                  hasBand={groups.length > 0} openGroups={openGroups}
+                  onToggleGroup={toggleGroup} noGroupLabel={t('checklist.noGroupSection')}
+                  {...rowProps} />
+              </div>
             )}
           </>
         )}
