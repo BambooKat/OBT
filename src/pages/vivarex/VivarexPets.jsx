@@ -13,6 +13,52 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
+function ProjectForm({ initial, onSave, onClose }) {
+  const { t } = useT()
+  const [name, setName]                       = useState(initial?.name ?? '')
+  const [description, setDescription]         = useState(initial?.description ?? '')
+  const [originalCreator, setOriginalCreator] = useState(initial?.original_creator ?? '')
+  const [coverUrl, setCoverUrl]               = useState(initial?.cover_url ?? '')
+  const [saving, setSaving]                   = useState(false)
+  const [error, setError]                     = useState(null)
+
+  async function handleSave() {
+    if (!name.trim()) { setError(t('vivarex.projectName') + ' required'); return }
+    setError(null); setSaving(true)
+    await onSave({ name: name.trim(), description: description.trim() || null, original_creator: originalCreator.trim() || null, cover_url: coverUrl.trim() || null })
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      {error && <div className="obt-alert obt-alert--error" style={{ marginBottom: 14 }}>{error}</div>}
+      <div className="obt-field">
+        <label>{t('vivarex.projectName')} *</label>
+        <input className="obt-input" value={name} onChange={e => setName(e.target.value)} placeholder={t('vivarex.projectNamePlaceholder')} />
+      </div>
+      <div className="obt-field">
+        <label>{t('vivarex.creator')} <span className="obt-optional">{t('common.optional')}</span></label>
+        <input className="obt-input" value={originalCreator} onChange={e => setOriginalCreator(e.target.value)} placeholder={t('vivarex.creatorPlaceholder')} />
+      </div>
+      <div className="obt-field">
+        <label>{t('vivarex.coverUrl')} <span className="obt-optional">{t('common.optional')}</span></label>
+        <input className="obt-input" value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder="https://..." />
+        {coverUrl && (
+          <img src={coverUrl} alt="preview"
+            style={{ marginTop: 8, borderRadius: 8, maxHeight: 100, objectFit: 'cover' }}
+            onError={e => { e.target.style.display = 'none' }} />
+        )}
+      </div>
+      <div className="obt-actions">
+        <button className="obt-btn obt-btn--ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <button className="obt-btn obt-btn--primary" onClick={handleSave} disabled={saving}>
+          {saving ? t('common.loading') : t('common.save')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Lightbox({ src, alt, onClose }) {
   return (
     <div className="obt-modal-overlay" onClick={onClose} style={{ zIndex: 2000 }}>
@@ -202,9 +248,10 @@ export default function VivarexPets() {
   const [project, setProject]           = useState(null)
   const [pets, setPets]                 = useState([])
   const [loading, setLoading]           = useState(true)
-  const [addOpen, setAddOpen]           = useState(false)
-  const [editTarget, setEditTarget]     = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [addOpen, setAddOpen]               = useState(false)
+  const [editProjectOpen, setEditProjectOpen] = useState(false)
+  const [editTarget, setEditTarget]         = useState(null)
+  const [deleteTarget, setDeleteTarget]     = useState(null)
   const [sortMode, setSortMode]         = useState('date')
   const [sortDir, setSortDir]           = useState('desc')
 
@@ -249,6 +296,12 @@ export default function VivarexPets() {
     setPets(prev => prev.map(p => p.id === petId ? { ...p, ...updates } : p))
   }
 
+  async function handleEditProject(fields) {
+    const { data } = await supabase.from('vivarex_projects').update(fields).eq('id', projectId).select().single()
+    setProject(data)
+    setEditProjectOpen(false)
+  }
+
   async function handleAdd(fields) {
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase.from('vivarex_pets')
@@ -289,8 +342,8 @@ export default function VivarexPets() {
             <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => navigate('/vivarex')}>
               <i className="ti ti-arrow-left" /> {t('vivarex.allProjects')}
             </button>
-            <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => setAddOpen(true)} style={{ marginTop: 8 }}>
-              <i className="ti ti-plus" /> {t('vivarex.addPet')}
+            <button className="obt-btn obt-btn--ghost obt-btn--sm" onClick={() => setEditProjectOpen(true)} style={{ marginTop: 8 }}>
+              <i className="ti ti-pencil" /> {t('vivarex.editProject')}
             </button>
           </div>
           <div className="obt-hero-title">
@@ -316,7 +369,7 @@ export default function VivarexPets() {
       </div>
 
       <div className="obt-page">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <div className="obt-sortseg">
             {sortBtns.map(b => {
               const isActive = sortMode === b.key
@@ -332,6 +385,9 @@ export default function VivarexPets() {
               )
             })}
           </div>
+          <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => setAddOpen(true)}>
+            <i className="ti ti-plus" /> {t('vivarex.addPet')}
+          </button>
         </div>
         {sortMode === 'drag' && pets.length > 1 && (
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
@@ -374,6 +430,9 @@ export default function VivarexPets() {
         )}
       </div>
 
+      <Modal open={editProjectOpen} onClose={() => setEditProjectOpen(false)} title={t('vivarex.editProject')} size="sm">
+        {project && <ProjectForm initial={project} onSave={handleEditProject} onClose={() => setEditProjectOpen(false)} />}
+      </Modal>
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('vivarex.addPet')} size="sm">
         <PetForm onSave={handleAdd} onClose={() => setAddOpen(false)} />
       </Modal>

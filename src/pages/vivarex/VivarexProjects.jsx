@@ -5,6 +5,13 @@ import { supabase } from '../../supabaseClient'
 import { useT } from '../../i18n'
 import Modal from '../Modal'
 import { IconPencil, IconTrash } from '@tabler/icons-react'
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext, rectSortingStrategy, useSortable, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 function ProjectForm({ initial, onSave, onClose }) {
   const { t } = useT()
@@ -75,6 +82,51 @@ function DeleteConfirm({ project, onConfirm, onClose }) {
   )
 }
 
+function SortableProjectCard({ p, calcProgress, navigate, t, onEdit, onDelete }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, cursor: 'grab' }
+  const { owned, total, pct } = calcProgress(p.vivarex_pets)
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <ProjectCard p={p} owned={owned} total={total} pct={pct} navigate={navigate} t={t} onEdit={onEdit} onDelete={onDelete} />
+    </div>
+  )
+}
+
+function ProjectCard({ p, owned, total, pct, navigate, t, onEdit, onDelete }) {
+  return (
+    <div className="obt-card" onClick={() => navigate(`/vivarex/${p.id}`)}>
+      <div className="obt-badge">{pct}%</div>
+      {p.cover_url && (
+        <img src={p.cover_url} alt={p.name}
+          style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }}
+          onError={e => { e.target.style.display = 'none' }} />
+      )}
+      <h3>{p.name}</h3>
+      {p.original_creator && (
+        <div className="obt-meta" style={{ marginBottom: 4 }}>
+          <i className="ti ti-user" /> {p.original_creator}
+        </div>
+      )}
+      {p.description && <p className="obt-card-preview">{p.description}</p>}
+      <div className="obt-stats">
+        <div><b>{owned}</b> / {total} {t('vivarex.completed').toLowerCase()}</div>
+      </div>
+      <div className="obt-card-progress" style={{ marginTop: 10 }}>
+        <div style={{ width: `${pct}%` }} />
+      </div>
+      <div className="vx-card-actions" onClick={e => e.stopPropagation()}>
+        <button className="obt-icon-btn" title={t('vivarex.editProject')} onClick={() => onEdit(p)}>
+          <IconPencil size={15} />
+        </button>
+        <button className="obt-icon-btn obt-icon-btn--danger" title={t('vivarex.deleteProject')} onClick={() => onDelete(p)}>
+          <IconTrash size={15} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function VivarexProjects() {
   const { t } = useT()
   const navigate = useNavigate()
@@ -83,6 +135,10 @@ export default function VivarexProjects() {
   const [createOpen, setCreateOpen]     = useState(false)
   const [editTarget, setEditTarget]     = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [sortMode, setSortMode]         = useState('date')
+  const [sortDir, setSortDir]           = useState('desc')
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   useEffect(() => { load() }, [])
 
@@ -126,7 +182,34 @@ export default function VivarexProjects() {
     setDeleteTarget(null)
   }
 
+  async function handleDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return
+    const reordered = arrayMove(projects, projects.findIndex(p => p.id === active.id), projects.findIndex(p => p.id === over.id))
+    setProjects(reordered)
+    await Promise.all(reordered.map((p, i) => supabase.from('vivarex_projects').update({ sort_order: i }).eq('id', p.id)))
+  }
+
   if (loading) return <div className="obt-loading">{t('common.loading')}</div>
+
+  function handleSortBtn(key) {
+    if (key === 'drag') { setSortMode('drag'); return }
+    if (sortMode === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
+    else { setSortMode(key); setSortDir(key === 'date' ? 'desc' : 'asc') }
+  }
+
+  const displayed = (() => {
+    if (sortMode === 'drag') return projects
+    const sorted = [...projects].sort((a, b) =>
+      sortMode === 'alpha' ? a.name.localeCompare(b.name) : new Date(a.created_at) - new Date(b.created_at)
+    )
+    return sortDir === 'desc' ? sorted.reverse() : sorted
+  })()
+
+  const sortBtns = [
+    { key: 'alpha', icon: 'ti-sort-a-z',   title: t('vivarex.sortAlpha'),  dir: true },
+    { key: 'date',  icon: 'ti-clock',       title: t('vivarex.sortDate'),   dir: true },
+    { key: 'drag',  icon: 'ti-arrows-sort', title: t('vivarex.sortManual'), dir: false },
+  ]
 
   const totalPets = projects.reduce((acc, p) => acc + (p.vivarex_pets?.length ?? 0), 0)
 
@@ -155,6 +238,23 @@ export default function VivarexProjects() {
       </div>
 
       <div className="obt-page">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div className="obt-sortseg">
+            {sortBtns.map(b => {
+              const isActive = sortMode === b.key
+              const arrow = b.dir && isActive ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
+              return (
+                <button key={b.key} type="button"
+                  className={isActive ? 'is-active' : ''}
+                  onClick={() => handleSortBtn(b.key)}
+                  title={b.title + arrow}
+                >
+                  <i className={`ti ${b.icon}`} />
+                </button>
+              )
+            })}
+          </div>
+        </div>
         {projects.length === 0 ? (
           <div className="obt-empty">
             <div className="obt-empty-icon">🐾</div>
@@ -164,40 +264,31 @@ export default function VivarexProjects() {
               <i className="ti ti-plus" /> {t('vivarex.newProject')}
             </button>
           </div>
+        ) : sortMode === 'drag' ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={projects.map(p => p.id)} strategy={rectSortingStrategy}>
+              <div className="obt-grid">
+                {projects.map(p => (
+                  <SortableProjectCard key={p.id} p={p}
+                    calcProgress={calcProgress}
+                    navigate={navigate} t={t}
+                    onEdit={setEditTarget}
+                    onDelete={setDeleteTarget}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         ) : (
           <div className="obt-grid">
-            {projects.map(p => {
+            {displayed.map(p => {
               const { owned, total, pct } = calcProgress(p.vivarex_pets)
               return (
-                <div key={p.id} className="obt-card" onClick={() => navigate(`/vivarex/${p.id}`)}>
-                  <div className="obt-badge">{pct}%</div>
-                  {p.cover_url && (
-                    <img src={p.cover_url} alt={p.name}
-                      style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }}
-                      onError={e => { e.target.style.display = 'none' }} />
-                  )}
-                  <h3>{p.name}</h3>
-                  {p.original_creator && (
-                    <div className="obt-meta" style={{ marginBottom: 4 }}>
-                      <i className="ti ti-user" /> {p.original_creator}
-                    </div>
-                  )}
-                  {p.description && <p className="obt-card-preview">{p.description}</p>}
-                  <div className="obt-stats">
-                    <div><b>{owned}</b> / {total} {t('vivarex.completed').toLowerCase()}</div>
-                  </div>
-                  <div className="obt-card-progress" style={{ marginTop: 10 }}>
-                    <div style={{ width: `${pct}%` }} />
-                  </div>
-                  <div className="vx-card-actions" onClick={e => e.stopPropagation()}>
-                    <button className="obt-icon-btn" title={t('vivarex.editProject')} onClick={() => setEditTarget(p)}>
-                      <IconPencil size={15} />
-                    </button>
-                    <button className="obt-icon-btn obt-icon-btn--danger" title={t('vivarex.deleteProject')} onClick={() => setDeleteTarget(p)}>
-                      <IconTrash size={15} />
-                    </button>
-                  </div>
-                </div>
+                <ProjectCard key={p.id} p={p} owned={owned} total={total} pct={pct}
+                  navigate={navigate} t={t}
+                  onEdit={setEditTarget}
+                  onDelete={setDeleteTarget}
+                />
               )
             })}
           </div>
