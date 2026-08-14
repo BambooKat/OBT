@@ -189,7 +189,7 @@ export default function VivarexProjects() {
                   <div className="obt-card-progress" style={{ marginTop: 10 }}>
                     <div style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="obt-card-actions" onClick={e => e.stopPropagation()}>
+                  <div className="vx-card-actions" onClick={e => e.stopPropagation()}>
                     <button className="obt-icon-btn" title={t('vivarex.editProject')} onClick={() => setEditTarget(p)}>
                       <IconPencil size={15} />
                     </button>
