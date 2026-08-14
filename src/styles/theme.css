@@ -1349,11 +1349,11 @@ a { color: var(--primary-dark); }
 
 .vx-card-actions {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   right: 10px;
   display: flex;
   gap: 2px;
-  opacity: 0;
+  opacity: 1;
   transition: opacity .12s;
 }
-.obt-card:hover .vx-card-actions { opacity: 1; }
+
