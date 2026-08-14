@@ -1273,3 +1273,75 @@ a { color: var(--primary-dark); }
 .obt-sortseg button:first-child{ border-left: 0; }
 .obt-sortseg button:hover{ background: color-mix(in srgb, var(--primary) 8%, transparent); }
 .obt-sortseg button.is-active{ background: var(--primary); color: var(--on-primary, #fff); }
+
+/* ============================================================
+   OBT — Vivarex: griglia e card pet
+   Aggiungere in fondo a theme.css
+   ============================================================ */
+
+/* Griglia pet */
+.vx-pets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+/* Card pet verticale */
+.vx-pet-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 2px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.vx-pet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Wrap immagine quadrato */
+.vx-pet-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+.vx-pet-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.vx-pet-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 48px;
+}
+
+/* Nome overlay in basso */
+.vx-pet-name-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--primary-dark) 75%, transparent);
+  padding: 5px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  backdrop-filter: blur(4px);
+}

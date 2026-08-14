@@ -42,6 +42,9 @@ function Layout({ username, onLogout, children }) {
               <Link to="/journal" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
                 <i className="ti ti-notebook" /> {t('layout.journal')}
               </Link>
+	      <Link to="/vivarex" className="obt-btn obt-btn--ghost obt-btn--sm" style={{ textDecoration: 'none' }}>
+  <i className="ti ti-paw" /> Vivarex
+</Link>
               <Link to="/dashboard" className="obt-btn obt-btn--ghost obt-btn--sm"
                 title={t('layout.dashboardAlt')} style={{ textDecoration: 'none' }}>
                 <i className="ti ti-user" /> {username}

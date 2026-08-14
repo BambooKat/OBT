@@ -17,6 +17,8 @@ import ChecklistEditor from './pages/ChecklistEditor'
 import ChecklistNew from './pages/ChecklistNew'
 import Guide from './pages/Guide'
 import News from './pages/News'
+import VivarexProjects from './pages/vivarex/VivarexProjects'
+import VivarexPets from './pages/vivarex/VivarexPets'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -91,6 +93,8 @@ function App() {
         <Route path="/u/:username" element={<PublicProfile />} />
         <Route path="/project/:projectId" element={<ProjectDashboard />} />
         <Route path="/line/:id" element={<ProjectPage />} />
+	<Route path="/vivarex" element={<VivarexProjects />} />
+	<Route path="/vivarex/:projectId" element={<VivarexPets />} />
         <Route path="/credits" element={<Credits />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/guide" element={<Guide />} />
