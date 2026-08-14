@@ -1348,12 +1348,10 @@ a { color: var(--primary-dark); }
 }
 
 .vx-card-actions {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
   display: flex;
   gap: 2px;
+  justify-content: flex-end;
+  margin-top: 8px;
   opacity: 1;
   transition: opacity .12s;
 }
-
