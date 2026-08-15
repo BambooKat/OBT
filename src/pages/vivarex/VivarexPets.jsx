@@ -140,7 +140,7 @@ function DeleteConfirm({ pet, onConfirm, onClose }) {
   )
 }
 
-function PetCard({ pet, onStatusChange, onEdit, onDelete }) {
+function PetCard({ pet, onStatusChange, onEdit, onDelete, selectMode, selected, onSelect }) {
   const [lightbox, setLightbox] = useState(false)
 
   async function toggleMale() {
@@ -161,64 +161,50 @@ function PetCard({ pet, onStatusChange, onEdit, onDelete }) {
 
   const isComplete = pet.target === 'couple' ? pet.owned_male && pet.owned_female : pet.owned
 
+  const cardBorder = selected
+    ? { borderColor: 'var(--accent, var(--primary))', borderWidth: 3, boxShadow: '0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent)' }
+    : isComplete
+    ? { borderColor: 'var(--primary)', borderWidth: 2 }
+    : {}
+
   return (
     <>
-      <div className="vx-pet-card" style={isComplete ? { borderColor: 'var(--primary)', borderWidth: 2 } : {}}>
+      <div className="vx-pet-card" style={cardBorder}
+        onClick={selectMode ? () => onSelect(pet.id) : undefined}
+        style={{ ...cardBorder, cursor: selectMode ? 'pointer' : undefined }}
+      >
         <div className="vx-pet-img-wrap"
-          onClick={() => pet.image_url && setLightbox(true)}
-          style={{ cursor: pet.image_url ? 'zoom-in' : 'default' }}
+          onClick={selectMode ? () => onSelect(pet.id) : () => pet.image_url && setLightbox(true)}
+          style={{ cursor: selectMode ? 'pointer' : pet.image_url ? 'zoom-in' : 'default' }}
         >
           {pet.image_url
             ? <img className="vx-pet-img" src={pet.image_url} alt={pet.name} />
             : <div className="vx-pet-img-placeholder">🐾</div>
           }
           <div className="vx-pet-name-bar">{pet.name}</div>
+          {selected && (
+            <div style={{
+              position: 'absolute', top: 6, right: 6,
+              width: 22, height: 22, borderRadius: '50%',
+              background: 'var(--primary)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, fontWeight: 800, boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+            }}>✓</div>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px' }}>
-          {/* Bottoni stato */}
-          <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+          <div style={{ display: 'flex', gap: 4, flex: 1, opacity: selectMode ? 0.4 : 1, pointerEvents: selectMode ? 'none' : 'auto' }}>
             {pet.target === 'couple' ? (
               <>
-                <button
-                  onClick={toggleMale}
-                  style={{
-                    flex: 1, padding: '5px 4px', borderRadius: 8, border: '2px solid',
-                    fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                    borderColor: pet.owned_male ? 'var(--primary)' : 'var(--line)',
-                    background: pet.owned_male ? 'var(--primary)' : 'var(--card)',
-                    color: pet.owned_male ? '#fff' : 'var(--ink-soft)',
-                    transition: 'all .12s ease',
-                  }}
-                >♂</button>
-                <button
-                  onClick={toggleFemale}
-                  style={{
-                    flex: 1, padding: '5px 4px', borderRadius: 8, border: '2px solid',
-                    fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                    borderColor: pet.owned_female ? 'var(--secondary)' : 'var(--line)',
-                    background: pet.owned_female ? 'var(--secondary)' : 'var(--card)',
-                    color: pet.owned_female ? '#fff' : 'var(--ink-soft)',
-                    transition: 'all .12s ease',
-                  }}
-                >♀</button>
+                <button onClick={toggleMale} style={{ flex:1, padding:'5px 4px', borderRadius:8, border:'2px solid', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', borderColor: pet.owned_male ? 'var(--primary)' : 'var(--line)', background: pet.owned_male ? 'var(--primary)' : 'var(--card)', color: pet.owned_male ? '#fff' : 'var(--ink-soft)', transition:'all .12s ease' }}>♂</button>
+                <button onClick={toggleFemale} style={{ flex:1, padding:'5px 4px', borderRadius:8, border:'2px solid', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', borderColor: pet.owned_female ? 'var(--secondary)' : 'var(--line)', background: pet.owned_female ? 'var(--secondary)' : 'var(--card)', color: pet.owned_female ? '#fff' : 'var(--ink-soft)', transition:'all .12s ease' }}>♀</button>
               </>
             ) : (
-              <button
-                onClick={toggleOwned}
-                style={{
-                  flex: 1, padding: '5px 4px', borderRadius: 8, border: '2px solid',
-                  fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                  borderColor: pet.owned ? 'var(--primary)' : 'var(--line)',
-                  background: pet.owned ? 'var(--primary)' : 'var(--card)',
-                  color: pet.owned ? '#fff' : 'var(--ink-soft)',
-                  transition: 'all .12s ease',
-                }}
-              >✓</button>
+              <button onClick={toggleOwned} style={{ flex:1, padding:'5px 4px', borderRadius:8, border:'2px solid', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', borderColor: pet.owned ? 'var(--primary)' : 'var(--line)', background: pet.owned ? 'var(--primary)' : 'var(--card)', color: pet.owned ? '#fff' : 'var(--ink-soft)', transition:'all .12s ease' }}>✓</button>
             )}
           </div>
-          {/* Azioni */}
-          <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+          <div style={{ display:'flex', gap:2, flexShrink:0, opacity: selectMode ? 0.4 : 1, pointerEvents: selectMode ? 'none' : 'auto' }}>
             <button className="obt-icon-btn" onClick={onEdit}><IconPencil size={13} /></button>
             <button className="obt-icon-btn obt-icon-btn--danger" onClick={onDelete}><IconTrash size={13} /></button>
           </div>
@@ -254,6 +240,8 @@ export default function VivarexPets() {
   const [deleteTarget, setDeleteTarget]     = useState(null)
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(`vx-sort-mode-${projectId}`) ?? 'date')
   const [sortDir, setSortDir]   = useState(() => localStorage.getItem(`vx-sort-dir-${projectId}`) ?? 'desc')
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected]     = useState(new Set())
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -329,6 +317,57 @@ export default function VivarexPets() {
     setEditTarget(null)
   }
 
+  function toggleSelect(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  async function bulkSetTarget(target) {
+    const ids = [...selected]
+    await Promise.all(ids.map(id => supabase.from('vivarex_pets').update({ target }).eq('id', id)))
+    setPets(prev => prev.map(p => selected.has(p.id) ? { ...p, target } : p))
+  }
+
+  async function bulkToggleMale() {
+    const ids = [...selected]
+    const allOn = ids.every(id => pets.find(p => p.id === id)?.owned_male)
+    const val = !allOn
+    await Promise.all(ids.map(id => supabase.from('vivarex_pets').update({ owned_male: val }).eq('id', id)))
+    setPets(prev => prev.map(p => selected.has(p.id) ? { ...p, owned_male: val } : p))
+  }
+
+  async function bulkToggleFemale() {
+    const ids = [...selected]
+    const allOn = ids.every(id => pets.find(p => p.id === id)?.owned_female)
+    const val = !allOn
+    await Promise.all(ids.map(id => supabase.from('vivarex_pets').update({ owned_female: val }).eq('id', id)))
+    setPets(prev => prev.map(p => selected.has(p.id) ? { ...p, owned_female: val } : p))
+  }
+
+  async function bulkToggleOwned() {
+    const ids = [...selected]
+    const allOn = ids.every(id => pets.find(p => p.id === id)?.owned)
+    const val = !allOn
+    await Promise.all(ids.map(id => supabase.from('vivarex_pets').update({ owned: val }).eq('id', id)))
+    setPets(prev => prev.map(p => selected.has(p.id) ? { ...p, owned: val } : p))
+  }
+
+  async function bulkDelete() {
+    if (!window.confirm(`Eliminare ${selected.size} pet? L'operazione non è reversibile.`)) return
+    const ids = [...selected]
+    await Promise.all(ids.map(id => supabase.from('vivarex_pets').delete().eq('id', id)))
+    setPets(prev => prev.filter(p => !selected.has(p.id)))
+    exitSelectMode()
+  }
+
   async function handleDelete() {
     await supabase.from('vivarex_pets').delete().eq('id', deleteTarget.id)
     setPets(prev => prev.filter(p => p.id !== deleteTarget.id))
@@ -398,6 +437,13 @@ export default function VivarexPets() {
               )
             })}
           </div>
+          <button
+            className={`obt-btn obt-btn--sm${selectMode ? ' obt-btn--primary' : ' obt-btn--ghost'}`}
+            onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+          >
+            <i className={`ti ${selectMode ? 'ti-x' : 'ti-checkbox'}`} />
+            {selectMode ? ` ${selected.size} sel.` : ' Seleziona'}
+          </button>
           <button className="obt-btn obt-btn--primary obt-btn--sm" onClick={() => setAddOpen(true)}>
             <i className="ti ti-plus" /> {t('vivarex.addPet')}
           </button>
@@ -425,6 +471,9 @@ export default function VivarexPets() {
                     onStatusChange={handleStatusChange}
                     onEdit={() => setEditTarget(pet)}
                     onDelete={() => setDeleteTarget(pet)}
+                    selectMode={selectMode}
+                    selected={selected.has(pet.id)}
+                    onSelect={toggleSelect}
                   />
                 ))}
               </div>
@@ -437,11 +486,53 @@ export default function VivarexPets() {
                 onStatusChange={handleStatusChange}
                 onEdit={() => setEditTarget(pet)}
                 onDelete={() => setDeleteTarget(pet)}
+                selectMode={selectMode}
+                selected={selected.has(pet.id)}
+                onSelect={toggleSelect}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Toolbar fluttuante selezione multipla */}
+      {selectMode && selected.size > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--card)', border: '1px solid var(--line)',
+          borderRadius: 40, padding: '8px 16px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+        }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600, marginRight: 4 }}>
+            {selected.size} sel.
+          </span>
+
+          {/* Bottoni owned */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={bulkToggleMale} style={{ padding:'5px 10px', borderRadius:20, border:'1px solid var(--line)', background:'var(--bg)', cursor:'pointer', fontWeight:800, fontSize:13 }}>♂</button>
+            <button onClick={bulkToggleFemale} style={{ padding:'5px 10px', borderRadius:20, border:'1px solid var(--line)', background:'var(--bg)', cursor:'pointer', fontWeight:800, fontSize:13 }}>♀</button>
+            <button onClick={bulkToggleOwned} style={{ padding:'5px 10px', borderRadius:20, border:'1px solid var(--line)', background:'var(--bg)', cursor:'pointer', fontWeight:800, fontSize:13 }}>✓</button>
+          </div>
+
+          {/* Dropdown tipo */}
+          <select
+            onChange={e => e.target.value && bulkSetTarget(e.target.value)}
+            defaultValue=""
+            style={{ padding:'5px 8px', borderRadius:20, border:'1px solid var(--line)', background:'var(--bg)', color:'var(--ink)', cursor:'pointer', fontSize:12 }}
+          >
+            <option value="" disabled>Tipo...</option>
+            <option value="couple">♂♀ Coppia</option>
+            <option value="single">✓ Singolo</option>
+          </select>
+
+          {/* Elimina */}
+          <button onClick={bulkDelete} style={{ padding:'5px 10px', borderRadius:20, border:'1px solid var(--bad)', background:'transparent', color:'var(--bad)', cursor:'pointer', fontWeight:600, fontSize:12 }}>
+            <i className="ti ti-trash" />
+          </button>
+        </div>
+      )}
 
       <Modal open={editProjectOpen} onClose={() => setEditProjectOpen(false)} title={t('vivarex.editProject')} size="sm">
         {project && <ProjectForm initial={project} onSave={handleEditProject} onClose={() => setEditProjectOpen(false)} />}
