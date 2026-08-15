@@ -240,8 +240,9 @@ export default function VivarexPets() {
   const [deleteTarget, setDeleteTarget]     = useState(null)
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(`vx-sort-mode-${projectId}`) ?? 'date')
   const [sortDir, setSortDir]   = useState(() => localStorage.getItem(`vx-sort-dir-${projectId}`) ?? 'desc')
-  const [selectMode, setSelectMode] = useState(false)
-  const [selected, setSelected]     = useState(new Set())
+  const [selectMode, setSelectMode]         = useState(false)
+  const [selected, setSelected]             = useState(new Set())
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -361,10 +362,10 @@ export default function VivarexPets() {
   }
 
   async function bulkDelete() {
-    if (!window.confirm(`Eliminare ${selected.size} pet? L'operazione non è reversibile.`)) return
     const ids = [...selected]
     await Promise.all(ids.map(id => supabase.from('vivarex_pets').delete().eq('id', id)))
     setPets(prev => prev.filter(p => !selected.has(p.id)))
+    setBulkDeleteConfirm(false)
     exitSelectMode()
   }
 
@@ -528,11 +529,21 @@ export default function VivarexPets() {
           </select>
 
           {/* Elimina */}
-          <button onClick={bulkDelete} style={{ padding:'5px 10px', borderRadius:20, border:'1px solid var(--bad)', background:'transparent', color:'var(--bad)', cursor:'pointer', fontWeight:600, fontSize:12 }}>
+          <button onClick={() => setBulkDeleteConfirm(true)} style={{ padding:'5px 10px', borderRadius:20, border:'1px solid var(--bad)', background:'transparent', color:'var(--bad)', cursor:'pointer', fontWeight:600, fontSize:12 }}>
             <i className="ti ti-trash" />
           </button>
         </div>
       )}
+
+      <Modal open={bulkDeleteConfirm} onClose={() => setBulkDeleteConfirm(false)} title={t('vivarex.deletePet')} size="sm">
+        <p style={{ color:'var(--ink-soft)', fontSize:14, marginBottom:20, lineHeight:1.6 }}>
+          Sei sicura di voler eliminare <strong style={{ color:'var(--ink)' }}>{selected.size} pet</strong>? L'operazione non è reversibile.
+        </p>
+        <div className="obt-actions">
+          <button className="obt-btn obt-btn--ghost" onClick={() => setBulkDeleteConfirm(false)}>{t('common.cancel')}</button>
+          <button className="obt-btn obt-btn--danger" onClick={bulkDelete}>{t('common.delete')}</button>
+        </div>
+      </Modal>
 
       <Modal open={editProjectOpen} onClose={() => setEditProjectOpen(false)} title={t('vivarex.editProject')} size="sm">
         {project && <ProjectForm initial={project} onSave={handleEditProject} onClose={() => setEditProjectOpen(false)} />}
