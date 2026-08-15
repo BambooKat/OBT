@@ -103,11 +103,6 @@ function ProjectCard({ p, owned, total, pct, navigate, t, onEdit, onDelete }) {
           onError={e => { e.target.style.display = 'none' }} />
       )}
       <h3>{p.name}</h3>
-      {p.original_creator && (
-        <div className="obt-meta" style={{ marginBottom: 4 }}>
-          <i className="ti ti-user" /> {p.original_creator}
-        </div>
-      )}
       {p.description && <p className="obt-card-preview">{p.description}</p>}
       <div className="obt-stats">
         <div><b>{owned}</b> / {total} {t('vivarex.completed').toLowerCase()}</div>
