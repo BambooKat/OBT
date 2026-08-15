@@ -252,8 +252,8 @@ export default function VivarexPets() {
   const [editProjectOpen, setEditProjectOpen] = useState(false)
   const [editTarget, setEditTarget]         = useState(null)
   const [deleteTarget, setDeleteTarget]     = useState(null)
-  const [sortMode, setSortMode]         = useState('date')
-  const [sortDir, setSortDir]           = useState('desc')
+  const [sortMode, setSortMode] = useState(() => localStorage.getItem(`vx-sort-mode-${projectId}`) ?? 'date')
+  const [sortDir, setSortDir]   = useState(() => localStorage.getItem(`vx-sort-dir-${projectId}`) ?? 'desc')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -272,9 +272,22 @@ export default function VivarexPets() {
   }
 
   function handleSortBtn(key) {
-    if (key === 'drag') { setSortMode('drag'); return }
-    if (sortMode === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
-    else { setSortMode(key); setSortDir(key === 'date' ? 'desc' : 'asc') }
+    if (key === 'drag') {
+      setSortMode('drag')
+      localStorage.setItem(`vx-sort-mode-${projectId}`, 'drag')
+      return
+    }
+    if (sortMode === key) {
+      const newDir = sortDir === 'asc' ? 'desc' : 'asc'
+      setSortDir(newDir)
+      localStorage.setItem(`vx-sort-dir-${projectId}`, newDir)
+    } else {
+      const newDir = key === 'date' ? 'desc' : 'asc'
+      setSortMode(key)
+      setSortDir(newDir)
+      localStorage.setItem(`vx-sort-mode-${projectId}`, key)
+      localStorage.setItem(`vx-sort-dir-${projectId}`, newDir)
+    }
   }
 
   const displayed = (() => {
