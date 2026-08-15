@@ -103,6 +103,12 @@ function ProjectCard({ p, owned, total, pct, navigate, t, onEdit, onDelete }) {
           onError={e => { e.target.style.display = 'none' }} />
       )}
       <h3>{p.name}</h3>
+      {p.original_creator && (
+        <div className="obt-meta" title={p.original_creator}
+          style={{ marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <i className="ti ti-user" /> {p.original_creator}
+        </div>
+      )}
       {p.description && <p className="obt-card-preview">{p.description}</p>}
       <div className="obt-stats">
         <div><b>{owned}</b> / {total} {t('vivarex.completed').toLowerCase()}</div>
@@ -110,11 +116,6 @@ function ProjectCard({ p, owned, total, pct, navigate, t, onEdit, onDelete }) {
       <div className="obt-card-progress" style={{ marginTop: 10 }}>
         <div style={{ width: `${pct}%` }} />
       </div>
-      {p.original_creator && (
-        <div className="vx-pet-creator" title={p.original_creator}>
-          by {p.original_creator}
-        </div>
-      )}
       <div className="vx-card-actions" onClick={e => e.stopPropagation()}>
         <button className="obt-icon-btn" title={t('vivarex.editProject')} onClick={() => onEdit(p)}>
           <IconPencil size={15} />
