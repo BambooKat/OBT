@@ -115,6 +115,11 @@ function ProjectCard({ p, owned, total, pct, navigate, t, onEdit, onDelete }) {
       <div className="obt-card-progress" style={{ marginTop: 10 }}>
         <div style={{ width: `${pct}%` }} />
       </div>
+      {p.original_creator && (
+        <div className="vx-pet-creator" title={p.original_creator}>
+          by {p.original_creator}
+        </div>
+      )}
       <div className="vx-card-actions" onClick={e => e.stopPropagation()}>
         <button className="obt-icon-btn" title={t('vivarex.editProject')} onClick={() => onEdit(p)}>
           <IconPencil size={15} />
